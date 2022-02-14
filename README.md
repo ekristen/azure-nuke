@@ -1,5 +1,7 @@
 # Azure Nuke
 
+**This is potentially very destructive! Use at your own risk!**
+
 **Status:** This is early beta.
 
 Originally based on the source code from [aws-nuke fork](https://github.com/ekristen/aws-nuke) and [aws-nuke original](https://github.com/rebuy-de/aws-nuke)
