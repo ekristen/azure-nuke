@@ -2,7 +2,7 @@
 
 **This is potentially very destructive! Use at your own risk!**
 
-**Status:** This is early beta.
+**Status:** This is late alpha, early beta. Expect some behaviors around safeguarding, delays, and prompts to change. Likely will change CLI behavior a bit as well.
 
 Originally based on the source code from [aws-nuke fork](https://github.com/ekristen/aws-nuke) and [aws-nuke original](https://github.com/rebuy-de/aws-nuke)
 
