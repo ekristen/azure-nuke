@@ -1,0 +1,9 @@
+/vendor
+/aws-nuke
+/aws-nuke-*
+/dist
+/releases
+/mocks
+.envrc
+config.yaml
+cosign.key
