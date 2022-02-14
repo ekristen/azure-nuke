@@ -14,7 +14,8 @@ import (
 
 type Disk struct {
 	client compute.DisksClient
-	name   *string
+	name   string
+	rg     string
 }
 
 func init() {
@@ -51,7 +52,8 @@ func ListDisk(opts resource.ListerOpts) ([]resource.Resource, error) {
 		for _, g := range list.Values() {
 			resources = append(resources, &Disk{
 				client: client,
-				name:   g.Name,
+				name:   *g.Name,
+				rg:     opts.ResourceGroup,
 			})
 		}
 
@@ -64,18 +66,18 @@ func ListDisk(opts resource.ListerOpts) ([]resource.Resource, error) {
 }
 
 func (r *Disk) Remove() error {
-	_, err := r.client.Delete(context.TODO(), "Default", *r.name)
+	_, err := r.client.Delete(context.TODO(), r.rg, r.name)
 	return err
 }
 
 func (r *Disk) Properties() types.Properties {
 	properties := types.NewProperties()
 
-	properties.Set("Name", *r.name)
+	properties.Set("Name", r.name)
 
 	return properties
 }
 
 func (r *Disk) String() string {
-	return *r.name
+	return r.name
 }

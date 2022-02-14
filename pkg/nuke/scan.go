@@ -88,6 +88,7 @@ func (s *scanner) list(authorizers azure.Authorizers, tenantId, subscriptionId, 
 	for _, r := range rs {
 		s.items <- &queue.Item{
 			Authorizers:    authorizers,
+			TenantId:       tenantId,
 			SubscriptionId: subscriptionId,
 			ResourceGroup:  resourceGroup,
 			Resource:       r,

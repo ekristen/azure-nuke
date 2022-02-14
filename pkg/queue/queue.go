@@ -31,6 +31,7 @@ type Item struct {
 	Reason string
 
 	Authorizers    azure.Authorizers
+	TenantId       string
 	SubscriptionId string
 	ResourceGroup  string
 
@@ -57,7 +58,7 @@ func (i *Item) Print() {
 
 // List gets all resource items of the same resource type like the Item.
 func (i *Item) List() ([]resource.Resource, error) {
-	listers := resource.GetListers()
+	listers := resource.GetListersV2()
 	/*
 		sess, err := i.Region.Session(i.Type)
 		if err != nil {
@@ -65,7 +66,12 @@ func (i *Item) List() ([]resource.Resource, error) {
 		}
 		return listers[i.Type](sess)
 	*/
-	return listers[i.Type](i.Authorizers, i.SubscriptionId, i.ResourceGroup)
+	return listers[i.Type](resource.ListerOpts{
+		Authorizers:    i.Authorizers,
+		TenantId:       i.TenantId,
+		SubscriptionId: i.SubscriptionId,
+		ResourceGroup:  i.ResourceGroup,
+	})
 }
 
 func (i *Item) GetProperty(key string) (string, error) {
