@@ -48,7 +48,7 @@ func ListContainerRegistry(opts resource.ListerOpts) ([]resource.Resource, error
 	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
 
 	client := containerregistry.NewRegistriesClient(opts.SubscriptionId)
-	cliengit.Authorizer = opts.Authorizers.Management
+	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 
