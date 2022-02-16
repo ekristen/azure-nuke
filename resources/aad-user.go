@@ -16,6 +16,7 @@ type AzureADUser struct {
 	client *msgraph.UsersClient
 	id     *string
 	name   *string
+	upn    *string
 }
 
 func init() {
@@ -57,6 +58,7 @@ func ListAzureADUser(opts resource.ListerOpts) ([]resource.Resource, error) {
 			client: client,
 			id:     user.ID,
 			name:   user.DisplayName,
+			upn:    user.UserPrincipalName,
 		})
 	}
 
@@ -72,6 +74,7 @@ func (r *AzureADUser) Properties() types.Properties {
 	properties := types.NewProperties()
 
 	properties.Set("Name", *r.name)
+	properties.Set("UserPrincipalName", *r.upn)
 
 	return properties
 }
