@@ -2,7 +2,6 @@ package resources
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/manicminer/hamilton/auth"
 	"github.com/manicminer/hamilton/msgraph"
@@ -76,7 +75,6 @@ func ListApplicationCertificate(opts resource.ListerOpts) ([]resource.Resource, 
 
 	for _, entity := range *entites {
 		for _, cred := range *entity.KeyCredentials {
-			fmt.Println("secret")
 			resources = append(resources, &ApplicationCertificate{
 				client: client,
 				id:     cred.KeyId,

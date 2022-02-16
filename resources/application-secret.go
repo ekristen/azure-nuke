@@ -2,7 +2,6 @@ package resources
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/manicminer/hamilton/auth"
 	"github.com/manicminer/hamilton/msgraph"
@@ -76,7 +75,6 @@ func ListApplicationSecret(opts resource.ListerOpts) ([]resource.Resource, error
 
 	for _, entity := range *entites {
 		for _, cred := range *entity.PasswordCredentials {
-			fmt.Println("secret")
 			resources = append(resources, &ApplicationSecret{
 				client: client,
 				id:     cred.KeyId,
