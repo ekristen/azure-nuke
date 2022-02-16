@@ -3,7 +3,7 @@ module github.com/ekristen/azure-nuke
 go 1.17
 
 require (
-	github.com/Azure/azure-sdk-for-go v61.4.0+incompatible
+	github.com/Azure/azure-sdk-for-go v61.5.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.11.24
 	github.com/AzureAD/microsoft-authentication-library-for-go v0.4.0
 	github.com/aws/aws-sdk-go v1.42.51
