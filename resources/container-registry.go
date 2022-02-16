@@ -54,7 +54,7 @@ func ListContainerRegistry(opts resource.ListerOpts) ([]resource.Resource, error
 
 	resources := make([]resource.Resource, 0)
 
-	logrus.Trace("attempting to list virtual machines")
+	logrus.Trace("attempting to list container registries")
 
 	ctx := context.Background()
 
