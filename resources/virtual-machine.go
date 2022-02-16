@@ -66,7 +66,7 @@ func ListVirtualMachine(opts resource.ListerOpts) ([]resource.Resource, error) {
 }
 
 func (r *VirtualMachine) Remove() error {
-	_, err := r.client.Delete(context.TODO(), "Default", *r.name, &[]bool{true}[0])
+	_, err := r.client.Delete(context.TODO(), *r.resourceGroup, *r.name, &[]bool{true}[0])
 	return err
 }
 
