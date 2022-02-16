@@ -48,10 +48,10 @@ func ListResourceGroup(opts resource.ListerOpts) ([]resource.Resource, error) {
 
 	for list.NotDone() {
 		logrus.Trace("list not done")
-		for _, g := range list.Values() {
+		for _, entity := range list.Values() {
 			resources = append(resources, &ResourceGroup{
 				client: client,
-				name:   g.Name,
+				name:   entity.Name,
 			})
 		}
 
