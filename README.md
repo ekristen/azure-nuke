@@ -12,16 +12,25 @@ This tool is designed to target an Azure Tenant and all subscriptions within the
 
 ## Usage
 
+**Note:** all cli flags can also be expressed as environment variables.
+
 By default no destructive actions will be taken.
 
 ```bash
-azure-nuke nuke --tenant-id=00000000-0000-0000-0000-000000000000 --resource-id=api://11111111-1111-1111-1111-111111111111 --config=./config.yaml
+azure-nuke nuke \
+  --tenant-id=00000000-0000-0000-0000-000000000000 \
+  --resource-id=api://11111111-1111-1111-1111-111111111111 \
+  --config=./config.yaml
 ```
 
 To actually destroy you must add the `--no-dry-run` cli parameter.
 
 ```bash
-azure-nuke nuke --tenant-id=00000000-0000-0000-0000-000000000000 --resource-id=api://11111111-1111-1111-1111-111111111111 --config=./config.yaml --no-dry-run
+azure-nuke nuke \
+  --tenant-id=00000000-0000-0000-0000-000000000000 \
+  --resource-id=api://11111111-1111-1111-1111-111111111111 \
+  --config=./config.yaml \
+  --no-dry-run
 ```
 
 ### Help Text
