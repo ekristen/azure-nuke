@@ -22,7 +22,10 @@ func AcquireTokenFederatedToken(ctx context.Context, tenantID string) func(tenan
 		// 	AZURE_AUTHORITY_HOST is the AAD authority hostname
 		clientID := os.Getenv("AZURE_CLIENT_ID")
 		tokenFilePath := os.Getenv("AZURE_FEDERATED_TOKEN_FILE")
-		authorityHost := os.Getenv("AZURE_AUTHORITY_HOST")
+		authorityHost := "https://login.microsoftonline.com"
+		if v := os.Getenv("AZURE_AUTHORITY_HOST"); v != "" {
+			authorityHost = v
+		}
 
 		// trim the suffix / if exists
 		resource = strings.TrimSuffix(resource, "/")

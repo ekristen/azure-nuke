@@ -13,7 +13,10 @@ func AcquireTokenClientSecret(ctx context.Context, tenantID, resource string) fu
 	return func(tenantID, resource string) (*autorest.BearerAuthorizer, error) {
 		clientID := os.Getenv("AZURE_CLIENT_ID")
 		clientSecret := os.Getenv("AZURE_CLIENT_SECRET")
-		authorityHost := os.Getenv("AZURE_AUTHORITY_HOST")
+		authorityHost := "https://login.microsoftonline.com"
+		if v := os.Getenv("AZURE_AUTHORITY_HOST"); v != "" {
+			authorityHost = v
+		}
 
 		// trim the suffix / if exists
 		resource = strings.TrimSuffix(resource, "/")
