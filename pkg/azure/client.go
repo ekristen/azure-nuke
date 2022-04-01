@@ -11,7 +11,7 @@ import (
 func AcquireToken(ctx context.Context, tenantID string) (string, func(tenantID, resource string) (*autorest.BearerAuthorizer, error), error) {
 	clientID := os.Getenv("AZURE_CLIENT_ID")
 	tokenFilePath := os.Getenv("AZURE_FEDERATED_TOKEN_FILE")
-	certFilePath := os.Getenv("AZURE_CLIENT_CERTIFICATE_FILE")
+	certFilePath := os.Getenv("AZURE_CLIENT_CERTIFICATE")
 	clientSecret := os.Getenv("AZURE_CLIENT_SECRET")
 	appIDURI := os.Getenv("AZURE_APP_ID_URI")
 

@@ -2,8 +2,9 @@ package azure
 
 import (
 	"context"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -14,9 +15,12 @@ import (
 func AcquireTokenClientCertificate(ctx context.Context, tenantID, resource string) func(tenantID, resource string) (*autorest.BearerAuthorizer, error) {
 	return func(tenantID, resource string) (*autorest.BearerAuthorizer, error) {
 		clientID := os.Getenv("AZURE_CLIENT_ID")
-		certFilePath := os.Getenv("AZURE_CLIENT_CERTIFICATE_FILE")
-		certFilePwd := os.Getenv("AZURE_CLIENT_CERTIFICATE_PASSWORD")
-		authorityHost := os.Getenv("AZURE_AUTHORITY_HOST")
+		certPem := os.Getenv("AZURE_CLIENT_CERTIFICATE")
+		keyPem := os.Getenv("AZURE_CLIENT_PRIVATE_KEY")
+		authorityHost := "https://login.microsoftonline.com"
+		if v := os.Getenv("AZURE_AUTHORITY_HOST"); v != "" {
+			authorityHost = v
+		}
 
 		// trim the suffix / if exists
 		resource = strings.TrimSuffix(resource, "/")
@@ -27,26 +31,25 @@ func AcquireTokenClientCertificate(ctx context.Context, tenantID, resource strin
 
 		scopes := []string{resource}
 
-		pemData, err := ioutil.ReadFile(certFilePath)
+		certBlock, _ := pem.Decode([]byte(certPem))
+		if certBlock == nil {
+			return nil, fmt.Errorf("failed to parse certificate PEM")
+		}
+		cert, err := x509.ParseCertificate(certBlock.Bytes)
 		if err != nil {
 			return nil, err
 		}
 
-		// This extracts our public certificates and private key from the PEM file.
-		// The private key must be in PKCS8 format. If it is encrypted, the second argument
-		// must be password to decode.
-		certs, privateKey, err := confidential.CertFromPEM(pemData, certFilePwd)
+		keyBlock, _ := pem.Decode([]byte(keyPem))
+		if keyBlock == nil {
+			return nil, fmt.Errorf("failed to parse certificate PEM")
+		}
+		privateKey, err := x509.ParsePKCS1PrivateKey(keyBlock.Bytes)
 		if err != nil {
 			return nil, err
 		}
 
-		// PEM files can have multiple certs. This is usually for certificate chaining where roots
-		// sign to leafs. Useful for TLS, not for this use case.
-		if len(certs) > 1 {
-			return nil, fmt.Errorf("too many certificates in PEM file")
-		}
-
-		cred := confidential.NewCredFromCert(certs[0], privateKey)
+		cred := confidential.NewCredFromCert(cert, privateKey)
 		if err != nil {
 			return nil, err
 		}

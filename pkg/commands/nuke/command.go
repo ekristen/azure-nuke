@@ -48,6 +48,7 @@ func execute(c *cli.Context) error {
 	params := nuke.NukeParameters{
 		ConfigPath: c.Path("config"),
 		ForceSleep: c.Int("force-sleep"),
+		Quiet:      c.Bool("quiet"),
 		NoDryRun:   c.Bool("no-dry-run"),
 	}
 
@@ -90,6 +91,10 @@ func init() {
 			Name:  "force-sleep",
 			Usage: "seconds to sleep",
 			Value: 10,
+		},
+		&cli.BoolFlag{
+			Name:  "quiet",
+			Usage: "hide filtered messages",
 		},
 		&cli.BoolFlag{
 			Name:  "no-dry-run",
