@@ -2,7 +2,7 @@
 
 **This is potentially very destructive! Use at your own risk!**
 
-**Status:** This is late alpha, early beta. Expect some behaviors around safeguarding, delays, and prompts to change. Likely will change CLI behavior a bit as well.
+**Status:** This is early beta. Expect some behaviors around safeguarding, delays, and prompts to change. Likely will change CLI behavior a bit as well.
 
 Originally based on the source code from [aws-nuke fork](https://github.com/ekristen/aws-nuke) and [aws-nuke original](https://github.com/rebuy-de/aws-nuke)
 
@@ -24,11 +24,33 @@ To actually destroy you must add the `--no-dry-run` cli parameter.
 azure-nuke nuke --tenant-id=00000000-0000-0000-0000-000000000000 --resource-id=api://11111111-1111-1111-1111-111111111111 --config=./config.yaml --no-dry-run
 ```
 
+### Help Text
+
+```man
+NAME:
+   azure-nuke - remove everything from an azure tenant
+
+USAGE:
+   azure-nuke [global options] command [command options] [arguments...]
+
+VERSION:
+   0.7.1
+
+AUTHOR:
+   Erik Kristensen <erik@erikkristensen.com>
+
+COMMANDS:
+   nuke     nuke an azure tenant
+   help, h  Shows a list of commands or help for one command
+
+GLOBAL OPTIONS:
+   --help, -h     show help (default: false)
+   --version, -v  print the version (default: false)
+```
+
 ## Authentication
 
-**Subject to Change**
-
-Authentication is only supported via a Service Principal and you can authenticate via a `shared secret` or `certificate`.
+Authentication is only supported via a Service Principal and you can authenticate via a `shared secret`, `certificate`, or `federated token (kubernetes)`
 
 ### Shared Secret
 
@@ -41,8 +63,15 @@ export AZURE_CLIENT_SECRET=000000000000
 
 ```bash
 export AZURE_CLIENT_ID=00000000-0000-0000-0000-000000000000
-export AZURE_CLIENT_CERTIFICATE_FILE=./path/to/cert
+export AZURE_CLIENT_CERTIFICATE=""
+export AZURE_CLIENT_PRIVATE_KEY=""
 ```
+
+### Federated Token (Kubernetes)
+
+You can also authenticate using Federated Tokens with Kubernetes and the Azure Workload Identity.
+
+To make this work you'll need to deploy azure-nuke with a Service Account that's configured to do federation with the Service Principal.
 
 ## Configuring
 
