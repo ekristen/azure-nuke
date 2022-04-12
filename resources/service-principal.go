@@ -83,8 +83,8 @@ func (r *ServicePrincipal) Remove() error {
 func (r *ServicePrincipal) Properties() types.Properties {
 	properties := types.NewProperties()
 
-	properties.Set("Name", *r.name)
-	properties.Set("AppOwnerId", *r.appOwner)
+	properties.Set("Name", r.name)
+	properties.Set("AppOwnerId", r.appOwner)
 
 	return properties
 }

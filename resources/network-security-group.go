@@ -16,6 +16,7 @@ type NetworkSecurityGroup struct {
 	client   network.SecurityGroupsClient
 	name     *string
 	location *string
+	rg       *string
 }
 
 func init() {
@@ -40,7 +41,7 @@ func ListNetworkSecurityGroup(opts resource.ListerOpts) ([]resource.Resource, er
 
 	ctx := context.Background()
 
-	list, err := client.List(ctx, "Default")
+	list, err := client.List(ctx, opts.ResourceGroup)
 	if err != nil {
 		return nil, err
 	}
@@ -54,6 +55,7 @@ func ListNetworkSecurityGroup(opts resource.ListerOpts) ([]resource.Resource, er
 				client:   client,
 				name:     g.Name,
 				location: g.Location,
+				rg:       &opts.ResourceGroup,
 			})
 		}
 
@@ -66,7 +68,7 @@ func ListNetworkSecurityGroup(opts resource.ListerOpts) ([]resource.Resource, er
 }
 
 func (r *NetworkSecurityGroup) Remove() error {
-	_, err := r.client.Delete(context.TODO(), "Default", *r.name)
+	_, err := r.client.Delete(context.TODO(), *r.rg, *r.name)
 	return err
 }
 

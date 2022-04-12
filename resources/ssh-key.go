@@ -15,6 +15,7 @@ import (
 type SSHPublicKey struct {
 	client compute.SSHPublicKeysClient
 	name   *string
+	rg     *string
 }
 
 func init() {
@@ -52,6 +53,7 @@ func ListSSHPublicKey(opts resource.ListerOpts) ([]resource.Resource, error) {
 			resources = append(resources, &SSHPublicKey{
 				client: client,
 				name:   g.Name,
+				rg:     &opts.ResourceGroup,
 			})
 		}
 
@@ -64,7 +66,7 @@ func ListSSHPublicKey(opts resource.ListerOpts) ([]resource.Resource, error) {
 }
 
 func (r *SSHPublicKey) Remove() error {
-	_, err := r.client.Delete(context.TODO(), "Default", *r.name)
+	_, err := r.client.Delete(context.TODO(), *r.rg, *r.name)
 	return err
 }
 
