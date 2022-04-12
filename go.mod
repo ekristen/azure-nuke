@@ -3,7 +3,7 @@ module github.com/ekristen/azure-nuke
 go 1.17
 
 require (
-	github.com/Azure/azure-sdk-for-go v61.5.0+incompatible
+	github.com/Azure/azure-sdk-for-go v63.2.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.11.24
 	github.com/AzureAD/microsoft-authentication-library-for-go v0.4.0
 	github.com/aws/aws-sdk-go v1.42.51
@@ -27,6 +27,7 @@ require (
 	github.com/Azure/go-autorest/logger v0.2.1 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
+	github.com/gofrs/uuid v4.2.0+incompatible // indirect
 	github.com/golang-jwt/jwt v3.2.1+incompatible // indirect
 	github.com/golang-jwt/jwt/v4 v4.2.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect

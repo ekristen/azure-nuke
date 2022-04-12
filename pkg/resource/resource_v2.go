@@ -69,6 +69,9 @@ func GetListersTS() {
 		graph.AddNode(name)
 	}
 	for name, r := range registrations {
+		if r.Scope == ResourceGroup {
+			graph.AddEdge("ResourceGroup", name)
+		}
 		for _, dep := range r.DependsOn {
 			graph.AddEdge(name, dep)
 		}

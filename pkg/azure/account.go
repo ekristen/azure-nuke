@@ -81,6 +81,10 @@ func NewTenant(ctx context.Context, tenantId string, authorizers Authorizers) (*
 		}
 	}
 
+	if len(tenant.TenantIds) == 0 {
+		return nil, fmt.Errorf("tenant not found: %s", tenant.ID)
+	}
+
 	if tenant.TenantIds[0] != tenant.ID {
 		return nil, fmt.Errorf("tenant ids do not match")
 	}
