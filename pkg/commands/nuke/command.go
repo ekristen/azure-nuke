@@ -6,8 +6,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 
-	"github.com/Azure/go-autorest/autorest"
-
 	"github.com/ekristen/azure-nuke/pkg/azure"
 	"github.com/ekristen/azure-nuke/pkg/commands"
 	"github.com/ekristen/azure-nuke/pkg/common"
@@ -26,21 +24,17 @@ func execute(c *cli.Context) error {
 		return err
 	}
 
+	logrus.Tracef("callback type: %s", ttype)
+
 	var authorizers azure.Authorizers
 
-	if ttype == "token" {
-		authorizers.Management, err = callback(c.String("tenant-id"), "https://management.azure.com/")
-		if err != nil {
-			return err
-		}
-		authorizers.Graph, err = callback(c.String("tenant-id"), "https://graph.microsoft.com")
-		if err != nil {
-			return err
-		}
-
-	} else {
-		authorizers.Management = autorest.NewBearerAuthorizerCallback(nil, callback)
-		authorizers.Graph = autorest.NewBearerAuthorizerCallback(nil, callback)
+	authorizers.Management, err = callback(c.String("tenant-id"), "https://management.azure.com/")
+	if err != nil {
+		return err
+	}
+	authorizers.Graph, err = callback(c.String("tenant-id"), "https://graph.microsoft.com")
+	if err != nil {
+		return err
 	}
 
 	logrus.Trace("preparing to run nuke")
@@ -81,11 +75,6 @@ func init() {
 			Usage:    "the tenant-id to nuke",
 			EnvVars:  []string{"AZURE_TENANT_ID"},
 			Required: true,
-		},
-		&cli.StringFlag{
-			Name:    "resource-id",
-			EnvVars: []string{"AZURE_RESOURCE_ID"},
-			Value:   "https://management.azure.com/",
 		},
 		&cli.IntFlag{
 			Name:  "force-sleep",

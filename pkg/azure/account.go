@@ -22,6 +22,9 @@ type Tenant struct {
 }
 
 func NewTenant(ctx context.Context, tenantId string, authorizers Authorizers) (*Tenant, error) {
+	log := logrus.WithField("handler", "NewTenant")
+	log.Trace("start: NewTenant")
+
 	tenant := &Tenant{
 		Authorizers:    authorizers,
 		ID:             tenantId,
@@ -33,6 +36,7 @@ func NewTenant(ctx context.Context, tenantId string, authorizers Authorizers) (*
 	tenantClient := subscription.NewTenantsClient()
 	tenantClient.Authorizer = authorizers.Management
 
+	log.Trace("attempting to list tenants")
 	for list, err := tenantClient.List(ctx); list.NotDone(); err = list.NextWithContext(ctx) {
 		if err != nil {
 			return nil, err

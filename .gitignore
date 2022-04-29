@@ -6,5 +6,6 @@
 /mocks
 .envrc
 .envrc*
+.token
 config.yaml
 cosign.key
