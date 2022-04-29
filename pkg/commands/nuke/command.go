@@ -83,9 +83,9 @@ func init() {
 			Required: true,
 		},
 		&cli.StringFlag{
-			Name:     "resource-id",
-			Required: true,
-			EnvVars:  []string{"AZURE_RESOURCE_ID", "AZURE_APP_ID_URI"},
+			Name:    "resource-id",
+			EnvVars: []string{"AZURE_RESOURCE_ID"},
+			Value:   "https://management.azure.com/",
 		},
 		&cli.IntFlag{
 			Name:  "force-sleep",
