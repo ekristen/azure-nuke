@@ -21,10 +21,11 @@ func init() {
 }
 
 type ApplicationFederatedCredential struct {
-	client *msgraph.ApplicationsClient
-	id     *string
-	name   *string
-	appId  *string
+	client     *msgraph.ApplicationsClient
+	id         *string
+	name       *string
+	appId      *string
+	uniqueName *string
 }
 
 func (r *ApplicationFederatedCredential) Filter() error {
@@ -40,6 +41,8 @@ func (r *ApplicationFederatedCredential) Properties() types.Properties {
 	properties := types.NewProperties()
 
 	properties.Set("Name", *r.name)
+	properties.Set("AppID", *r.appId)
+	properties.Set("AppUniqueName", r.uniqueName)
 
 	return properties
 }
@@ -80,10 +83,11 @@ func ListApplicationFederatedCredential(opts resource.ListerOpts) ([]resource.Re
 		}
 		for _, cred := range *creds {
 			resources = append(resources, &ApplicationFederatedCredential{
-				client: client,
-				id:     cred.ID,
-				name:   cred.Name,
-				appId:  entity.ID,
+				client:     client,
+				id:         cred.ID,
+				name:       cred.Name,
+				appId:      entity.ID,
+				uniqueName: entity.UniqueName,
 			})
 		}
 	}
