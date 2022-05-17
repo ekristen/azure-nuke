@@ -17,9 +17,6 @@ func AcquireTokenClientSecret(ctx context.Context, tenantID, resource string) fu
 		if v := os.Getenv("AZURE_AUTHORITY_HOST"); v != "" {
 			authorityHost = v
 		}
-		if v := os.Getenv("AZURE_TENANT_ID"); v != "" {
-			tenantID = v
-		}
 
 		// trim the suffix / if exists
 		resource = strings.TrimSuffix(resource, "/")
