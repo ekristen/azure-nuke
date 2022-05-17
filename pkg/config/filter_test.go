@@ -64,6 +64,16 @@ func TestUnmarshalFilter(t *testing.T) {
 				past.Format(time.RFC3339),
 			},
 		},
+		{
+			yaml:     `{"type":"prefix","value":"someprefix-"}`,
+			match:    []string{"someprefix-1234", "someprefix-someprefix", "someprefix-asdafd"},
+			mismatch: []string{"not-someprefix-1234", "not-someprefix-asfda"},
+		},
+		{
+			yaml:     `{"type":"suffix","value":"-somesuffix"}`,
+			match:    []string{"12345-somesuffix", "someprefix-somesuffix", "asdfdsa-somesuffix"},
+			mismatch: []string{"1235-somesuffix-not", "asdf-not-somesuffix-not"},
+		},
 	}
 
 	for _, tc := range cases {

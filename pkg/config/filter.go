@@ -19,6 +19,8 @@ const (
 	FilterTypeRegex         FilterType = "regex"
 	FilterTypeContains      FilterType = "contains"
 	FilterTypeDateOlderThan FilterType = "dateOlderThan"
+	FilterTypeSuffix        FilterType = "suffix"
+	FilterTypePrefix        FilterType = "prefix"
 )
 
 type Filters map[string][]Filter
@@ -72,6 +74,12 @@ func (f Filter) Match(o string) (bool, error) {
 		fieldTimeWithOffset := fieldTime.Add(duration)
 
 		return fieldTimeWithOffset.After(time.Now()), nil
+
+	case FilterTypePrefix:
+		return strings.HasPrefix(o, f.Value), nil
+
+	case FilterTypeSuffix:
+		return strings.HasSuffix(o, f.Value), nil
 
 	default:
 		return false, fmt.Errorf("unknown type %s", f.Type)
