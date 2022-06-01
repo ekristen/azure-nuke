@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/manicminer/hamilton/auth"
 )
 
 // authResult contains the subset of results from token acquisition operation in ConfidentialClientApplication
@@ -25,6 +26,6 @@ func (ar authResult) Token() string {
 }
 
 type Authorizers struct {
-	Graph      autorest.Authorizer
+	Graph      auth.Authorizer
 	Management autorest.Authorizer
 }
