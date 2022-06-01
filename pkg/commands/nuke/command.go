@@ -2,7 +2,11 @@ package nuke
 
 import (
 	"context"
+	"io/ioutil"
 
+	authWrapper "github.com/manicminer/hamilton-autorest/auth"
+	"github.com/manicminer/hamilton/auth"
+	"github.com/manicminer/hamilton/environments"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 
@@ -19,23 +23,49 @@ func execute(c *cli.Context) error {
 
 	logrus.Tracef("tenant id: %s", c.String("tenant-id"))
 
-	ttype, callback, err := azure.AcquireToken(ctx, c.String("tenant-id"))
+	env, err := environments.EnvironmentFromString(c.String("environment"))
 	if err != nil {
 		return err
 	}
 
-	logrus.Tracef("callback type: %s", ttype)
+	authConfig := &auth.Config{
+		Environment: env,
+		TenantID:    c.String("tenant-id"),
+		ClientID:    c.String("client-id"),
+	}
+
+	if c.String("client-secret") != "" {
+		logrus.Debug("authentication type: client secret")
+		authConfig.EnableClientSecretAuth = true
+		authConfig.ClientSecret = c.String("client-secret")
+	} else if c.String("client-certificate-file") != "" {
+		logrus.Debug("authentication type: client certificate")
+		authConfig.EnableClientCertAuth = true
+		authConfig.ClientCertPath = c.String("client-certificate-file")
+	} else if c.String("client-federated-token-file") != "" {
+		logrus.Debug("authentication type: federated token")
+		token, err := ioutil.ReadFile(c.String("client-federated-token-file"))
+		if err != nil {
+			return err
+		}
+		authConfig.EnableClientFederatedAuth = true
+		authConfig.FederatedAssertion = string(token)
+	}
+
+	graphAuthorizer, err := authConfig.NewAuthorizer(ctx, env.MsGraph)
+	if err != nil {
+		return err
+	}
+
+	mgmtAuthorizer, err := authConfig.NewAuthorizer(ctx, env.ResourceManager)
+	if err != nil {
+		return err
+	}
 
 	var authorizers azure.Authorizers
 
-	authorizers.Management, err = callback(c.String("tenant-id"), "https://management.azure.com/")
-	if err != nil {
-		return err
-	}
-	authorizers.Graph, err = callback(c.String("tenant-id"), "https://graph.microsoft.com")
-	if err != nil {
-		return err
-	}
+	authorizers.Management = &authWrapper.Authorizer{Authorizer: mgmtAuthorizer}
+	authorizers.Graph = graphAuthorizer
 
 	logrus.Trace("preparing to run nuke")
 
@@ -71,10 +101,33 @@ func init() {
 			Value: "config.yaml",
 		},
 		&cli.StringFlag{
+			Name:    "environment",
+			Usage:   "Azure Environment",
+			EnvVars: []string{"AZURE_ENVIRONMENT"},
+			Value:   "global",
+		},
+		&cli.StringFlag{
 			Name:     "tenant-id",
 			Usage:    "the tenant-id to nuke",
 			EnvVars:  []string{"AZURE_TENANT_ID"},
 			Required: true,
+		},
+		&cli.StringFlag{
+			Name:     "client-id",
+			EnvVars:  []string{"AZURE_CLIENT_ID"},
+			Required: true,
+		},
+		&cli.StringFlag{
+			Name:    "client-secret",
+			EnvVars: []string{"AZURE_CLIENT_SECRET"},
+		},
+		&cli.StringFlag{
+			Name:    "client-certificate-file",
+			EnvVars: []string{"AZURE_CLIENT_CERTIFICATE_FILE"},
+		},
+		&cli.StringFlag{
+			Name:    "client-federated-token-file",
+			EnvVars: []string{"AZURE_FEDERATED_TOKEN_FILE"},
 		},
 		&cli.IntFlag{
 			Name:  "force-sleep",

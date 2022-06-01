@@ -3,7 +3,6 @@ package resources
 import (
 	"context"
 
-	"github.com/manicminer/hamilton/auth"
 	"github.com/manicminer/hamilton/msgraph"
 	"github.com/manicminer/hamilton/odata"
 	"github.com/sirupsen/logrus"
@@ -53,13 +52,8 @@ func (r *ApplicationSecret) String() string {
 func ListApplicationSecret(opts resource.ListerOpts) ([]resource.Resource, error) {
 	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
 
-	wrappedAuth, err := auth.NewAutorestAuthorizerWrapper(opts.Authorizers.Graph)
-	if err != nil {
-		return nil, err
-	}
-
 	client := msgraph.NewApplicationsClient(opts.TenantId)
-	client.BaseClient.Authorizer = wrappedAuth
+	client.BaseClient.Authorizer = opts.Authorizers.Graph
 	client.BaseClient.DisableRetries = true
 
 	resources := make([]resource.Resource, 0)
