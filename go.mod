@@ -7,7 +7,7 @@ require (
 	github.com/Azure/go-autorest/autorest v0.11.25
 	github.com/aws/aws-sdk-go v1.42.51
 	github.com/fatih/color v1.13.0
-	github.com/manicminer/hamilton v0.43.0
+	github.com/manicminer/hamilton v0.46.0
 	github.com/manicminer/hamilton-autorest v0.2.0
 	github.com/mb0/glob v0.0.0-20160210091149-1eb79d2de6c4
 	github.com/rebuy-de/aws-nuke v2.10.0+incompatible
