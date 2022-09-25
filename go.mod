@@ -1,6 +1,6 @@
 module github.com/ekristen/azure-nuke
 
-go 1.17
+go 1.19
 
 require (
 	github.com/Azure/azure-sdk-for-go v63.2.0+incompatible
