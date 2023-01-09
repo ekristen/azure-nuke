@@ -38,14 +38,14 @@ func ListApplication(opts resource.ListerOpts) ([]resource.Resource, error) {
 
 	ctx := context.Background()
 
-	entites, _, err := client.List(ctx, odata.Query{})
+	entities, _, err := client.List(ctx, odata.Query{})
 	if err != nil {
 		return nil, err
 	}
 
 	logrus.Trace("listing ....")
 
-	for _, entity := range *entites {
+	for _, entity := range *entities {
 		resources = append(resources, &Application{
 			client: client,
 			id:     entity.ID,
@@ -61,8 +61,15 @@ func (r *Application) Filter() error {
 }
 
 func (r *Application) Remove() error {
-	_, err := r.client.Delete(context.TODO(), *r.id)
-	return err
+	if _, err := r.client.Delete(context.TODO(), *r.id); err != nil {
+		return err
+	}
+
+	if _, err := r.client.DeletePermanently(context.TODO(), *r.id); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (r *Application) Properties() types.Properties {
