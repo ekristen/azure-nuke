@@ -3,6 +3,7 @@ package azure
 import (
 	"context"
 	"fmt"
+	"github.com/ekristen/azure-nuke/pkg/utils"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -22,7 +23,7 @@ type Tenant struct {
 	ResourceGroups map[string][]string
 }
 
-func NewTenant(pctx context.Context, tenantId string, authorizers Authorizers) (*Tenant, error) {
+func NewTenant(pctx context.Context, authorizers Authorizers, tenantId string, subscriptionIds []string) (*Tenant, error) {
 	ctx, cancel := context.WithTimeout(pctx, time.Second*15)
 	defer cancel()
 
@@ -30,11 +31,12 @@ func NewTenant(pctx context.Context, tenantId string, authorizers Authorizers) (
 	log.Trace("start: NewTenant")
 
 	tenant := &Tenant{
-		Authorizers:    authorizers,
-		ID:             tenantId,
-		TenantIds:      make([]string, 0),
-		Locations:      make(map[string][]string),
-		ResourceGroups: make(map[string][]string),
+		Authorizers:     authorizers,
+		ID:              tenantId,
+		TenantIds:       make([]string, 0),
+		SubscriptionIds: make([]string, 0),
+		Locations:       make(map[string][]string),
+		ResourceGroups:  make(map[string][]string),
 	}
 
 	tenantClient := subscription.NewTenantsClient()
@@ -59,6 +61,11 @@ func NewTenant(pctx context.Context, tenantId string, authorizers Authorizers) (
 			return nil, err
 		}
 		for _, s := range list.Values() {
+			if len(subscriptionIds) > 0 && !utils.StringSliceContains(subscriptionIds, *s.SubscriptionID) {
+				logrus.Warn("skipping subscription id: %s (reason: not requested)", *s.SubscriptionID)
+				continue
+			}
+
 			logrus.Tracef("adding subscriptions id: %s", *s.SubscriptionID)
 			tenant.SubscriptionIds = append(tenant.SubscriptionIds, *s.SubscriptionID)
 
