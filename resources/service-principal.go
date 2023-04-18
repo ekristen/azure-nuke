@@ -3,6 +3,8 @@ package resources
 import (
 	"context"
 	"fmt"
+	"github.com/aws/smithy-go/ptr"
+	"strings"
 
 	"github.com/manicminer/hamilton/msgraph"
 	"github.com/manicminer/hamilton/odata"
@@ -17,6 +19,7 @@ type ServicePrincipal struct {
 	id       *string
 	name     *string
 	appOwner *string
+	spType   *string
 }
 
 func init() {
@@ -28,7 +31,10 @@ func init() {
 }
 
 func ListServicePrincipal(opts resource.ListerOpts) ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+	log := logrus.
+		WithField("resource", "ServicePrincipal").
+		WithField("scope", resource.Subscription).
+		WithField("subscription", opts.SubscriptionId)
 
 	client := msgraph.NewServicePrincipalsClient(opts.TenantId)
 	client.BaseClient.Authorizer = opts.Authorizers.Graph
@@ -36,23 +42,23 @@ func ListServicePrincipal(opts resource.ListerOpts) ([]resource.Resource, error)
 
 	resources := make([]resource.Resource, 0)
 
-	logrus.Trace("attempting to list service principals")
+	log.Trace("attempting to list service principals")
 
-	ctx := context.Background()
-
-	entites, _, err := client.List(ctx, odata.Query{})
+	ctx := context.TODO()
+	entities, _, err := client.List(ctx, odata.Query{})
 	if err != nil {
 		return nil, err
 	}
 
-	logrus.Trace("listing ....")
+	log.Trace("listing entities")
 
-	for _, entity := range *entites {
+	for _, entity := range *entities {
 		resources = append(resources, &ServicePrincipal{
 			client:   client,
 			id:       entity.ID,
 			name:     entity.DisplayName,
 			appOwner: entity.AppOwnerOrganizationId,
+			spType:   entity.ServicePrincipalType,
 		})
 	}
 
@@ -60,12 +66,22 @@ func ListServicePrincipal(opts resource.ListerOpts) ([]resource.Resource, error)
 }
 
 func (r *ServicePrincipal) Filter() error {
-	if r.appOwner != nil && *r.appOwner == "f8cdef31-a31e-4b4a-93e4-5f571e91255a" {
+	if ptr.ToString(r.spType) == "ManagedIdentity" {
+		return fmt.Errorf("cannot delete managed service principals")
+	}
+
+	if ptr.ToString(r.appOwner) == "f8cdef31-a31e-4b4a-93e4-5f571e91255a" {
 		return fmt.Errorf("cannot delete built-in service principals")
 	}
-	if r.name != nil && *r.name == "O365 LinkedIn Connection" {
+
+	if ptr.ToString(r.name) == "O365 LinkedIn Connection" {
 		return fmt.Errorf("cannot delete built-in service principals")
 	}
+
+	if strings.Contains(ptr.ToString(r.name), "securityOperators/Defender") {
+		return fmt.Errorf("cannot delete defender linked service principals")
+	}
+
 	return nil
 }
 
@@ -79,10 +95,11 @@ func (r *ServicePrincipal) Properties() types.Properties {
 
 	properties.Set("Name", r.name)
 	properties.Set("AppOwnerId", r.appOwner)
+	properties.Set("ServicePrincipalType", r.spType)
 
 	return properties
 }
 
 func (r *ServicePrincipal) String() string {
-	return *r.id
+	return ptr.ToString(r.id)
 }
