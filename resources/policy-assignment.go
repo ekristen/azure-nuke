@@ -11,9 +11,10 @@ import (
 )
 
 type PolicyAssignment struct {
-	client policy.AssignmentsClient
-	name   string
-	scope  string
+	client         policy.AssignmentsClient
+	name           string
+	scope          string
+	enforementMode string
 }
 
 func init() {
@@ -48,9 +49,10 @@ func ListPolicyAssignment(opts resource.ListerOpts) ([]resource.Resource, error)
 		logrus.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &PolicyAssignment{
-				client: client,
-				name:   *g.Name,
-				scope:  *g.Scope,
+				client:         client,
+				name:           *g.Name,
+				scope:          *g.Scope,
+				enforementMode: string(g.EnforcementMode),
 			})
 		}
 
@@ -72,6 +74,7 @@ func (r *PolicyAssignment) Properties() types.Properties {
 
 	properties.Set("Name", r.name)
 	properties.Set("Scope", r.scope)
+	properties.Set("EnforcementMode", r.enforementMode)
 
 	return properties
 }
