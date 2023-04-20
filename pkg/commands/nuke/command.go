@@ -76,7 +76,7 @@ func execute(c *cli.Context) error {
 		NoDryRun:   c.Bool("no-dry-run"),
 	}
 
-	tenant, err := azure.NewTenant(ctx, c.String("tenant-id"), authorizers)
+	tenant, err := azure.NewTenant(ctx, authorizers, c.String("tenant-id"), c.StringSlice("subscription-id"))
 	if err != nil {
 		return err
 	}
@@ -111,6 +111,12 @@ func init() {
 			Usage:    "the tenant-id to nuke",
 			EnvVars:  []string{"AZURE_TENANT_ID"},
 			Required: true,
+		},
+		&cli.StringSliceFlag{
+			Name:     "subscription-id",
+			Usage:    "the subscription-id to nuke (this filters to 1 or more subscription ids)",
+			EnvVars:  []string{"AZURE_SUBSCRIPTION_ID"},
+			Required: false,
 		},
 		&cli.StringFlag{
 			Name:     "client-id",
