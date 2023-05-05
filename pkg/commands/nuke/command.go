@@ -74,6 +74,7 @@ func execute(c *cli.Context) error {
 		ForceSleep: c.Int("force-sleep"),
 		Quiet:      c.Bool("quiet"),
 		NoDryRun:   c.Bool("no-dry-run"),
+		Targets:    c.StringSlice("only-resource"),
 	}
 
 	tenant, err := azure.NewTenant(ctx, authorizers, c.String("tenant-id"), c.StringSlice("subscription-id"))
@@ -147,6 +148,10 @@ func init() {
 		&cli.BoolFlag{
 			Name:  "no-dry-run",
 			Usage: "no dry run",
+		},
+		&cli.StringSliceFlag{
+			Name:  "only-resource",
+			Usage: "only resource",
 		},
 	}
 
