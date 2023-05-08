@@ -72,6 +72,8 @@ github.com/cpuguy83/go-md2man/v2 v2.0.0/go.mod h1:maD7wRr/U5Z6m/iR4s+kqSMx2CaBsr
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/ekristen/hamilton v0.41.2-0.20220427114511-879dfadfc8cf h1:Prr9NiuZeMzPGxtOgbx8mQzYYZMOOfSQLK1haAtyZJo=
+github.com/ekristen/hamilton v0.41.2-0.20220427114511-879dfadfc8cf/go.mod h1:lbVyngC+/nCWuDp8UhC6Bw+bh7jcP/E+YwqzHTmzemk=
 github.com/ekristen/hamilton v0.41.2-0.20220531231900-4379b9e63cfe h1:SsLaK7XrFgAK/t75MfZgIJSrmqlGyqgaVsCkftVDkN8=
 github.com/ekristen/hamilton v0.41.2-0.20220531231900-4379b9e63cfe/go.mod h1:lbVyngC+/nCWuDp8UhC6Bw+bh7jcP/E+YwqzHTmzemk=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=

@@ -55,4 +55,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/manicminer/hamilton => github.com/ekristen/hamilton v0.41.2-0.20220531231900-4379b9e63cfe
+replace github.com/manicminer/hamilton => github.com/ekristen/hamilton v0.41.2-0.20220427114511-879dfadfc8cf
