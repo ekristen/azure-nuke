@@ -3,8 +3,8 @@ package resources
 import (
 	"context"
 
+	"github.com/hashicorp/go-azure-sdk/sdk/odata"
 	"github.com/manicminer/hamilton/msgraph"
-	"github.com/manicminer/hamilton/odata"
 	"github.com/sirupsen/logrus"
 
 	"github.com/ekristen/azure-nuke/pkg/resource"
@@ -30,7 +30,7 @@ func init() {
 func ListAzureADUser(opts resource.ListerOpts) ([]resource.Resource, error) {
 	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
 
-	client := msgraph.NewUsersClient(opts.TenantId)
+	client := msgraph.NewUsersClient()
 	client.BaseClient.Authorizer = opts.Authorizers.Graph
 	client.BaseClient.DisableRetries = true
 
@@ -50,7 +50,7 @@ func ListAzureADUser(opts resource.ListerOpts) ([]resource.Resource, error) {
 	for _, user := range *users {
 		resources = append(resources, &AzureADUser{
 			client: client,
-			id:     user.ID,
+			id:     user.ID(),
 			name:   user.DisplayName,
 			upn:    user.UserPrincipalName,
 		})

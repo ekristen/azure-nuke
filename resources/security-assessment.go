@@ -3,18 +3,20 @@ package resources
 import (
 	"context"
 	"fmt"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/security/armsecurity"
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/ekristen/azure-nuke/pkg/resource"
 	"github.com/ekristen/azure-nuke/pkg/types"
 	"github.com/sirupsen/logrus"
-	"time"
-
-	"github.com/Azure/azure-sdk-for-go/services/preview/security/mgmt/v3.0/security"
+	"strings"
 )
 
 type SecurityAssessment struct {
-	client security.AssessmentsClient
-	id     string
-	name   string
+	client     *armsecurity.AssessmentsClient
+	id         *string
+	resourceId *string
+	name       *string
+	status     *string
 }
 
 func init() {
@@ -33,41 +35,51 @@ func ListSecurityAssessment(opts resource.ListerOpts) ([]resource.Resource, erro
 
 	log.Trace("creating client")
 
-	client := security.NewAssessmentsClient(opts.SubscriptionId)
-	client.Authorizer = opts.Authorizers.Management
-	client.RetryAttempts = 1
-	client.RetryDuration = time.Second * 2
+	clientFactory, err := armsecurity.NewClientFactory(opts.SubscriptionId, opts.Authorizers.IdentityCreds, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	client := clientFactory.NewAssessmentsClient()
 
 	resources := make([]resource.Resource, 0)
 
 	log.Trace("listing resources")
 
 	ctx := context.TODO()
-	list, err := client.List(ctx, fmt.Sprintf("/subscriptions/%s", opts.SubscriptionId))
-	if err != nil {
-		return nil, err
-	}
-
-	for list.NotDone() {
+	pager := client.NewListPager(fmt.Sprintf("/subscriptions/%s", opts.SubscriptionId), nil)
+	for pager.More() {
 		log.Trace("listing not done")
-		for _, g := range list.Values() {
-			resources = append(resources, &SecurityAssessment{
-				client: client,
-				id:     *g.ID,
-				name:   *g.Name,
-			})
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			log.Fatalf("failed to advance page: %v", err)
 		}
+		for _, v := range page.Value {
+			// TODO: this might not be right -- but without it it wants to delete things it cannot delete
+			d := v.Properties.ResourceDetails.GetResourceDetails()
+			if d.Source == nil {
+				continue
+			}
 
-		if err := list.NextWithContext(ctx); err != nil {
-			return nil, err
+			parts := strings.Split(to.String(v.ID), "/providers/Microsoft.Security")
+			resources = append(resources, &SecurityAssessment{
+				client:     client,
+				resourceId: to.StringPtr(parts[0]),
+				id:         v.ID,
+				name:       v.Name,
+			})
 		}
 	}
 
 	return resources, nil
 }
 
+func (r *SecurityAssessment) Filter() error {
+	return nil
+}
+
 func (r *SecurityAssessment) Remove() error {
-	_, err := r.client.Delete(context.TODO(), r.id, r.name)
+	_, err := r.client.Delete(context.TODO(), strings.TrimLeft(to.String(r.resourceId), "/"), to.String(r.name), nil)
 	return err
 }
 
@@ -75,11 +87,13 @@ func (r *SecurityAssessment) Properties() types.Properties {
 	properties := types.NewProperties()
 
 	properties.Set("ID", r.id)
+	properties.Set("ResourceID", r.resourceId)
 	properties.Set("Name", r.name)
+	properties.Set("StatusCode", r.status)
 
 	return properties
 }
 
 func (r *SecurityAssessment) String() string {
-	return r.name
+	return to.String(r.name)
 }

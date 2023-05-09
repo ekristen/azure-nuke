@@ -3,8 +3,8 @@ package resources
 import (
 	"context"
 
+	"github.com/hashicorp/go-azure-sdk/sdk/odata"
 	"github.com/manicminer/hamilton/msgraph"
-	"github.com/manicminer/hamilton/odata"
 	"github.com/sirupsen/logrus"
 
 	"github.com/ekristen/azure-nuke/pkg/resource"
@@ -52,7 +52,7 @@ func (r *ApplicationSecret) String() string {
 func ListApplicationSecret(opts resource.ListerOpts) ([]resource.Resource, error) {
 	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
 
-	client := msgraph.NewApplicationsClient(opts.TenantId)
+	client := msgraph.NewApplicationsClient()
 	client.BaseClient.Authorizer = opts.Authorizers.Graph
 	client.BaseClient.DisableRetries = true
 
@@ -75,7 +75,7 @@ func ListApplicationSecret(opts resource.ListerOpts) ([]resource.Resource, error
 				client:  client,
 				id:      cred.KeyId,
 				name:    cred.DisplayName,
-				appId:   entity.ID,
+				appId:   entity.ID(),
 				appName: entity.DisplayName,
 			})
 		}

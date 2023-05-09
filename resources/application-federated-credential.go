@@ -3,8 +3,8 @@ package resources
 import (
 	"context"
 
+	"github.com/hashicorp/go-azure-sdk/sdk/odata"
 	"github.com/manicminer/hamilton/msgraph"
-	"github.com/manicminer/hamilton/odata"
 	"github.com/sirupsen/logrus"
 
 	"github.com/ekristen/azure-nuke/pkg/resource"
@@ -53,7 +53,7 @@ func (r *ApplicationFederatedCredential) String() string {
 func ListApplicationFederatedCredential(opts resource.ListerOpts) ([]resource.Resource, error) {
 	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
 
-	client := msgraph.NewApplicationsClient(opts.TenantId)
+	client := msgraph.NewApplicationsClient()
 	client.BaseClient.Authorizer = opts.Authorizers.Graph
 	client.BaseClient.DisableRetries = true
 
@@ -71,7 +71,7 @@ func ListApplicationFederatedCredential(opts resource.ListerOpts) ([]resource.Re
 	logrus.Trace("listing ....")
 
 	for _, entity := range *entites {
-		creds, _, err := client.ListFederatedIdentityCredentials(ctx, *entity.ID, odata.Query{})
+		creds, _, err := client.ListFederatedIdentityCredentials(ctx, *entity.ID(), odata.Query{})
 		if err != nil {
 			return nil, err
 		}
@@ -80,7 +80,7 @@ func ListApplicationFederatedCredential(opts resource.ListerOpts) ([]resource.Re
 				client:     client,
 				id:         cred.ID,
 				name:       cred.Name,
-				appId:      entity.ID,
+				appId:      entity.ID(),
 				uniqueName: entity.UniqueName,
 			})
 		}
