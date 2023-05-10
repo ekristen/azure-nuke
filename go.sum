@@ -45,6 +45,10 @@ github.com/Azure/azure-sdk-for-go/sdk/internal v1.2.0 h1:leh5DwKv6Ihwi+h60uHtn6U
 github.com/Azure/azure-sdk-for-go/sdk/internal v1.2.0/go.mod h1:eWRD7oawr1Mu1sLCawqVc0CUiF43ia3qQMxLscsKQ9w=
 github.com/Azure/azure-sdk-for-go/sdk/internal v1.3.0 h1:sXr+ck84g/ZlZUOZiNELInmMgOsuGwdjjVkEIde0OtY=
 github.com/Azure/azure-sdk-for-go/sdk/internal v1.3.0/go.mod h1:okt5dMMTOFjX/aovMlrjvvXoPMBVSPzk9185BT0+eZM=
+github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/recoveryservices/armrecoveryservices v1.3.1 h1:SGAVVkLMSa6MYQjtclI6wXH/ppv1Ly9aiiDKZG9zsk4=
+github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/recoveryservices/armrecoveryservices v1.3.1/go.mod h1:LD+Jehorcp6CDsoVI6gZzJmfTUiXjL/qJPFte51DCOM=
+github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/recoveryservices/armrecoveryservicesbackup v1.0.0 h1:MgsdbI063vhtsJMMCZSY6TcxFopiEhPMJEJ2L5iDva0=
+github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/recoveryservices/armrecoveryservicesbackup v1.0.0/go.mod h1:65T59IeW3MusDYTq3zjvzzipDyct3UbWTZVL31go+Ww=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/security/armsecurity v0.11.0 h1:hxVDRUlzurR0SR71oRaZjn/qS6Ub2nVCPZ+AYxFR+IA=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/security/armsecurity v0.11.0/go.mod h1:ThM/jv2MXLB5PMseu0si9VcGF62a3963e7lMvPZ4zyU=
 github.com/Azure/go-autorest v14.2.0+incompatible h1:V5VMDjClD3GiElqLWO7mz2MxNAK/vTfRHdAubSIPRgs=

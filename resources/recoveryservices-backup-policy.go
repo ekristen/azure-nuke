@@ -18,7 +18,7 @@ type RecoveryServicesBackupPolicy struct {
 	protectionsClient protectionpolicies.ProtectionPoliciesClient
 	id                *string
 	name              *string
-	location          string
+	location          *string
 	rg                string
 	backupPolicyId    protectionpolicies.BackupPolicyId
 }
@@ -28,6 +28,9 @@ func init() {
 		Name:   "RecoveryServicesBackupPolicy",
 		Scope:  resource.ResourceGroup,
 		Lister: ListRecoveryServicesBackupPolicy,
+		DependsOn: []string{
+			"RecoveryServicesBackupProtectedItem",
+		},
 	})
 }
 
@@ -79,6 +82,7 @@ func ListRecoveryServicesBackupPolicy(opts resource.ListerOpts) ([]resource.Reso
 				protectionsClient: protectionsClient,
 				id:                item.Id,
 				name:              item.Name,
+				location:          item.Location,
 				rg:                opts.ResourceGroup,
 				backupPolicyId:    protectionpolicies.NewBackupPolicyID(opts.SubscriptionId, opts.ResourceGroup, ptr.ToString(v.Name), ptr.ToString(item.Name)),
 			})
