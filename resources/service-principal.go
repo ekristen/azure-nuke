@@ -6,8 +6,8 @@ import (
 	"github.com/aws/smithy-go/ptr"
 	"strings"
 
+	"github.com/hashicorp/go-azure-sdk/sdk/odata"
 	"github.com/manicminer/hamilton/msgraph"
-	"github.com/manicminer/hamilton/odata"
 	"github.com/sirupsen/logrus"
 
 	"github.com/ekristen/azure-nuke/pkg/resource"
@@ -36,8 +36,8 @@ func ListServicePrincipal(opts resource.ListerOpts) ([]resource.Resource, error)
 		WithField("scope", resource.Subscription).
 		WithField("subscription", opts.SubscriptionId)
 
-	client := msgraph.NewServicePrincipalsClient(opts.TenantId)
-	client.BaseClient.Authorizer = opts.Authorizers.Graph
+	client := msgraph.NewServicePrincipalsClient()
+	client.BaseClient.Authorizer = opts.Authorizers.MicrosoftGraph
 	client.BaseClient.DisableRetries = true
 
 	resources := make([]resource.Resource, 0)
@@ -55,7 +55,7 @@ func ListServicePrincipal(opts resource.ListerOpts) ([]resource.Resource, error)
 	for _, entity := range *entities {
 		resources = append(resources, &ServicePrincipal{
 			client:   client,
-			id:       entity.ID,
+			id:       entity.ID(),
 			name:     entity.DisplayName,
 			appOwner: entity.AppOwnerOrganizationId,
 			spType:   entity.ServicePrincipalType,

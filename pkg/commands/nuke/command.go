@@ -2,19 +2,19 @@ package nuke
 
 import (
 	"context"
-	"io/ioutil"
-
-	authWrapper "github.com/manicminer/hamilton-autorest/auth"
-	"github.com/manicminer/hamilton/auth"
-	"github.com/manicminer/hamilton/environments"
-	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli/v2"
-
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/ekristen/azure-nuke/pkg/azure"
 	"github.com/ekristen/azure-nuke/pkg/commands"
 	"github.com/ekristen/azure-nuke/pkg/common"
 	"github.com/ekristen/azure-nuke/pkg/config"
 	"github.com/ekristen/azure-nuke/pkg/nuke"
+	"github.com/hashicorp/go-azure-sdk/sdk/auth"
+	"github.com/hashicorp/go-azure-sdk/sdk/auth/autorest"
+	"github.com/hashicorp/go-azure-sdk/sdk/environments"
+	"github.com/sirupsen/logrus"
+	"github.com/urfave/cli/v2"
+	"io/ioutil"
+	"os"
 )
 
 func execute(c *cli.Context) error {
@@ -23,49 +23,86 @@ func execute(c *cli.Context) error {
 
 	logrus.Tracef("tenant id: %s", c.String("tenant-id"))
 
-	env, err := environments.EnvironmentFromString(c.String("environment"))
-	if err != nil {
-		return err
-	}
-
-	authConfig := &auth.Config{
-		Environment: env,
-		TenantID:    c.String("tenant-id"),
-		ClientID:    c.String("client-id"),
-	}
-
-	if c.String("client-secret") != "" {
-		logrus.Debug("authentication type: client secret")
-		authConfig.EnableClientSecretAuth = true
-		authConfig.ClientSecret = c.String("client-secret")
-	} else if c.String("client-certificate-file") != "" {
-		logrus.Debug("authentication type: client certificate")
-		authConfig.EnableClientCertAuth = true
-		authConfig.ClientCertPath = c.String("client-certificate-file")
-	} else if c.String("client-federated-token-file") != "" {
-		logrus.Debug("authentication type: federated token")
-		token, err := ioutil.ReadFile(c.String("client-federated-token-file"))
-		if err != nil {
-			return err
-		}
-		authConfig.EnableClientFederatedAuth = true
-		authConfig.FederatedAssertion = string(token)
-	}
-
-	graphAuthorizer, err := authConfig.NewAuthorizer(ctx, env.MsGraph)
-	if err != nil {
-		return err
-	}
-
-	mgmtAuthorizer, err := authConfig.NewAuthorizer(ctx, env.ResourceManager)
+	env, err := environments.FromName(c.String("environment"))
 	if err != nil {
 		return err
 	}
 
 	var authorizers azure.Authorizers
 
-	authorizers.Management = &authWrapper.Authorizer{Authorizer: mgmtAuthorizer}
-	authorizers.Graph = graphAuthorizer
+	credentials := auth.Credentials{
+		Environment: *env,
+		TenantID:    c.String("tenant-id"),
+		ClientID:    c.String("client-id"),
+
+		EnableAuthenticatingUsingClientSecret: true,
+	}
+
+	if c.String("client-secret") != "" {
+		logrus.Debug("authentication type: client secret")
+		credentials.EnableAuthenticatingUsingClientSecret = true
+		credentials.ClientSecret = c.String("client-secret")
+
+		creds, err := azidentity.NewClientSecretCredential(c.String("tenant-id"), c.String("client-id"), c.String("client-secret"), &azidentity.ClientSecretCredentialOptions{})
+		if err != nil {
+			return err
+		}
+		authorizers.IdentityCreds = creds
+	} else if c.String("client-certificate-file") != "" {
+		logrus.Debug("authentication type: client certificate")
+		credentials.EnableAuthenticatingUsingClientCertificate = true
+		credentials.ClientCertificatePath = c.String("client-certificate-file")
+
+		certData, err := os.ReadFile(c.String("client-certificate-file"))
+		if err != nil {
+			return err
+		}
+
+		certs, pkey, err := azidentity.ParseCertificates(certData, nil)
+		if err != nil {
+			return err
+		}
+
+		creds, err := azidentity.NewClientCertificateCredential(c.String("tenant-id"), c.String("client-id"), certs, pkey, &azidentity.ClientCertificateCredentialOptions{})
+		if err != nil {
+			return err
+		}
+		authorizers.IdentityCreds = creds
+	} else if c.String("client-federated-token-file") != "" {
+		logrus.Debug("authentication type: federated token")
+		token, err := ioutil.ReadFile(c.String("client-federated-token-file"))
+		if err != nil {
+			return err
+		}
+		credentials.EnableAuthenticationUsingOIDC = true
+		credentials.OIDCAssertionToken = string(token)
+
+		creds, err := azidentity.NewWorkloadIdentityCredential(&azidentity.WorkloadIdentityCredentialOptions{
+			ClientID:      c.String("client-id"),
+			TenantID:      c.String("tenant-id"),
+			TokenFilePath: c.String("client-federated-token-file"),
+		})
+		if err != nil {
+			return err
+		}
+		authorizers.IdentityCreds = creds
+	}
+
+	graphAuthorizer, err := auth.NewAuthorizerFromCredentials(ctx, credentials, env.MicrosoftGraph)
+	if err != nil {
+		return err
+	}
+
+	mgmtAuthorizer, err := auth.NewAuthorizerFromCredentials(ctx, credentials, env.ResourceManager)
+	if err != nil {
+		return err
+	}
+
+	authorizers.Management = autorest.AutorestAuthorizer(mgmtAuthorizer)
+	authorizers.Graph = autorest.AutorestAuthorizer(graphAuthorizer)
+
+	authorizers.MicrosoftGraph = graphAuthorizer
+	authorizers.ResourceManager = mgmtAuthorizer
 
 	logrus.Trace("preparing to run nuke")
 

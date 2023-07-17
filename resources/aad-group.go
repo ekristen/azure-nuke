@@ -3,8 +3,8 @@ package resources
 import (
 	"context"
 
+	"github.com/hashicorp/go-azure-sdk/sdk/odata"
 	"github.com/manicminer/hamilton/msgraph"
-	"github.com/manicminer/hamilton/odata"
 	"github.com/sirupsen/logrus"
 
 	"github.com/ekristen/azure-nuke/pkg/resource"
@@ -28,8 +28,8 @@ func init() {
 func ListAzureADGroup(opts resource.ListerOpts) ([]resource.Resource, error) {
 	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
 
-	client := msgraph.NewGroupsClient(opts.TenantId)
-	client.BaseClient.Authorizer = opts.Authorizers.Graph
+	client := msgraph.NewGroupsClient()
+	client.BaseClient.Authorizer = opts.Authorizers.MicrosoftGraph
 	client.BaseClient.DisableRetries = true
 
 	resources := make([]resource.Resource, 0)
@@ -48,7 +48,7 @@ func ListAzureADGroup(opts resource.ListerOpts) ([]resource.Resource, error) {
 	for _, group := range *groups {
 		resources = append(resources, &AzureAdGroup{
 			client: client,
-			id:     group.ID,
+			id:     group.ID(),
 			name:   group.DisplayName,
 		})
 	}
