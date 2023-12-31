@@ -2,35 +2,38 @@ package resources
 
 import (
 	"context"
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 	"time"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-05-01/network"
 
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/resource"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 )
 
-type IPAllocation struct {
-	client network.IPAllocationsClient
-	name   *string
-	rg     *string
-}
-
 func init() {
-	resource.RegisterV2(resource.Registration{
+	resource.Register(resource.Registration{
 		Name:   "IPAllocation",
-		Scope:  resource.ResourceGroup,
-		Lister: ListIPAllocation,
+		Scope:  nuke.ResourceGroup,
+		Lister: IPAllocationLister{},
 	})
 }
 
-func ListIPAllocation(opts resource.ListerOpts) ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+type IPAllocationLister struct {
+	opts nuke.ListerOpts
+}
 
-	client := network.NewIPAllocationsClient(opts.SubscriptionId)
-	client.Authorizer = opts.Authorizers.Management
+func (l IPAllocationLister) SetOptions(opts interface{}) {
+	l.opts = opts.(nuke.ListerOpts)
+}
+
+func (l IPAllocationLister) List() ([]resource.Resource, error) {
+	logrus.Tracef("subscription id: %s", l.opts.SubscriptionId)
+
+	client := network.NewIPAllocationsClient(l.opts.SubscriptionId)
+	client.Authorizer = l.opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 
@@ -40,7 +43,7 @@ func ListIPAllocation(opts resource.ListerOpts) ([]resource.Resource, error) {
 
 	ctx := context.Background()
 
-	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup)
+	list, err := client.ListByResourceGroup(ctx, l.opts.ResourceGroup)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +56,7 @@ func ListIPAllocation(opts resource.ListerOpts) ([]resource.Resource, error) {
 			resources = append(resources, &IPAllocation{
 				client: client,
 				name:   g.Name,
-				rg:     &opts.ResourceGroup,
+				rg:     &l.opts.ResourceGroup,
 			})
 		}
 
@@ -63,6 +66,12 @@ func ListIPAllocation(opts resource.ListerOpts) ([]resource.Resource, error) {
 	}
 
 	return resources, nil
+}
+
+type IPAllocation struct {
+	client network.IPAllocationsClient
+	name   *string
+	rg     *string
 }
 
 func (r *IPAllocation) Remove() error {

@@ -2,21 +2,22 @@ package resources
 
 import (
 	"context"
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 	"time"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerregistry/mgmt/2019-05-01/containerregistry"
 
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/resource"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 )
 
 func init() {
-	resource.RegisterV2(resource.Registration{
+	resource.Register(resource.Registration{
 		Name:   "ContainerRegistry",
-		Lister: ListContainerRegistry,
-		Scope:  resource.ResourceGroup,
+		Scope:  nuke.ResourceGroup,
+		Lister: ContainerRegistryLister{},
 	})
 }
 
@@ -44,11 +45,19 @@ func (r *ContainerRegistry) String() string {
 	return *r.name
 }
 
-func ListContainerRegistry(opts resource.ListerOpts) ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+type ContainerRegistryLister struct {
+	opts nuke.ListerOpts
+}
 
-	client := containerregistry.NewRegistriesClient(opts.SubscriptionId)
-	client.Authorizer = opts.Authorizers.Management
+func (l ContainerRegistryLister) SetOptions(opts interface{}) {
+	l.opts = opts.(nuke.ListerOpts)
+}
+
+func (l ContainerRegistryLister) List() ([]resource.Resource, error) {
+	logrus.Tracef("subscription id: %s", l.opts.SubscriptionId)
+
+	client := containerregistry.NewRegistriesClient(l.opts.SubscriptionId)
+	client.Authorizer = l.opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 
@@ -71,7 +80,7 @@ func ListContainerRegistry(opts resource.ListerOpts) ([]resource.Resource, error
 			resources = append(resources, &ContainerRegistry{
 				client:        client,
 				name:          entity.Name,
-				resourceGroup: &opts.ResourceGroup,
+				resourceGroup: &l.opts.ResourceGroup,
 			})
 		}
 

@@ -2,34 +2,62 @@ package resources
 
 import (
 	"context"
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/ekristen/azure-nuke/pkg/nuke"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/resource"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 	"github.com/sirupsen/logrus"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/preview/resources/mgmt/2021-06-01-preview/policy"
 )
 
-type PolicyAssignment struct {
-	client         policy.AssignmentsClient
-	name           string
-	scope          string
-	enforementMode string
-}
-
 func init() {
-	resource.RegisterV2(resource.Registration{
+	resource.Register(resource.Registration{
 		Name:   "PolicyAssignment",
-		Scope:  resource.Subscription,
-		Lister: ListPolicyAssignment,
+		Scope:  nuke.Subscription,
+		Lister: PolicyAssignmentLister{},
 	})
 }
 
-func ListPolicyAssignment(opts resource.ListerOpts) ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+type PolicyAssignment struct {
+	client          policy.AssignmentsClient
+	name            string
+	scope           string
+	enforcementMode string
+}
 
-	client := policy.NewAssignmentsClient(opts.SubscriptionId)
-	client.Authorizer = opts.Authorizers.Management
+func (r *PolicyAssignment) Remove() error {
+	_, err := r.client.Delete(context.TODO(), r.scope, r.name)
+	return err
+}
+
+func (r *PolicyAssignment) Properties() types.Properties {
+	properties := types.NewProperties()
+
+	properties.Set("Name", r.name)
+	properties.Set("Scope", r.scope)
+	properties.Set("EnforcementMode", r.enforcementMode)
+
+	return properties
+}
+
+func (r *PolicyAssignment) String() string {
+	return r.name
+}
+
+type PolicyAssignmentLister struct {
+	opts nuke.ListerOpts
+}
+
+func (l PolicyAssignmentLister) SetOptions(opts interface{}) {
+	l.opts = opts.(nuke.ListerOpts)
+}
+
+func (l PolicyAssignmentLister) List() ([]resource.Resource, error) {
+	logrus.Tracef("subscription id: %s", l.opts.SubscriptionId)
+
+	client := policy.NewAssignmentsClient(l.opts.SubscriptionId)
+	client.Authorizer = l.opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 
@@ -49,10 +77,10 @@ func ListPolicyAssignment(opts resource.ListerOpts) ([]resource.Resource, error)
 		logrus.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &PolicyAssignment{
-				client:         client,
-				name:           *g.Name,
-				scope:          *g.Scope,
-				enforementMode: string(g.EnforcementMode),
+				client:          client,
+				name:            *g.Name,
+				scope:           *g.Scope,
+				enforcementMode: string(g.EnforcementMode),
 			})
 		}
 
@@ -62,23 +90,4 @@ func ListPolicyAssignment(opts resource.ListerOpts) ([]resource.Resource, error)
 	}
 
 	return resources, nil
-}
-
-func (r *PolicyAssignment) Remove() error {
-	_, err := r.client.Delete(context.TODO(), r.scope, r.name)
-	return err
-}
-
-func (r *PolicyAssignment) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", r.name)
-	properties.Set("Scope", r.scope)
-	properties.Set("EnforcementMode", r.enforementMode)
-
-	return properties
-}
-
-func (r *PolicyAssignment) String() string {
-	return r.name
 }

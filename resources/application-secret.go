@@ -2,20 +2,21 @@ package resources
 
 import (
 	"context"
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 
 	"github.com/hashicorp/go-azure-sdk/sdk/odata"
 	"github.com/manicminer/hamilton/msgraph"
 	"github.com/sirupsen/logrus"
 
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/resource"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 )
 
 func init() {
-	resource.RegisterV2(resource.Registration{
+	resource.Register(resource.Registration{
 		Name:   "ApplicationSecret",
-		Scope:  resource.Tenant,
-		Lister: ListApplicationSecret,
+		Scope:  nuke.Tenant,
+		Lister: ApplicationSecretLister{},
 	})
 }
 
@@ -49,11 +50,19 @@ func (r *ApplicationSecret) String() string {
 	return *r.id
 }
 
-func ListApplicationSecret(opts resource.ListerOpts) ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+type ApplicationSecretLister struct {
+	opts nuke.ListerOpts
+}
+
+func (l ApplicationSecretLister) SetOptions(opts interface{}) {
+	l.opts = opts.(nuke.ListerOpts)
+}
+
+func (l ApplicationSecretLister) List() ([]resource.Resource, error) {
+	logrus.Tracef("subscription id: %s", l.opts.SubscriptionId)
 
 	client := msgraph.NewApplicationsClient()
-	client.BaseClient.Authorizer = opts.Authorizers.Graph
+	client.BaseClient.Authorizer = l.opts.Authorizers.Graph
 	client.BaseClient.DisableRetries = true
 
 	resources := make([]resource.Resource, 0)
@@ -62,14 +71,14 @@ func ListApplicationSecret(opts resource.ListerOpts) ([]resource.Resource, error
 
 	ctx := context.Background()
 
-	entites, _, err := client.List(ctx, odata.Query{})
+	entities, _, err := client.List(ctx, odata.Query{})
 	if err != nil {
 		return nil, err
 	}
 
 	logrus.Trace("listing ....")
 
-	for _, entity := range *entites {
+	for _, entity := range *entities {
 		for _, cred := range *entity.PasswordCredentials {
 			resources = append(resources, &ApplicationSecret{
 				client:  client,

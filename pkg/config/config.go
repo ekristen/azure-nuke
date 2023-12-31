@@ -2,31 +2,26 @@ package config
 
 import (
 	"fmt"
-	"io/ioutil"
-
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/config"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/filter"
+	"os"
 
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
 
-type ResourceTypes struct {
-	Targets  types.Collection `yaml:"targets"`
-	Excludes types.Collection `yaml:"excludes"`
-}
-
 type Tenant struct {
-	Filters       Filters       `yaml:"filters"`
-	ResourceTypes ResourceTypes `yaml:"resource-types"`
-	Presets       []string      `yaml:"presets"`
+	Filters       filter.Filters       `yaml:"filters"`
+	ResourceTypes config.ResourceTypes `yaml:"resource-types"`
+	Presets       []string             `yaml:"presets"`
 }
 
 type Nuke struct {
-	Tenants         map[string]Tenant            `yaml:"tenants"`
-	TenantBlocklist []string                     `yaml:"tenant-blocklist"`
-	ResourceTypes   ResourceTypes                `yaml:"resource-types"`
-	FeatureFlags    FeatureFlags                 `yaml:"feature-flags"`
-	Presets         map[string]PresetDefinitions `yaml:"presets"`
+	Tenants         map[string]Tenant                   `yaml:"tenants"`
+	TenantBlocklist []string                            `yaml:"tenant-blocklist"`
+	ResourceTypes   config.ResourceTypes                `yaml:"resource-types"`
+	FeatureFlags    config.FeatureFlags                 `yaml:"feature-flags"`
+	Presets         map[string]config.PresetDefinitions `yaml:"presets"`
 }
 
 type FeatureFlags struct {
@@ -41,28 +36,40 @@ type DisableDeletionProtection struct {
 }
 
 type PresetDefinitions struct {
-	Filters Filters `yaml:"filters"`
+	Filters filter.Filters `yaml:"filters"`
 }
 
 func Load(path string) (*Nuke, error) {
 	var err error
 
-	raw, err := ioutil.ReadFile(path)
+	raw, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	config := new(Nuke)
-	err = yaml.UnmarshalStrict(raw, config)
+	cfg := new(Nuke)
+	err = yaml.UnmarshalStrict(raw, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := config.resolveDeprecations(); err != nil {
+	if err := cfg.ResolveDeprecations(); err != nil {
 		return nil, err
 	}
 
-	return config, nil
+	return cfg, nil
+}
+
+func (c *Nuke) GetResourceTypes() config.ResourceTypes {
+	return c.ResourceTypes
+}
+
+func (c *Nuke) GetFeatureFlags() config.FeatureFlags {
+	return c.FeatureFlags
+}
+
+func (c *Nuke) GetPresets() map[string]config.PresetDefinitions {
+	return c.Presets
 }
 
 func (c *Nuke) ResolveBlocklist() []string {
@@ -88,7 +95,7 @@ func (c *Nuke) InBlocklist(searchID string) bool {
 	return false
 }
 
-func (c *Nuke) ValidateTenant(tenantId string) error {
+func (c *Nuke) Validate(tenantId string) error {
 	if !c.HasBlocklist() {
 		return fmt.Errorf("the config file contains an empty blocklist. " +
 			"For safety reasons you need to specify at least one tenant ID. " +
@@ -124,12 +131,12 @@ func (c *Nuke) ValidateTenant(tenantId string) error {
 	return nil
 }
 
-func (c *Nuke) Filters(tenantId string) (Filters, error) {
+func (c *Nuke) Filters(tenantId string) (filter.Filters, error) {
 	tenant := c.Tenants[tenantId]
 	filters := tenant.Filters
 
 	if filters == nil {
-		filters = Filters{}
+		filters = filter.Filters{}
 	}
 
 	if tenant.Presets == nil {
@@ -153,7 +160,7 @@ func (c *Nuke) Filters(tenantId string) (Filters, error) {
 	return filters, nil
 }
 
-func (c *Nuke) resolveDeprecations() error {
+func (c *Nuke) ResolveDeprecations() error {
 	deprecations := map[string]string{
 		"EC2DhcpOptions":                "EC2DHCPOptions",
 		"EC2InternetGatewayAttachement": "EC2InternetGatewayAttachment",

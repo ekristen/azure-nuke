@@ -8,6 +8,10 @@ import (
 	"github.com/ekristen/azure-nuke/pkg/common"
 	"github.com/ekristen/azure-nuke/pkg/config"
 	"github.com/ekristen/azure-nuke/pkg/nuke"
+	sdknuke "github.com/ekristen/cloud-nuke-sdk/pkg/nuke"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/resource"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/utils"
 	"github.com/hashicorp/go-azure-sdk/sdk/auth"
 	"github.com/hashicorp/go-azure-sdk/sdk/auth/autorest"
 	"github.com/hashicorp/go-azure-sdk/sdk/environments"
@@ -106,7 +110,7 @@ func execute(c *cli.Context) error {
 
 	logrus.Trace("preparing to run nuke")
 
-	params := nuke.NukeParameters{
+	params := sdknuke.Parameters{
 		ConfigPath: c.Path("config"),
 		ForceSleep: c.Int("force-sleep"),
 		Quiet:      c.Bool("quiet"),
@@ -121,12 +125,84 @@ func execute(c *cli.Context) error {
 
 	n := nuke.New(params, tenant)
 
-	config, err := config.Load(params.ConfigPath)
+	n.RegisterValidateHandler(func() error {
+		return n.Config.Validate(n.Tenant.ID)
+	})
+
+	parsedConfig, err := config.Load(params.ConfigPath)
 	if err != nil {
 		return err
 	}
+	n.Config = parsedConfig
 
-	n.Config = config
+	tenantConfig := parsedConfig.Tenants[n.Tenant.ID]
+
+	tenantResourceTypes := utils.ResolveResourceTypes(
+		resource.GetNamesForScope(nuke.Tenant),
+		[]types.Collection{
+			n.Parameters.Targets,
+			n.Config.GetResourceTypes().Targets,
+			tenantConfig.ResourceTypes.Targets,
+		},
+		[]types.Collection{
+			n.Parameters.Excludes,
+			n.Config.GetResourceTypes().Excludes,
+			tenantConfig.ResourceTypes.Excludes,
+		},
+	)
+
+	subscriptionResourceTypes := utils.ResolveResourceTypes(
+		resource.GetNamesForScope(nuke.Subscription),
+		[]types.Collection{
+			n.Parameters.Targets,
+			n.Config.GetResourceTypes().Targets,
+			tenantConfig.ResourceTypes.Targets,
+		},
+		[]types.Collection{
+			n.Parameters.Excludes,
+			n.Config.GetResourceTypes().Excludes,
+			tenantConfig.ResourceTypes.Excludes,
+		},
+	)
+
+	resourceGroupResourceTypes := utils.ResolveResourceTypes(
+		resource.GetNamesForScope(nuke.ResourceGroup),
+		[]types.Collection{
+			n.Parameters.Targets,
+			n.Config.GetResourceTypes().Targets,
+			tenantConfig.ResourceTypes.Targets,
+		},
+		[]types.Collection{
+			n.Parameters.Excludes,
+			n.Config.GetResourceTypes().Excludes,
+			tenantConfig.ResourceTypes.Excludes,
+		},
+	)
+
+	n.RegisterScanner(nuke.Tenant, sdknuke.NewScanner(tenantResourceTypes, nuke.ListerOpts{
+		Authorizers:    n.Tenant.Authorizers,
+		TenantId:       n.Tenant.ID,
+		SubscriptionId: "tenant",
+		ResourceGroup:  "",
+	}))
+
+	for _, subscriptionId := range n.Tenant.SubscriptionIds {
+		n.RegisterScanner(nuke.Subscription, sdknuke.NewScanner(subscriptionResourceTypes, nuke.ListerOpts{
+			Authorizers:    n.Tenant.Authorizers,
+			TenantId:       n.Tenant.ID,
+			SubscriptionId: subscriptionId,
+			ResourceGroup:  "",
+		}))
+
+		for _, resourceGroup := range n.Tenant.ResourceGroups[subscriptionId] {
+			n.RegisterScanner(nuke.ResourceGroup, sdknuke.NewScanner(resourceGroupResourceTypes, nuke.ListerOpts{
+				Authorizers:    n.Tenant.Authorizers,
+				TenantId:       n.Tenant.ID,
+				SubscriptionId: subscriptionId,
+				ResourceGroup:  resourceGroup,
+			}))
+		}
+	}
 
 	return n.Run()
 }

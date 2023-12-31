@@ -2,34 +2,62 @@ package resources
 
 import (
 	"context"
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 	"time"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"
 
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/resource"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 )
+
+func init() {
+	resource.Register(resource.Registration{
+		Name:   "ResourceGroup",
+		Lister: ResourceGroupLister{},
+		Scope:  nuke.Subscription,
+	})
+}
 
 type ResourceGroup struct {
 	client resources.GroupsClient
 	name   *string
 }
 
-func init() {
-	resource.RegisterV2(resource.Registration{
-		Name:   "ResourceGroup",
-		Lister: ListResourceGroup,
-		Scope:  resource.Subscription,
-	})
+func (r *ResourceGroup) Remove() error {
+	_, err := r.client.Delete(context.TODO(), *r.name)
+	return err
 }
 
-func ListResourceGroup(opts resource.ListerOpts) ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+func (r *ResourceGroup) Properties() types.Properties {
+	properties := types.NewProperties()
 
-	client := resources.NewGroupsClient(opts.SubscriptionId)
-	client.Authorizer = opts.Authorizers.Management
+	properties.Set("Name", *r.name)
+
+	return properties
+}
+
+func (r *ResourceGroup) String() string {
+	return *r.name
+}
+
+// -------------------
+
+type ResourceGroupLister struct {
+	opts nuke.ListerOpts
+}
+
+func (l ResourceGroupLister) SetOptions(opts interface{}) {
+	l.opts = opts.(nuke.ListerOpts)
+}
+
+func (l ResourceGroupLister) List() ([]resource.Resource, error) {
+	logrus.Tracef("subscription id: %s", l.opts.SubscriptionId)
+
+	client := resources.NewGroupsClient(l.opts.SubscriptionId)
+	client.Authorizer = l.opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 
@@ -61,21 +89,4 @@ func ListResourceGroup(opts resource.ListerOpts) ([]resource.Resource, error) {
 	}
 
 	return resources, nil
-}
-
-func (r *ResourceGroup) Remove() error {
-	_, err := r.client.Delete(context.TODO(), *r.name)
-	return err
-}
-
-func (r *ResourceGroup) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", *r.name)
-
-	return properties
-}
-
-func (r *ResourceGroup) String() string {
-	return *r.name
 }

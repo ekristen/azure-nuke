@@ -3,15 +3,24 @@ package resources
 import (
 	"context"
 	"fmt"
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonids"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/consumption/2021-10-01/budgets"
 	"github.com/hashicorp/go-azure-sdk/sdk/environments"
 	"github.com/sirupsen/logrus"
 	"time"
 
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/resource"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 )
+
+func init() {
+	resource.Register(resource.Registration{
+		Name:   "Budget",
+		Scope:  nuke.Subscription,
+		Lister: BudgetLister{},
+	})
+}
 
 type Budget struct {
 	client *budgets.BudgetsClient
@@ -19,16 +28,18 @@ type Budget struct {
 	rg     string
 }
 
-func init() {
-	resource.RegisterV2(resource.Registration{
-		Name:   "Budget",
-		Scope:  resource.Subscription,
-		Lister: ListBudget,
-	})
+type BudgetLister struct {
+	opts nuke.ListerOpts
 }
 
-func ListBudget(opts resource.ListerOpts) ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+func (l BudgetLister) SetOptions(opts interface{}) {
+	l.opts = opts.(nuke.ListerOpts)
+}
+
+func (l BudgetLister) List(opts interface{}) ([]resource.Resource, error) {
+	opts = opts.(nuke.ListerOpts)
+
+	logrus.Tracef("subscription id: %s", l.opts.SubscriptionId)
 
 	resources := make([]resource.Resource, 0)
 
@@ -41,7 +52,7 @@ func ListBudget(opts resource.ListerOpts) ([]resource.Resource, error) {
 	if err != nil {
 		return nil, err
 	}
-	client.Client.Authorizer = opts.Authorizers.Management
+	client.Client.Authorizer = l.opts.Authorizers.Management
 	//client.Authorizer = opts.Authorizers.Management
 	//client.RetryAttempts = 1
 	//client.RetryDuration = time.Second * 2
@@ -53,7 +64,7 @@ func ListBudget(opts resource.ListerOpts) ([]resource.Resource, error) {
 	defer cancel()
 
 	list, err := client.List(ctx, commonids.ScopeId{
-		Scope: fmt.Sprintf("/subscriptions/%s", opts.SubscriptionId),
+		Scope: fmt.Sprintf("/subscriptions/%s", l.opts.SubscriptionId),
 	})
 	if err != nil {
 		return nil, err
