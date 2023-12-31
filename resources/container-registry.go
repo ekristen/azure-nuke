@@ -46,18 +46,15 @@ func (r *ContainerRegistry) String() string {
 }
 
 type ContainerRegistryLister struct {
-	opts nuke.ListerOpts
 }
 
-func (l ContainerRegistryLister) SetOptions(opts interface{}) {
-	l.opts = opts.(nuke.ListerOpts)
-}
+func (l ContainerRegistryLister) List(o interface{}) ([]resource.Resource, error) {
+	opts := o.(nuke.ListerOpts)
 
-func (l ContainerRegistryLister) List() ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", l.opts.SubscriptionId)
+	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
 
-	client := containerregistry.NewRegistriesClient(l.opts.SubscriptionId)
-	client.Authorizer = l.opts.Authorizers.Management
+	client := containerregistry.NewRegistriesClient(opts.SubscriptionId)
+	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 
@@ -80,7 +77,7 @@ func (l ContainerRegistryLister) List() ([]resource.Resource, error) {
 			resources = append(resources, &ContainerRegistry{
 				client:        client,
 				name:          entity.Name,
-				resourceGroup: &l.opts.ResourceGroup,
+				resourceGroup: &opts.ResourceGroup,
 			})
 		}
 

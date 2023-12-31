@@ -22,18 +22,15 @@ func init() {
 }
 
 type AppServicePlanLister struct {
-	opts nuke.ListerOpts
 }
 
-func (l AppServicePlanLister) SetOptions(opts interface{}) {
-	l.opts = opts.(nuke.ListerOpts)
-}
+func (l AppServicePlanLister) List(o interface{}) ([]resource.Resource, error) {
+	opts := o.(nuke.ListerOpts)
 
-func (l AppServicePlanLister) List() ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", l.opts.SubscriptionId)
+	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
 
-	client := web.NewAppServicePlansClient(l.opts.SubscriptionId)
-	client.Authorizer = l.opts.Authorizers.Management
+	client := web.NewAppServicePlansClient(opts.SubscriptionId)
+	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 
@@ -42,7 +39,7 @@ func (l AppServicePlanLister) List() ([]resource.Resource, error) {
 	logrus.Trace("attempting to list ssh key")
 
 	ctx := context.Background()
-	list, err := client.ListByResourceGroup(ctx, l.opts.ResourceGroup)
+	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +52,7 @@ func (l AppServicePlanLister) List() ([]resource.Resource, error) {
 			resources = append(resources, &AppServicePlan{
 				client: client,
 				name:   *g.Name,
-				rg:     l.opts.ResourceGroup,
+				rg:     opts.ResourceGroup,
 			})
 		}
 

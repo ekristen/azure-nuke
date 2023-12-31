@@ -73,21 +73,18 @@ func (r *ServicePrincipal) String() string {
 // -------------------------------------------------------------
 
 type ServicePrincipalsLister struct {
-	opts nuke.ListerOpts
 }
 
-func (l ServicePrincipalsLister) SetOptions(opts interface{}) {
-	l.opts = opts.(nuke.ListerOpts)
-}
+func (l ServicePrincipalsLister) List(o interface{}) ([]resource.Resource, error) {
+	opts := o.(nuke.ListerOpts)
 
-func (l ServicePrincipalsLister) List() ([]resource.Resource, error) {
 	log := logrus.
 		WithField("resource", "ServicePrincipal").
 		WithField("scope", nuke.Subscription).
-		WithField("subscription", l.opts.SubscriptionId)
+		WithField("subscription", opts.SubscriptionId)
 
 	client := msgraph.NewServicePrincipalsClient()
-	client.BaseClient.Authorizer = l.opts.Authorizers.MicrosoftGraph
+	client.BaseClient.Authorizer = opts.Authorizers.MicrosoftGraph
 	client.BaseClient.DisableRetries = true
 
 	resources := make([]resource.Resource, 0)

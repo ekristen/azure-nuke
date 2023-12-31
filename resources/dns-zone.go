@@ -22,23 +22,20 @@ func init() {
 }
 
 type DNSZoneLister struct {
-	opts nuke.ListerOpts
 }
 
-func (l DNSZoneLister) SetOptions(opts interface{}) {
-	l.opts = opts.(nuke.ListerOpts)
-}
+func (l DNSZoneLister) List(o interface{}) ([]resource.Resource, error) {
+	opts := o.(nuke.ListerOpts)
 
-func (l DNSZoneLister) List() ([]resource.Resource, error) {
 	log := logrus.WithFields(logrus.Fields{
-		"subscription": l.opts.SubscriptionId,
+		"subscription": opts.SubscriptionId,
 		"handler":      "ListDNSZone",
 	})
 
 	log.Trace("start")
 
-	client := dns.NewZonesClient(l.opts.SubscriptionId)
-	client.Authorizer = l.opts.Authorizers.Management
+	client := dns.NewZonesClient(opts.SubscriptionId)
+	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 
@@ -46,7 +43,7 @@ func (l DNSZoneLister) List() ([]resource.Resource, error) {
 
 	ctx := context.Background()
 
-	list, err := client.ListByResourceGroup(ctx, l.opts.ResourceGroup, nil)
+	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup, nil)
 	if err != nil {
 		log.WithError(err).Error("unable to list")
 		return nil, err
@@ -62,7 +59,7 @@ func (l DNSZoneLister) List() ([]resource.Resource, error) {
 				client:   client,
 				name:     g.Name,
 				location: g.Location,
-				rg:       &l.opts.ResourceGroup,
+				rg:       &opts.ResourceGroup,
 			})
 		}
 

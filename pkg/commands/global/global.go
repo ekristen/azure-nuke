@@ -1,4 +1,4 @@
-package commands
+package global
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func GlobalFlags() []cli.Flag {
+func Flags() []cli.Flag {
 	globalFlags := []cli.Flag{
 		&cli.StringFlag{
 			Name:    "log-level",

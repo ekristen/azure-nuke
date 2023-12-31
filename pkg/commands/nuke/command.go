@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/ekristen/azure-nuke/pkg/azure"
-	"github.com/ekristen/azure-nuke/pkg/commands"
+	"github.com/ekristen/azure-nuke/pkg/commands/global"
 	"github.com/ekristen/azure-nuke/pkg/common"
 	"github.com/ekristen/azure-nuke/pkg/config"
 	"github.com/ekristen/azure-nuke/pkg/nuke"
@@ -271,8 +271,8 @@ func init() {
 	cmd := &cli.Command{
 		Name:   "nuke",
 		Usage:  "nuke an azure tenant",
-		Flags:  append(flags, commands.GlobalFlags()...),
-		Before: commands.GlobalBefore,
+		Flags:  append(flags, global.Flags()...),
+		Before: global.GlobalBefore,
 		Action: execute,
 	}
 

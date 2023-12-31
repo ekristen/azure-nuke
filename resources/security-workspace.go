@@ -46,23 +46,20 @@ func (r *SecurityWorkspace) String() string {
 // -------------------------------------------------------------
 
 type SecurityWorkspaceLister struct {
-	opts nuke.ListerOpts
 }
 
-func (l SecurityWorkspaceLister) SetOptions(opts interface{}) {
-	l.opts = opts.(nuke.ListerOpts)
-}
+func (l SecurityWorkspaceLister) List(o interface{}) ([]resource.Resource, error) {
+	opts := o.(nuke.ListerOpts)
 
-func (l SecurityWorkspaceLister) List() ([]resource.Resource, error) {
 	log := logrus.
 		WithField("resource", "SecurityWorkspace").
 		WithField("scope", nuke.Subscription).
-		WithField("subscription", l.opts.SubscriptionId)
+		WithField("subscription", opts.SubscriptionId)
 
 	log.Trace("creating client")
 
-	client := security.NewWorkspaceSettingsClient(l.opts.SubscriptionId)
-	client.Authorizer = l.opts.Authorizers.Management
+	client := security.NewWorkspaceSettingsClient(opts.SubscriptionId)
+	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 

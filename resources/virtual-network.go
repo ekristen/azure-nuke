@@ -48,18 +48,15 @@ func (r *VirtualNetwork) String() string {
 // ---------------------------------------------
 
 type VirtualNetworkLister struct {
-	opts nuke.ListerOpts
 }
 
-func (l VirtualNetworkLister) SetOptions(opts interface{}) {
-	l.opts = opts.(nuke.ListerOpts)
-}
+func (l VirtualNetworkLister) List(o interface{}) ([]resource.Resource, error) {
+	opts := o.(nuke.ListerOpts)
 
-func (l VirtualNetworkLister) List() ([]resource.Resource, error) {
-	log := logrus.WithField("handler", "ListVirtualNetwork").WithField("subscription", l.opts.SubscriptionId)
+	log := logrus.WithField("handler", "ListVirtualNetwork").WithField("subscription", opts.SubscriptionId)
 
-	client := network.NewVirtualNetworksClient(l.opts.SubscriptionId)
-	client.Authorizer = l.opts.Authorizers.Management
+	client := network.NewVirtualNetworksClient(opts.SubscriptionId)
+	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 
@@ -69,7 +66,7 @@ func (l VirtualNetworkLister) List() ([]resource.Resource, error) {
 
 	ctx := context.Background()
 
-	list, err := client.List(ctx, l.opts.ResourceGroup)
+	list, err := client.List(ctx, opts.ResourceGroup)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +78,7 @@ func (l VirtualNetworkLister) List() ([]resource.Resource, error) {
 			resources = append(resources, &VirtualNetwork{
 				client: client,
 				name:   g.Name,
-				rg:     &l.opts.ResourceGroup,
+				rg:     &opts.ResourceGroup,
 			})
 		}
 

@@ -20,11 +20,6 @@ type AzureADUser struct {
 }
 
 type AzureADUserLister struct {
-	opts nuke.ListerOpts
-}
-
-func (l AzureADUserLister) SetOptions(opts interface{}) {
-	l.opts = opts.(nuke.ListerOpts)
 }
 
 func init() {
@@ -36,11 +31,13 @@ func init() {
 	})
 }
 
-func (l AzureADUserLister) List() ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", l.opts.SubscriptionId)
+func (l AzureADUserLister) List(o interface{}) ([]resource.Resource, error) {
+	opts := o.(nuke.ListerOpts)
+
+	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
 
 	client := msgraph.NewUsersClient()
-	client.BaseClient.Authorizer = l.opts.Authorizers.Graph
+	client.BaseClient.Authorizer = opts.Authorizers.Graph
 	client.BaseClient.DisableRetries = true
 
 	resources := make([]resource.Resource, 0)

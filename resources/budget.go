@@ -28,18 +28,12 @@ type Budget struct {
 	rg     string
 }
 
-type BudgetLister struct {
-	opts nuke.ListerOpts
-}
+type BudgetLister struct{}
 
-func (l BudgetLister) SetOptions(opts interface{}) {
-	l.opts = opts.(nuke.ListerOpts)
-}
+func (l BudgetLister) List(o interface{}) ([]resource.Resource, error) {
+	opts := o.(nuke.ListerOpts)
 
-func (l BudgetLister) List(opts interface{}) ([]resource.Resource, error) {
-	opts = opts.(nuke.ListerOpts)
-
-	logrus.Tracef("subscription id: %s", l.opts.SubscriptionId)
+	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
 
 	resources := make([]resource.Resource, 0)
 
@@ -52,7 +46,7 @@ func (l BudgetLister) List(opts interface{}) ([]resource.Resource, error) {
 	if err != nil {
 		return nil, err
 	}
-	client.Client.Authorizer = l.opts.Authorizers.Management
+	client.Client.Authorizer = opts.Authorizers.Management
 	//client.Authorizer = opts.Authorizers.Management
 	//client.RetryAttempts = 1
 	//client.RetryDuration = time.Second * 2
@@ -64,7 +58,7 @@ func (l BudgetLister) List(opts interface{}) ([]resource.Resource, error) {
 	defer cancel()
 
 	list, err := client.List(ctx, commonids.ScopeId{
-		Scope: fmt.Sprintf("/subscriptions/%s", l.opts.SubscriptionId),
+		Scope: fmt.Sprintf("/subscriptions/%s", opts.SubscriptionId),
 	})
 	if err != nil {
 		return nil, err

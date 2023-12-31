@@ -55,22 +55,19 @@ func (r *SecurityAssessment) String() string {
 // -------------------------------------------------------------
 
 type SecurityAssessmentLister struct {
-	opts nuke.ListerOpts
 }
 
-func (l SecurityAssessmentLister) SetOptions(opts interface{}) {
-	l.opts = opts.(nuke.ListerOpts)
-}
+func (l SecurityAssessmentLister) List(o interface{}) ([]resource.Resource, error) {
+	opts := o.(nuke.ListerOpts)
 
-func (l SecurityAssessmentLister) List() ([]resource.Resource, error) {
 	log := logrus.
 		WithField("resource", "SecurityAssessment").
 		WithField("scope", nuke.Subscription).
-		WithField("subscription", l.opts.SubscriptionId)
+		WithField("subscription", opts.SubscriptionId)
 
 	log.Trace("creating client")
 
-	clientFactory, err := armsecurity.NewClientFactory(l.opts.SubscriptionId, l.opts.Authorizers.IdentityCreds, nil)
+	clientFactory, err := armsecurity.NewClientFactory(opts.SubscriptionId, opts.Authorizers.IdentityCreds, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +79,7 @@ func (l SecurityAssessmentLister) List() ([]resource.Resource, error) {
 	log.Trace("listing resources")
 
 	ctx := context.TODO()
-	pager := client.NewListPager(fmt.Sprintf("/subscriptions/%s", l.opts.SubscriptionId), nil)
+	pager := client.NewListPager(fmt.Sprintf("/subscriptions/%s", opts.SubscriptionId), nil)
 	for pager.More() {
 		log.Trace("listing not done")
 		page, err := pager.NextPage(ctx)

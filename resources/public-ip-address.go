@@ -46,18 +46,15 @@ func (r *PublicIPAddresses) String() string {
 }
 
 type PublicIPAddressesLister struct {
-	opts nuke.ListerOpts
 }
 
-func (l PublicIPAddressesLister) SetOptions(opts interface{}) {
-	l.opts = opts.(nuke.ListerOpts)
-}
+func (l PublicIPAddressesLister) List(o interface{}) ([]resource.Resource, error) {
+	opts := o.(nuke.ListerOpts)
 
-func (l PublicIPAddressesLister) List() ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", l.opts.SubscriptionId)
+	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
 
-	client := network.NewPublicIPAddressesClient(l.opts.SubscriptionId)
-	client.Authorizer = l.opts.Authorizers.Management
+	client := network.NewPublicIPAddressesClient(opts.SubscriptionId)
+	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 
@@ -67,7 +64,7 @@ func (l PublicIPAddressesLister) List() ([]resource.Resource, error) {
 
 	ctx := context.Background()
 
-	list, err := client.List(ctx, l.opts.ResourceGroup)
+	list, err := client.List(ctx, opts.ResourceGroup)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +77,7 @@ func (l PublicIPAddressesLister) List() ([]resource.Resource, error) {
 			resources = append(resources, &PublicIPAddresses{
 				client: client,
 				name:   g.Name,
-				rg:     &l.opts.ResourceGroup,
+				rg:     &opts.ResourceGroup,
 			})
 		}
 

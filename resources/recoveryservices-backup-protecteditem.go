@@ -61,34 +61,31 @@ func (r *RecoveryServicesBackupProtectedItem) String() string {
 }
 
 type RecoveryServicesBackupProtectedItemLister struct {
-	opts nuke.ListerOpts
 }
 
-func (l RecoveryServicesBackupProtectedItemLister) SetOptions(opts interface{}) {
-	l.opts = opts.(nuke.ListerOpts)
-}
+func (l RecoveryServicesBackupProtectedItemLister) List(o interface{}) ([]resource.Resource, error) {
+	opts := o.(nuke.ListerOpts)
 
-func (l RecoveryServicesBackupProtectedItemLister) List() ([]resource.Resource, error) {
 	resources := make([]resource.Resource, 0)
 
 	log := logrus.
 		WithField("resource", "RecoveryServicesBackupProtectedItem").
 		WithField("scope", nuke.ResourceGroup).
-		WithField("subscription", l.opts.SubscriptionId).
-		WithField("rg", l.opts.ResourceGroup)
+		WithField("subscription", opts.SubscriptionId).
+		WithField("rg", opts.ResourceGroup)
 
 	log.Trace("creating client")
-	vaultsClient, err := armrecoveryservices.NewVaultsClient(l.opts.SubscriptionId, l.opts.Authorizers.IdentityCreds, nil)
+	vaultsClient, err := armrecoveryservices.NewVaultsClient(opts.SubscriptionId, opts.Authorizers.IdentityCreds, nil)
 	if err != nil {
 		return resources, err
 	}
 
-	client, err := armrecoveryservicesbackup.NewBackupProtectedItemsClient(l.opts.SubscriptionId, l.opts.Authorizers.IdentityCreds, nil)
+	client, err := armrecoveryservicesbackup.NewBackupProtectedItemsClient(opts.SubscriptionId, opts.Authorizers.IdentityCreds, nil)
 	if err != nil {
 		return resources, err
 	}
 
-	protectedItems, err := armrecoveryservicesbackup.NewProtectedItemsClient(l.opts.SubscriptionId, l.opts.Authorizers.IdentityCreds, nil)
+	protectedItems, err := armrecoveryservicesbackup.NewProtectedItemsClient(opts.SubscriptionId, opts.Authorizers.IdentityCreds, nil)
 	if err != nil {
 		return resources, err
 	}
@@ -96,7 +93,7 @@ func (l RecoveryServicesBackupProtectedItemLister) List() ([]resource.Resource, 
 	log.Trace("listing resources")
 
 	ctx := context.TODO()
-	vaultsPager := vaultsClient.NewListByResourceGroupPager(l.opts.ResourceGroup, nil)
+	vaultsPager := vaultsClient.NewListByResourceGroupPager(opts.ResourceGroup, nil)
 	for vaultsPager.More() {
 		page, err := vaultsPager.NextPage(ctx)
 		if err != nil {
@@ -105,7 +102,7 @@ func (l RecoveryServicesBackupProtectedItemLister) List() ([]resource.Resource, 
 
 		for _, v := range page.Value {
 
-			itemPager := client.NewListPager(to.String(v.Name), l.opts.ResourceGroup, nil)
+			itemPager := client.NewListPager(to.String(v.Name), opts.ResourceGroup, nil)
 			for itemPager.More() {
 				page, err := itemPager.NextPage(ctx)
 				if err != nil {
@@ -127,7 +124,7 @@ func (l RecoveryServicesBackupProtectedItemLister) List() ([]resource.Resource, 
 						id:            i.ID,
 						name:          i.Name,
 						location:      i.Location,
-						resourceGroup: to.StringPtr(l.opts.ResourceGroup),
+						resourceGroup: to.StringPtr(opts.ResourceGroup),
 						containerName: to.StringPtr(containerName),
 						backupFabric:  to.StringPtr("Azure"), // TODO: this should be calculated
 					})

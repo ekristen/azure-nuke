@@ -47,23 +47,20 @@ func (r *PrivateDNSZone) String() string {
 }
 
 type PrivateDNSZoneLister struct {
-	opts nuke.ListerOpts
 }
 
-func (l PrivateDNSZoneLister) SetOptions(opts interface{}) {
-	l.opts = opts.(nuke.ListerOpts)
-}
+func (l PrivateDNSZoneLister) List(o interface{}) ([]resource.Resource, error) {
+	opts := o.(nuke.ListerOpts)
 
-func (l PrivateDNSZoneLister) List() ([]resource.Resource, error) {
 	log := logrus.WithFields(logrus.Fields{
-		"subscription": l.opts.SubscriptionId,
+		"subscription": opts.SubscriptionId,
 		"handler":      "ListPrivateDNSZone",
 	})
 
 	log.Trace("start")
 
-	client := privatedns.NewPrivateZonesClient(l.opts.SubscriptionId)
-	client.Authorizer = l.opts.Authorizers.Management
+	client := privatedns.NewPrivateZonesClient(opts.SubscriptionId)
+	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 
@@ -87,7 +84,7 @@ func (l PrivateDNSZoneLister) List() ([]resource.Resource, error) {
 				client:   client,
 				name:     g.Name,
 				location: g.Location,
-				rg:       &l.opts.ResourceGroup,
+				rg:       &opts.ResourceGroup,
 			})
 		}
 

@@ -48,18 +48,15 @@ func (r *VirtualMachine) String() string {
 // -----------------------------------------
 
 type VirtualMachineLister struct {
-	opts nuke.ListerOpts
 }
 
-func (l VirtualMachineLister) SetOptions(opts interface{}) {
-	l.opts = opts.(nuke.ListerOpts)
-}
+func (l VirtualMachineLister) List(o interface{}) ([]resource.Resource, error) {
+	opts := o.(nuke.ListerOpts)
 
-func (l VirtualMachineLister) List() ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", l.opts.SubscriptionId)
+	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
 
-	client := compute.NewVirtualMachinesClient(l.opts.SubscriptionId)
-	client.Authorizer = l.opts.Authorizers.Management
+	client := compute.NewVirtualMachinesClient(opts.SubscriptionId)
+	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 
@@ -69,7 +66,7 @@ func (l VirtualMachineLister) List() ([]resource.Resource, error) {
 
 	ctx := context.Background()
 
-	list, err := client.List(ctx, l.opts.ResourceGroup)
+	list, err := client.List(ctx, opts.ResourceGroup)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +79,7 @@ func (l VirtualMachineLister) List() ([]resource.Resource, error) {
 			resources = append(resources, &VirtualMachine{
 				client:        client,
 				name:          g.Name,
-				resourceGroup: &l.opts.ResourceGroup,
+				resourceGroup: &opts.ResourceGroup,
 			})
 		}
 

@@ -57,24 +57,21 @@ func (r *RecoveryServicesVault) String() string {
 }
 
 type RecoveryServicesVaultLister struct {
-	opts nuke.ListerOpts
 }
 
-func (l RecoveryServicesVaultLister) SetOptions(opts interface{}) {
-	l.opts = opts.(nuke.ListerOpts)
-}
+func (l RecoveryServicesVaultLister) List(o interface{}) ([]resource.Resource, error) {
+	opts := o.(nuke.ListerOpts)
 
-func (l RecoveryServicesVaultLister) List() ([]resource.Resource, error) {
 	log := logrus.
 		WithField("resource", "RecoveryServicesVault").
 		WithField("scope", nuke.ResourceGroup).
-		WithField("subscription", l.opts.SubscriptionId).
-		WithField("rg", l.opts.ResourceGroup)
+		WithField("subscription", opts.SubscriptionId).
+		WithField("rg", opts.ResourceGroup)
 
 	log.Trace("creating client")
 
 	client := vaults.NewVaultsClientWithBaseURI("https://management.azure.com") // TODO: pass in the endpoint
-	client.Client.Authorizer = l.opts.Authorizers.Management
+	client.Client.Authorizer = opts.Authorizers.Management
 	client.Client.RetryAttempts = 1
 	client.Client.RetryDuration = time.Second * 2
 
@@ -83,7 +80,7 @@ func (l RecoveryServicesVaultLister) List() ([]resource.Resource, error) {
 	log.Trace("listing resources")
 
 	ctx := context.TODO()
-	items, err := client.ListByResourceGroupComplete(ctx, commonids.NewResourceGroupID(l.opts.SubscriptionId, l.opts.ResourceGroup))
+	items, err := client.ListByResourceGroupComplete(ctx, commonids.NewResourceGroupID(opts.SubscriptionId, opts.ResourceGroup))
 	if err != nil {
 		return nil, err
 	}
@@ -94,8 +91,8 @@ func (l RecoveryServicesVaultLister) List() ([]resource.Resource, error) {
 			id:       item.Id,
 			name:     item.Name,
 			location: item.Location,
-			vaultId:  vaults.NewVaultID(l.opts.SubscriptionId, l.opts.ResourceGroup, ptr.ToString(item.Id)),
-			rg:       l.opts.ResourceGroup,
+			vaultId:  vaults.NewVaultID(opts.SubscriptionId, opts.ResourceGroup, ptr.ToString(item.Id)),
+			rg:       opts.ResourceGroup,
 		})
 	}
 

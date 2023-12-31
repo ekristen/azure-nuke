@@ -51,18 +51,14 @@ func (r *ApplicationSecret) String() string {
 }
 
 type ApplicationSecretLister struct {
-	opts nuke.ListerOpts
 }
 
-func (l ApplicationSecretLister) SetOptions(opts interface{}) {
-	l.opts = opts.(nuke.ListerOpts)
-}
-
-func (l ApplicationSecretLister) List() ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", l.opts.SubscriptionId)
+func (l ApplicationSecretLister) List(o interface{}) ([]resource.Resource, error) {
+	opts := o.(nuke.ListerOpts)
+	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
 
 	client := msgraph.NewApplicationsClient()
-	client.BaseClient.Authorizer = l.opts.Authorizers.Graph
+	client.BaseClient.Authorizer = opts.Authorizers.Graph
 	client.BaseClient.DisableRetries = true
 
 	resources := make([]resource.Resource, 0)

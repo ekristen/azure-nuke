@@ -66,25 +66,22 @@ func (r *SecurityAlert) String() string {
 // ------------------------------------
 
 type SecurityAlertsLister struct {
-	opts nuke.ListerOpts
 }
 
-func (l SecurityAlertsLister) SetOptions(opts interface{}) {
-	l.opts = opts.(nuke.ListerOpts)
-}
+func (l SecurityAlertsLister) List(o interface{}) ([]resource.Resource, error) {
+	opts := o.(nuke.ListerOpts)
 
-func (l SecurityAlertsLister) List() ([]resource.Resource, error) {
 	log := logrus.
 		WithField("resource", "SecurityAlert").
 		WithField("scope", nuke.Subscription).
-		WithField("subscription", l.opts.SubscriptionId)
+		WithField("subscription", opts.SubscriptionId)
 
 	log.Trace("creating client")
 
 	locationRe := regexp.MustCompile(SecurityAlertLocation)
 
-	client := security.NewAlertsClient(l.opts.SubscriptionId)
-	client.Authorizer = l.opts.Authorizers.Management
+	client := security.NewAlertsClient(opts.SubscriptionId)
+	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 
