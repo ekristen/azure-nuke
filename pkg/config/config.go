@@ -161,30 +161,7 @@ func (c *Nuke) Filters(tenantId string) (filter.Filters, error) {
 }
 
 func (c *Nuke) ResolveDeprecations() error {
-	deprecations := map[string]string{
-		"EC2DhcpOptions":                "EC2DHCPOptions",
-		"EC2InternetGatewayAttachement": "EC2InternetGatewayAttachment",
-		"EC2NatGateway":                 "EC2NATGateway",
-		"EC2Vpc":                        "EC2VPC",
-		"EC2VpcEndpoint":                "EC2VPCEndpoint",
-		"EC2VpnConnection":              "EC2VPNConnection",
-		"EC2VpnGateway":                 "EC2VPNGateway",
-		"EC2VpnGatewayAttachement":      "EC2VPNGatewayAttachment",
-		"ECRrepository":                 "ECRRepository",
-		"IamGroup":                      "IAMGroup",
-		"IamGroupPolicyAttachement":     "IAMGroupPolicyAttachment",
-		"IamInstanceProfile":            "IAMInstanceProfile",
-		"IamInstanceProfileRole":        "IAMInstanceProfileRole",
-		"IamPolicy":                     "IAMPolicy",
-		"IamRole":                       "IAMRole",
-		"IamRolePolicyAttachement":      "IAMRolePolicyAttachment",
-		"IamServerCertificate":          "IAMServerCertificate",
-		"IamUser":                       "IAMUser",
-		"IamUserAccessKeys":             "IAMUserAccessKey",
-		"IamUserGroupAttachement":       "IAMUserGroupAttachment",
-		"IamUserPolicyAttachement":      "IAMUserPolicyAttachment",
-		"RDSCluster":                    "RDSDBCluster",
-	}
+	deprecations := map[string]string{}
 
 	for _, t := range c.Tenants {
 		for resourceType, resources := range t.Filters {
