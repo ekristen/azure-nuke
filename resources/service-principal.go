@@ -4,15 +4,24 @@ import (
 	"context"
 	"fmt"
 	"github.com/aws/smithy-go/ptr"
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 	"strings"
 
 	"github.com/hashicorp/go-azure-sdk/sdk/odata"
 	"github.com/manicminer/hamilton/msgraph"
 	"github.com/sirupsen/logrus"
 
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/resource"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 )
+
+func init() {
+	resource.Register(resource.Registration{
+		Name:   "ServicePrincipal",
+		Scope:  nuke.Tenant,
+		Lister: ServicePrincipalsLister{},
+	})
+}
 
 type ServicePrincipal struct {
 	client   *msgraph.ServicePrincipalsClient
@@ -20,49 +29,6 @@ type ServicePrincipal struct {
 	name     *string
 	appOwner *string
 	spType   *string
-}
-
-func init() {
-	resource.RegisterV2(resource.Registration{
-		Name:   "ServicePrincipal",
-		Scope:  resource.Tenant,
-		Lister: ListServicePrincipal,
-	})
-}
-
-func ListServicePrincipal(opts resource.ListerOpts) ([]resource.Resource, error) {
-	log := logrus.
-		WithField("resource", "ServicePrincipal").
-		WithField("scope", resource.Subscription).
-		WithField("subscription", opts.SubscriptionId)
-
-	client := msgraph.NewServicePrincipalsClient()
-	client.BaseClient.Authorizer = opts.Authorizers.MicrosoftGraph
-	client.BaseClient.DisableRetries = true
-
-	resources := make([]resource.Resource, 0)
-
-	log.Trace("attempting to list service principals")
-
-	ctx := context.TODO()
-	entities, _, err := client.List(ctx, odata.Query{})
-	if err != nil {
-		return nil, err
-	}
-
-	log.Trace("listing entities")
-
-	for _, entity := range *entities {
-		resources = append(resources, &ServicePrincipal{
-			client:   client,
-			id:       entity.ID(),
-			name:     entity.DisplayName,
-			appOwner: entity.AppOwnerOrganizationId,
-			spType:   entity.ServicePrincipalType,
-		})
-	}
-
-	return resources, nil
 }
 
 func (r *ServicePrincipal) Filter() error {
@@ -102,4 +68,49 @@ func (r *ServicePrincipal) Properties() types.Properties {
 
 func (r *ServicePrincipal) String() string {
 	return ptr.ToString(r.id)
+}
+
+// -------------------------------------------------------------
+
+type ServicePrincipalsLister struct {
+	opts nuke.ListerOpts
+}
+
+func (l ServicePrincipalsLister) SetOptions(opts interface{}) {
+	l.opts = opts.(nuke.ListerOpts)
+}
+
+func (l ServicePrincipalsLister) List() ([]resource.Resource, error) {
+	log := logrus.
+		WithField("resource", "ServicePrincipal").
+		WithField("scope", nuke.Subscription).
+		WithField("subscription", l.opts.SubscriptionId)
+
+	client := msgraph.NewServicePrincipalsClient()
+	client.BaseClient.Authorizer = l.opts.Authorizers.MicrosoftGraph
+	client.BaseClient.DisableRetries = true
+
+	resources := make([]resource.Resource, 0)
+
+	log.Trace("attempting to list service principals")
+
+	ctx := context.TODO()
+	entities, _, err := client.List(ctx, odata.Query{})
+	if err != nil {
+		return nil, err
+	}
+
+	log.Trace("listing entities")
+
+	for _, entity := range *entities {
+		resources = append(resources, &ServicePrincipal{
+			client:   client,
+			id:       entity.ID(),
+			name:     entity.DisplayName,
+			appOwner: entity.AppOwnerOrganizationId,
+			spType:   entity.ServicePrincipalType,
+		})
+	}
+
+	return resources, nil
 }

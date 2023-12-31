@@ -2,14 +2,23 @@ package resources
 
 import (
 	"context"
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 
 	"github.com/hashicorp/go-azure-sdk/sdk/odata"
 	"github.com/manicminer/hamilton/msgraph"
 	"github.com/sirupsen/logrus"
 
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/resource"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 )
+
+func init() {
+	resource.Register(resource.Registration{
+		Name:   "AzureADGroup",
+		Scope:  nuke.Tenant,
+		Lister: AzureAdGroupLister{},
+	})
+}
 
 type AzureAdGroup struct {
 	client *msgraph.GroupsClient
@@ -17,19 +26,19 @@ type AzureAdGroup struct {
 	name   *string
 }
 
-func init() {
-	resource.RegisterV2(resource.Registration{
-		Name:   "AzureADGroup",
-		Scope:  resource.Tenant,
-		Lister: ListAzureADGroup,
-	})
+type AzureAdGroupLister struct {
+	opts nuke.ListerOpts
 }
 
-func ListAzureADGroup(opts resource.ListerOpts) ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+func (l AzureAdGroupLister) SetOptions(opts interface{}) {
+	l.opts = opts.(nuke.ListerOpts)
+}
+
+func (l AzureAdGroupLister) List() ([]resource.Resource, error) {
+	logrus.Tracef("subscription id: %s", l.opts.SubscriptionId)
 
 	client := msgraph.NewGroupsClient()
-	client.BaseClient.Authorizer = opts.Authorizers.MicrosoftGraph
+	client.BaseClient.Authorizer = l.opts.Authorizers.MicrosoftGraph
 	client.BaseClient.DisableRetries = true
 
 	resources := make([]resource.Resource, 0)

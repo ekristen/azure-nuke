@@ -3,8 +3,9 @@ package resources
 import (
 	"context"
 	"github.com/aws/smithy-go/ptr"
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/ekristen/azure-nuke/pkg/nuke"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/resource"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonids"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/recoveryservices/2023-02-01/vaults"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/recoveryservicesbackup/2023-02-01/backuppolicies"
@@ -12,6 +13,17 @@ import (
 	"github.com/sirupsen/logrus"
 	"time"
 )
+
+func init() {
+	resource.Register(resource.Registration{
+		Name:   "RecoveryServicesBackupPolicy",
+		Scope:  nuke.ResourceGroup,
+		Lister: RecoveryServicesBackupPolicyLister{},
+		DependsOn: []string{
+			"RecoveryServicesBackupProtectedItem",
+		},
+	})
+}
 
 type RecoveryServicesBackupPolicy struct {
 	client            backuppolicies.BackupPoliciesClient
@@ -21,75 +33,6 @@ type RecoveryServicesBackupPolicy struct {
 	location          *string
 	rg                string
 	backupPolicyId    protectionpolicies.BackupPolicyId
-}
-
-func init() {
-	resource.RegisterV2(resource.Registration{
-		Name:   "RecoveryServicesBackupPolicy",
-		Scope:  resource.ResourceGroup,
-		Lister: ListRecoveryServicesBackupPolicy,
-		DependsOn: []string{
-			"RecoveryServicesBackupProtectedItem",
-		},
-	})
-}
-
-func ListRecoveryServicesBackupPolicy(opts resource.ListerOpts) ([]resource.Resource, error) {
-	log := logrus.
-		WithField("resource", "RecoveryServicesBackupPolicy").
-		WithField("scope", resource.ResourceGroup).
-		WithField("subscription", opts.SubscriptionId).
-		WithField("rg", opts.ResourceGroup)
-
-	log.Trace("creating client")
-
-	vaultsClient := vaults.NewVaultsClientWithBaseURI("https://management.azure.com") // TODO: pass in the endpoint
-	vaultsClient.Client.Authorizer = opts.Authorizers.Management
-	vaultsClient.Client.RetryAttempts = 1
-	vaultsClient.Client.RetryDuration = time.Second * 2
-
-	client := backuppolicies.NewBackupPoliciesClientWithBaseURI("https://management.azure.com") // TODO: pass in the endpoint
-	client.Client.Authorizer = opts.Authorizers.Management
-	client.Client.RetryAttempts = 1
-	client.Client.RetryDuration = time.Second * 2
-
-	protectionsClient := protectionpolicies.NewProtectionPoliciesClientWithBaseURI("https://management.azure.com") // TODO: pass in the endpoint
-	protectionsClient.Client.Authorizer = opts.Authorizers.Management
-	protectionsClient.Client.RetryAttempts = 1
-	protectionsClient.Client.RetryDuration = time.Second * 2
-
-	resources := make([]resource.Resource, 0)
-
-	log.Trace("listing resources")
-
-	ctx := context.TODO()
-
-	vaultsRes, err := vaultsClient.ListByResourceGroupComplete(ctx, commonids.NewResourceGroupID(opts.SubscriptionId, opts.ResourceGroup))
-	if err != nil {
-		return nil, err
-	}
-
-	for _, v := range vaultsRes.Items {
-		vaultId := backuppolicies.NewVaultID(opts.SubscriptionId, opts.ResourceGroup, ptr.ToString(v.Name))
-		items, err := client.ListComplete(ctx, vaultId, backuppolicies.DefaultListOperationOptions())
-		if err != nil {
-			return nil, err
-		}
-
-		for _, item := range items.Items {
-			resources = append(resources, &RecoveryServicesBackupPolicy{
-				client:            client,
-				protectionsClient: protectionsClient,
-				id:                item.Id,
-				name:              item.Name,
-				location:          item.Location,
-				rg:                opts.ResourceGroup,
-				backupPolicyId:    protectionpolicies.NewBackupPolicyID(opts.SubscriptionId, opts.ResourceGroup, ptr.ToString(v.Name), ptr.ToString(item.Name)),
-			})
-		}
-	}
-
-	return resources, nil
 }
 
 func (r *RecoveryServicesBackupPolicy) Filter() error {
@@ -113,4 +56,70 @@ func (r *RecoveryServicesBackupPolicy) Properties() types.Properties {
 
 func (r *RecoveryServicesBackupPolicy) String() string {
 	return ptr.ToString(r.name)
+}
+
+type RecoveryServicesBackupPolicyLister struct {
+	opts nuke.ListerOpts
+}
+
+func (l RecoveryServicesBackupPolicyLister) SetOptions(opts interface{}) {
+	l.opts = opts.(nuke.ListerOpts)
+}
+
+func (l RecoveryServicesBackupPolicyLister) List() ([]resource.Resource, error) {
+	log := logrus.
+		WithField("resource", "RecoveryServicesBackupPolicy").
+		WithField("scope", nuke.ResourceGroup).
+		WithField("subscription", l.opts.SubscriptionId).
+		WithField("rg", l.opts.ResourceGroup)
+
+	log.Trace("creating client")
+
+	vaultsClient := vaults.NewVaultsClientWithBaseURI("https://management.azure.com") // TODO: pass in the endpoint
+	vaultsClient.Client.Authorizer = l.opts.Authorizers.Management
+	vaultsClient.Client.RetryAttempts = 1
+	vaultsClient.Client.RetryDuration = time.Second * 2
+
+	client := backuppolicies.NewBackupPoliciesClientWithBaseURI("https://management.azure.com") // TODO: pass in the endpoint
+	client.Client.Authorizer = l.opts.Authorizers.Management
+	client.Client.RetryAttempts = 1
+	client.Client.RetryDuration = time.Second * 2
+
+	protectionsClient := protectionpolicies.NewProtectionPoliciesClientWithBaseURI("https://management.azure.com") // TODO: pass in the endpoint
+	protectionsClient.Client.Authorizer = l.opts.Authorizers.Management
+	protectionsClient.Client.RetryAttempts = 1
+	protectionsClient.Client.RetryDuration = time.Second * 2
+
+	resources := make([]resource.Resource, 0)
+
+	log.Trace("listing resources")
+
+	ctx := context.TODO()
+
+	vaultsRes, err := vaultsClient.ListByResourceGroupComplete(ctx, commonids.NewResourceGroupID(l.opts.SubscriptionId, l.opts.ResourceGroup))
+	if err != nil {
+		return nil, err
+	}
+
+	for _, v := range vaultsRes.Items {
+		vaultId := backuppolicies.NewVaultID(l.opts.SubscriptionId, l.opts.ResourceGroup, ptr.ToString(v.Name))
+		items, err := client.ListComplete(ctx, vaultId, backuppolicies.DefaultListOperationOptions())
+		if err != nil {
+			return nil, err
+		}
+
+		for _, item := range items.Items {
+			resources = append(resources, &RecoveryServicesBackupPolicy{
+				client:            client,
+				protectionsClient: protectionsClient,
+				id:                item.Id,
+				name:              item.Name,
+				location:          item.Location,
+				rg:                l.opts.ResourceGroup,
+				backupPolicyId:    protectionpolicies.NewBackupPolicyID(l.opts.SubscriptionId, l.opts.ResourceGroup, ptr.ToString(v.Name), ptr.ToString(item.Name)),
+			})
+		}
+	}
+
+	return resources, nil
 }

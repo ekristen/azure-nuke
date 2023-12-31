@@ -6,47 +6,49 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/config"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/filter"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 )
 
 func TestConfigBlocklist(t *testing.T) {
-	config := new(Nuke)
+	cfg := new(Nuke)
 
-	if config.HasBlocklist() {
+	if cfg.HasBlocklist() {
 		t.Errorf("HasBlocklist() returned true on a nil backlist.")
 	}
 
-	if config.InBlocklist("blubber") {
+	if cfg.InBlocklist("blubber") {
 		t.Errorf("InBlocklist() returned true on a nil backlist.")
 	}
 
-	config.TenantBlocklist = []string{}
+	cfg.TenantBlocklist = []string{}
 
-	if config.HasBlocklist() {
+	if cfg.HasBlocklist() {
 		t.Errorf("HasBlocklist() returned true on a empty backlist.")
 	}
 
-	if config.InBlocklist("foobar") {
+	if cfg.InBlocklist("foobar") {
 		t.Errorf("InBlocklist() returned true on a empty backlist.")
 	}
 
-	config.TenantBlocklist = append(config.TenantBlocklist, "bim")
+	cfg.TenantBlocklist = append(cfg.TenantBlocklist, "bim")
 
-	if !config.HasBlocklist() {
+	if !cfg.HasBlocklist() {
 		t.Errorf("HasBlocklist() returned false on a backlist with one element.")
 	}
 
-	if !config.InBlocklist("bim") {
+	if !cfg.InBlocklist("bim") {
 		t.Errorf("InBlocklist() returned false on looking up an existing value.")
 	}
 
-	if config.InBlocklist("baz") {
+	if cfg.InBlocklist("baz") {
 		t.Errorf("InBlocklist() returned true on looking up an non existing value.")
 	}
 }
 
 func TestLoadExampleConfig(t *testing.T) {
-	config, err := Load("testdata/example.yaml")
+	cfg, err := Load("testdata/example.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,30 +58,30 @@ func TestLoadExampleConfig(t *testing.T) {
 		Tenants: map[string]Tenant{
 			"555133742": {
 				Presets: []string{"terraform"},
-				Filters: Filters{
+				Filters: filter.Filters{
 					"IAMRole": {
-						NewExactFilter("uber.admin"),
+						filter.NewExactFilter("uber.admin"),
 					},
 					"IAMRolePolicyAttachment": {
-						NewExactFilter("uber.admin -> AdministratorAccess"),
+						filter.NewExactFilter("uber.admin -> AdministratorAccess"),
 					},
 				},
-				ResourceTypes: ResourceTypes{
-					types.Collection{"S3Bucket"},
-					nil,
+				ResourceTypes: config.ResourceTypes{
+					Targets:  types.Collection{"S3Bucket"},
+					Excludes: nil,
 				},
 			},
 		},
-		ResourceTypes: ResourceTypes{
+		resourceTypes: config.ResourceTypes{
 			Targets:  types.Collection{"DynamoDBTable", "S3Bucket", "S3Object"},
 			Excludes: types.Collection{"IAMRole"},
 		},
-		Presets: map[string]PresetDefinitions{
+		presets: map[string]config.PresetDefinitions{
 			"terraform": {
-				Filters: Filters{
+				Filters: filter.Filters{
 					"S3Bucket": {
-						Filter{
-							Type:  FilterTypeGlob,
+						filter.Filter{
+							Type:  filter.Glob,
 							Value: "my-statebucket-*",
 						},
 					},
@@ -88,36 +90,36 @@ func TestLoadExampleConfig(t *testing.T) {
 		},
 	}
 
-	if !reflect.DeepEqual(*config, expect) {
+	if !reflect.DeepEqual(cfg, expect) {
 		t.Errorf("Read struct mismatches:")
-		t.Errorf("  Got:      %#v", *config)
+		t.Errorf("  Got:      %#v", cfg)
 		t.Errorf("  Expected: %#v", expect)
 	}
 }
 
 func TestResolveDeprecations(t *testing.T) {
-	config := Nuke{
+	cfg := Nuke{
 		TenantBlocklist: []string{"1234567890"},
 		Tenants: map[string]Tenant{
 			"555133742": {
-				Filters: Filters{
+				Filters: filter.Filters{
 					"IamRole": {
-						NewExactFilter("uber.admin"),
-						NewExactFilter("foo.bar"),
+						filter.NewExactFilter("uber.admin"),
+						filter.NewExactFilter("foo.bar"),
 					},
 					"IAMRolePolicyAttachment": {
-						NewExactFilter("uber.admin -> AdministratorAccess"),
+						filter.NewExactFilter("uber.admin -> AdministratorAccess"),
 					},
 				},
 			},
 			"2345678901": {
-				Filters: Filters{
+				Filters: filter.Filters{
 					"ECRrepository": {
-						NewExactFilter("foo:bar"),
-						NewExactFilter("bar:foo"),
+						filter.NewExactFilter("foo:bar"),
+						filter.NewExactFilter("bar:foo"),
 					},
 					"IAMRolePolicyAttachment": {
-						NewExactFilter("uber.admin -> AdministratorAccess"),
+						filter.NewExactFilter("uber.admin -> AdministratorAccess"),
 					},
 				},
 			},
@@ -126,36 +128,36 @@ func TestResolveDeprecations(t *testing.T) {
 
 	expect := map[string]Tenant{
 		"555133742": {
-			Filters: Filters{
+			Filters: filter.Filters{
 				"IAMRole": {
-					NewExactFilter("uber.admin"),
-					NewExactFilter("foo.bar"),
+					filter.NewExactFilter("uber.admin"),
+					filter.NewExactFilter("foo.bar"),
 				},
 				"IAMRolePolicyAttachment": {
-					NewExactFilter("uber.admin -> AdministratorAccess"),
+					filter.NewExactFilter("uber.admin -> AdministratorAccess"),
 				},
 			},
 		},
 		"2345678901": {
-			Filters: Filters{
+			Filters: filter.Filters{
 				"ECRRepository": {
-					NewExactFilter("foo:bar"),
-					NewExactFilter("bar:foo"),
+					filter.NewExactFilter("foo:bar"),
+					filter.NewExactFilter("bar:foo"),
 				},
 				"IAMRolePolicyAttachment": {
-					NewExactFilter("uber.admin -> AdministratorAccess"),
+					filter.NewExactFilter("uber.admin -> AdministratorAccess"),
 				},
 			},
 		},
 	}
 
-	err := config.resolveDeprecations()
+	err := cfg.ResolveDeprecations()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(config.Tenants, expect) {
+	if !reflect.DeepEqual(cfg.Tenants, expect) {
 		t.Errorf("Read struct mismatches:")
-		t.Errorf("  Got:      %#v", config.Tenants)
+		t.Errorf("  Got:      %#v", cfg.Tenants)
 		t.Errorf("  Expected: %#v", expect)
 	}
 
@@ -163,24 +165,24 @@ func TestResolveDeprecations(t *testing.T) {
 		TenantBlocklist: []string{"1234567890"},
 		Tenants: map[string]Tenant{
 			"555133742": {
-				Filters: Filters{
+				Filters: filter.Filters{
 					"IamUserAccessKeys": {
-						NewExactFilter("X")},
+						filter.NewExactFilter("X")},
 					"IAMUserAccessKey": {
-						NewExactFilter("Y")},
+						filter.NewExactFilter("Y")},
 				},
 			},
 		},
 	}
 
-	err = invalidConfig.resolveDeprecations()
+	err = invalidConfig.ResolveDeprecations()
 	if err == nil || !strings.Contains(err.Error(), "using deprecated resource type and replacement") {
 		t.Fatal("invalid config did not cause correct error")
 	}
 }
 
 func TestConfigValidation(t *testing.T) {
-	config, err := Load("testdata/example.yaml")
+	cfg, err := Load("testdata/example.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -197,7 +199,7 @@ func TestConfigValidation(t *testing.T) {
 	for i, tc := range cases {
 		name := fmt.Sprintf("%d_%s/%t", i, tc.ID, tc.ShouldFail)
 		t.Run(name, func(t *testing.T) {
-			err := config.ValidateTenant(tc.ID)
+			err := cfg.Validate(tc.ID)
 			if tc.ShouldFail && err == nil {
 				t.Fatal("Expected an error but didn't get one.")
 			}
@@ -209,40 +211,40 @@ func TestConfigValidation(t *testing.T) {
 }
 
 func TestDeprecatedConfigKeys(t *testing.T) {
-	config, err := Load("testdata/deprecated-keys-config.yaml")
+	cfg, err := Load("testdata/deprecated-keys-config.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if !config.InBlocklist("1234567890") {
+	if !cfg.InBlocklist("1234567890") {
 		t.Errorf("Loading the config did not resolve the deprecated key 'account-blacklist' correctly")
 	}
 }
 
 func TestFilterMerge(t *testing.T) {
-	config, err := Load("testdata/example.yaml")
+	cfg, err := Load("testdata/example.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	filters, err := config.Filters("555133742")
+	filters, err := cfg.Filters("555133742")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	expect := Filters{
-		"S3Bucket": []Filter{
+	expect := filter.Filters{
+		"S3Bucket": []filter.Filter{
 			{
 				Type: "glob", Value: "my-statebucket-*",
 			},
 		},
-		"IAMRole": []Filter{
+		"IAMRole": []filter.Filter{
 			{
 				Type:  "exact",
 				Value: "uber.admin",
 			},
 		},
-		"IAMRolePolicyAttachment": []Filter{
+		"IAMRolePolicyAttachment": []filter.Filter{
 			{
 				Type:  "exact",
 				Value: "uber.admin -> AdministratorAccess",

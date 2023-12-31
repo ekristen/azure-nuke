@@ -2,35 +2,38 @@ package resources
 
 import (
 	"context"
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 	"time"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-05-01/network"
 
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/resource"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 )
 
-type NetworkInterface struct {
-	client network.InterfacesClient
-	name   *string
-	rg     *string
-}
-
 func init() {
-	resource.RegisterV2(resource.Registration{
+	resource.Register(resource.Registration{
 		Name:   "NetworkInterface",
-		Scope:  resource.ResourceGroup,
-		Lister: ListNetworkInterface,
+		Scope:  nuke.ResourceGroup,
+		Lister: NetworkInterfaceLister{},
 	})
 }
 
-func ListNetworkInterface(opts resource.ListerOpts) ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+type NetworkInterfaceLister struct {
+	opts nuke.ListerOpts
+}
 
-	client := network.NewInterfacesClient(opts.SubscriptionId)
-	client.Authorizer = opts.Authorizers.Management
+func (l NetworkInterfaceLister) SetOptions(opts interface{}) {
+	l.opts = opts.(nuke.ListerOpts)
+}
+
+func (l NetworkInterfaceLister) List() ([]resource.Resource, error) {
+	logrus.Tracef("subscription id: %s", l.opts.SubscriptionId)
+
+	client := network.NewInterfacesClient(l.opts.SubscriptionId)
+	client.Authorizer = l.opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 
@@ -40,7 +43,7 @@ func ListNetworkInterface(opts resource.ListerOpts) ([]resource.Resource, error)
 
 	ctx := context.Background()
 
-	list, err := client.List(ctx, opts.ResourceGroup)
+	list, err := client.List(ctx, l.opts.ResourceGroup)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +56,7 @@ func ListNetworkInterface(opts resource.ListerOpts) ([]resource.Resource, error)
 			resources = append(resources, &NetworkInterface{
 				client: client,
 				name:   g.Name,
-				rg:     &opts.ResourceGroup,
+				rg:     &l.opts.ResourceGroup,
 			})
 		}
 
@@ -63,6 +66,12 @@ func ListNetworkInterface(opts resource.ListerOpts) ([]resource.Resource, error)
 	}
 
 	return resources, nil
+}
+
+type NetworkInterface struct {
+	client network.InterfacesClient
+	name   *string
+	rg     *string
 }
 
 func (r *NetworkInterface) Remove() error {

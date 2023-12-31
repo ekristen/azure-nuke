@@ -2,13 +2,14 @@ package resources
 
 import (
 	"context"
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 
 	"github.com/hashicorp/go-azure-sdk/sdk/odata"
 	"github.com/manicminer/hamilton/msgraph"
 	"github.com/sirupsen/logrus"
 
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/resource"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 )
 
 type AzureADUser struct {
@@ -18,20 +19,28 @@ type AzureADUser struct {
 	upn    *string
 }
 
+type AzureADUserLister struct {
+	opts nuke.ListerOpts
+}
+
+func (l AzureADUserLister) SetOptions(opts interface{}) {
+	l.opts = opts.(nuke.ListerOpts)
+}
+
 func init() {
-	resource.RegisterV2(resource.Registration{
+	resource.Register(resource.Registration{
 		Name:      "AzureADUser",
-		Scope:     resource.Tenant,
-		Lister:    ListAzureADUser,
+		Scope:     nuke.Tenant,
+		Lister:    AzureADUserLister{},
 		DependsOn: []string{"AzureADGroup"},
 	})
 }
 
-func ListAzureADUser(opts resource.ListerOpts) ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+func (l AzureADUserLister) List() ([]resource.Resource, error) {
+	logrus.Tracef("subscription id: %s", l.opts.SubscriptionId)
 
 	client := msgraph.NewUsersClient()
-	client.BaseClient.Authorizer = opts.Authorizers.Graph
+	client.BaseClient.Authorizer = l.opts.Authorizers.Graph
 	client.BaseClient.DisableRetries = true
 
 	resources := make([]resource.Resource, 0)

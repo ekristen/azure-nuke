@@ -3,7 +3,7 @@ package azure
 import (
 	"context"
 	"fmt"
-	"github.com/ekristen/azure-nuke/pkg/utils"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/utils"
 	"time"
 
 	"github.com/sirupsen/logrus"

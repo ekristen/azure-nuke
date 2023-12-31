@@ -4,14 +4,25 @@ import (
 	"context"
 	"fmt"
 	"github.com/aws/smithy-go/ptr"
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/ekristen/azure-nuke/pkg/nuke"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/resource"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 	"github.com/sirupsen/logrus"
 	"regexp"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/preview/security/mgmt/v3.0/security"
 )
+
+var SecurityAlertLocation = "/Microsoft.Security/locations/(?P<location>.*)/alerts/"
+
+func init() {
+	resource.Register(resource.Registration{
+		Name:   "SecurityAlert",
+		Scope:  nuke.Subscription,
+		Lister: &SecurityAlertsLister{},
+	})
+}
 
 type SecurityAlert struct {
 	client      security.AlertsClient
@@ -22,28 +33,58 @@ type SecurityAlert struct {
 	status      string
 }
 
-var SecurityAlertLocation = "/Microsoft.Security/locations/(?P<location>.*)/alerts/"
+func (r *SecurityAlert) Filter() error {
+	if r.status == "Dismissed" {
+		return fmt.Errorf("alert already dismissed")
+	}
 
-func init() {
-	resource.RegisterV2(resource.Registration{
-		Name:   "SecurityAlert",
-		Scope:  resource.Subscription,
-		Lister: ListSecurityAlert,
-	})
+	return nil
 }
 
-func ListSecurityAlert(opts resource.ListerOpts) ([]resource.Resource, error) {
+func (r *SecurityAlert) Remove() error {
+	// Note: we cannot actually remove alerts :(
+	// So we just have to dismiss them instead
+	_, err := r.client.UpdateSubscriptionLevelStateToDismiss(context.TODO(), r.location, r.name)
+	return err
+}
+
+func (r *SecurityAlert) Properties() types.Properties {
+	properties := types.NewProperties()
+
+	properties.Set("Name", r.name)
+	properties.Set("DisplayName", r.displayName)
+	properties.Set("Location", r.location)
+	properties.Set("Status", r.status)
+
+	return properties
+}
+
+func (r *SecurityAlert) String() string {
+	return r.name
+}
+
+// ------------------------------------
+
+type SecurityAlertsLister struct {
+	opts nuke.ListerOpts
+}
+
+func (l SecurityAlertsLister) SetOptions(opts interface{}) {
+	l.opts = opts.(nuke.ListerOpts)
+}
+
+func (l SecurityAlertsLister) List() ([]resource.Resource, error) {
 	log := logrus.
 		WithField("resource", "SecurityAlert").
-		WithField("scope", resource.Subscription).
-		WithField("subscription", opts.SubscriptionId)
+		WithField("scope", nuke.Subscription).
+		WithField("subscription", l.opts.SubscriptionId)
 
 	log.Trace("creating client")
 
 	locationRe := regexp.MustCompile(SecurityAlertLocation)
 
-	client := security.NewAlertsClient(opts.SubscriptionId)
-	client.Authorizer = opts.Authorizers.Management
+	client := security.NewAlertsClient(l.opts.SubscriptionId)
+	client.Authorizer = l.opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 
@@ -78,34 +119,4 @@ func ListSecurityAlert(opts resource.ListerOpts) ([]resource.Resource, error) {
 	}
 
 	return resources, nil
-}
-
-func (r *SecurityAlert) Filter() error {
-	if r.status == "Dismissed" {
-		return fmt.Errorf("alert already dismissed")
-	}
-
-	return nil
-}
-
-func (r *SecurityAlert) Remove() error {
-	// Note: we cannot actually remove alerts :(
-	// So we just have to dismiss them instead
-	_, err := r.client.UpdateSubscriptionLevelStateToDismiss(context.TODO(), r.location, r.name)
-	return err
-}
-
-func (r *SecurityAlert) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", r.name)
-	properties.Set("DisplayName", r.displayName)
-	properties.Set("Location", r.location)
-	properties.Set("Status", r.status)
-
-	return properties
-}
-
-func (r *SecurityAlert) String() string {
-	return r.name
 }

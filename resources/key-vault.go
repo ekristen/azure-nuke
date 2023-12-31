@@ -2,35 +2,38 @@ package resources
 
 import (
 	"context"
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 	"time"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/Azure/azure-sdk-for-go/services/keyvault/mgmt/2019-09-01/keyvault"
 
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/resource"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 )
 
-type KeyVault struct {
-	client keyvault.VaultsClient
-	name   string
-	rg     string
-}
-
 func init() {
-	resource.RegisterV2(resource.Registration{
+	resource.Register(resource.Registration{
 		Name:   "KeyVault",
-		Scope:  resource.ResourceGroup,
-		Lister: ListKeyVault,
+		Scope:  nuke.ResourceGroup,
+		Lister: KeyVaultLister{},
 	})
 }
 
-func ListKeyVault(opts resource.ListerOpts) ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+type KeyVaultLister struct {
+	opts nuke.ListerOpts
+}
 
-	client := keyvault.NewVaultsClient(opts.SubscriptionId)
-	client.Authorizer = opts.Authorizers.Management
+func (l KeyVaultLister) SetOptions(opts interface{}) {
+	l.opts = opts.(nuke.ListerOpts)
+}
+
+func (l KeyVaultLister) List() ([]resource.Resource, error) {
+	logrus.Tracef("subscription id: %s", l.opts.SubscriptionId)
+
+	client := keyvault.NewVaultsClient(l.opts.SubscriptionId)
+	client.Authorizer = l.opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 
@@ -39,7 +42,7 @@ func ListKeyVault(opts resource.ListerOpts) ([]resource.Resource, error) {
 	logrus.Trace("attempting to list ssh key")
 
 	ctx := context.Background()
-	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup, nil)
+	list, err := client.ListByResourceGroup(ctx, l.opts.ResourceGroup, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +55,7 @@ func ListKeyVault(opts resource.ListerOpts) ([]resource.Resource, error) {
 			resources = append(resources, &KeyVault{
 				client: client,
 				name:   *g.Name,
-				rg:     opts.ResourceGroup,
+				rg:     l.opts.ResourceGroup,
 			})
 		}
 
@@ -62,6 +65,12 @@ func ListKeyVault(opts resource.ListerOpts) ([]resource.Resource, error) {
 	}
 
 	return resources, nil
+}
+
+type KeyVault struct {
+	client keyvault.VaultsClient
+	name   string
+	rg     string
 }
 
 func (r *KeyVault) Remove() error {

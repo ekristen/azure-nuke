@@ -2,20 +2,21 @@ package resources
 
 import (
 	"context"
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 
 	"github.com/hashicorp/go-azure-sdk/sdk/odata"
 	"github.com/manicminer/hamilton/msgraph"
 	"github.com/sirupsen/logrus"
 
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/resource"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 )
 
 func init() {
-	resource.RegisterV2(resource.Registration{
+	resource.Register(resource.Registration{
 		Name:   "ApplicationCertificate",
-		Scope:  resource.Tenant,
-		Lister: ListApplicationCertificate,
+		Scope:  nuke.Tenant,
+		Lister: ApplicationCertificateLister{},
 	})
 }
 
@@ -47,11 +48,19 @@ func (r *ApplicationCertificate) String() string {
 	return *r.id
 }
 
-func ListApplicationCertificate(opts resource.ListerOpts) ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+type ApplicationCertificateLister struct {
+	opts nuke.ListerOpts
+}
+
+func (l ApplicationCertificateLister) SetOptions(opts interface{}) {
+	l.opts = opts.(nuke.ListerOpts)
+}
+
+func (l ApplicationCertificateLister) List() ([]resource.Resource, error) {
+	logrus.Tracef("subscription id: %s", l.opts.SubscriptionId)
 
 	client := msgraph.NewApplicationsClient()
-	client.BaseClient.Authorizer = opts.Authorizers.Graph
+	client.BaseClient.Authorizer = l.opts.Authorizers.Graph
 	client.BaseClient.DisableRetries = true
 
 	resources := make([]resource.Resource, 0)

@@ -2,20 +2,21 @@ package resources
 
 import (
 	"context"
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 
 	"github.com/hashicorp/go-azure-sdk/sdk/odata"
 	"github.com/manicminer/hamilton/msgraph"
 	"github.com/sirupsen/logrus"
 
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/resource"
+	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 )
 
 func init() {
-	resource.RegisterV2(resource.Registration{
+	resource.Register(resource.Registration{
 		Name:   "ApplicationFederatedCredential",
-		Scope:  resource.Tenant,
-		Lister: ListApplicationFederatedCredential,
+		Scope:  nuke.Tenant,
+		Lister: ApplicationFederatedCredentialLister{},
 	})
 }
 
@@ -50,11 +51,19 @@ func (r *ApplicationFederatedCredential) String() string {
 	return *r.id
 }
 
-func ListApplicationFederatedCredential(opts resource.ListerOpts) ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+type ApplicationFederatedCredentialLister struct {
+	opts nuke.ListerOpts
+}
+
+func (l ApplicationFederatedCredentialLister) SetOptions(opts interface{}) {
+	l.opts = opts.(nuke.ListerOpts)
+}
+
+func (l ApplicationFederatedCredentialLister) List() ([]resource.Resource, error) {
+	logrus.Tracef("subscription id: %s", l.opts.SubscriptionId)
 
 	client := msgraph.NewApplicationsClient()
-	client.BaseClient.Authorizer = opts.Authorizers.Graph
+	client.BaseClient.Authorizer = l.opts.Authorizers.Graph
 	client.BaseClient.DisableRetries = true
 
 	resources := make([]resource.Resource, 0)
@@ -63,14 +72,14 @@ func ListApplicationFederatedCredential(opts resource.ListerOpts) ([]resource.Re
 
 	ctx := context.Background()
 
-	entites, _, err := client.List(ctx, odata.Query{})
+	entities, _, err := client.List(ctx, odata.Query{})
 	if err != nil {
 		return nil, err
 	}
 
 	logrus.Trace("listing ....")
 
-	for _, entity := range *entites {
+	for _, entity := range *entities {
 		creds, _, err := client.ListFederatedIdentityCredentials(ctx, *entity.ID(), odata.Query{})
 		if err != nil {
 			return nil, err
