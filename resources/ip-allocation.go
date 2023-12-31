@@ -22,18 +22,15 @@ func init() {
 }
 
 type IPAllocationLister struct {
-	opts nuke.ListerOpts
 }
 
-func (l IPAllocationLister) SetOptions(opts interface{}) {
-	l.opts = opts.(nuke.ListerOpts)
-}
+func (l IPAllocationLister) List(o interface{}) ([]resource.Resource, error) {
+	opts := o.(nuke.ListerOpts)
 
-func (l IPAllocationLister) List() ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", l.opts.SubscriptionId)
+	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
 
-	client := network.NewIPAllocationsClient(l.opts.SubscriptionId)
-	client.Authorizer = l.opts.Authorizers.Management
+	client := network.NewIPAllocationsClient(opts.SubscriptionId)
+	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 
@@ -43,7 +40,7 @@ func (l IPAllocationLister) List() ([]resource.Resource, error) {
 
 	ctx := context.Background()
 
-	list, err := client.ListByResourceGroup(ctx, l.opts.ResourceGroup)
+	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +53,7 @@ func (l IPAllocationLister) List() ([]resource.Resource, error) {
 			resources = append(resources, &IPAllocation{
 				client: client,
 				name:   g.Name,
-				rg:     &l.opts.ResourceGroup,
+				rg:     &opts.ResourceGroup,
 			})
 		}
 

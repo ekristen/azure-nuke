@@ -63,23 +63,20 @@ func (r *SecurityPricing) String() string {
 // -------------------------------------------------------------------
 
 type SecurityPricingLister struct {
-	opts nuke.ListerOpts
 }
 
-func (l SecurityPricingLister) SetOptions(opts interface{}) {
-	l.opts = opts.(nuke.ListerOpts)
-}
+func (l SecurityPricingLister) List(o interface{}) ([]resource.Resource, error) {
+	opts := o.(nuke.ListerOpts)
 
-func (l SecurityPricingLister) List() ([]resource.Resource, error) {
 	log := logrus.
 		WithField("resource", "SecurityPricing").
 		WithField("scope", nuke.Subscription).
-		WithField("subscription", l.opts.SubscriptionId)
+		WithField("subscription", opts.SubscriptionId)
 
 	log.Trace("creating client")
 
-	client := security.NewPricingsClient(l.opts.SubscriptionId)
-	client.Authorizer = l.opts.Authorizers.Management
+	client := security.NewPricingsClient(opts.SubscriptionId)
+	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 

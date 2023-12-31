@@ -55,18 +55,15 @@ func (r *PolicyDefinition) String() string {
 }
 
 type PolicyDefinitionLister struct {
-	opts nuke.ListerOpts
 }
 
-func (l PolicyDefinitionLister) SetOptions(opts interface{}) {
-	l.opts = opts.(nuke.ListerOpts)
-}
+func (l PolicyDefinitionLister) List(o interface{}) ([]resource.Resource, error) {
+	opts := o.(nuke.ListerOpts)
 
-func (l PolicyDefinitionLister) List() ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", l.opts.SubscriptionId)
+	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
 
-	client := policy.NewDefinitionsClient(l.opts.SubscriptionId)
-	client.Authorizer = l.opts.Authorizers.Management
+	client := policy.NewDefinitionsClient(opts.SubscriptionId)
+	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 

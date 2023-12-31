@@ -46,18 +46,15 @@ func (r *Disk) String() string {
 }
 
 type DiskLister struct {
-	opts nuke.ListerOpts
 }
 
-func (l DiskLister) SetOptions(opts interface{}) {
-	l.opts = opts.(nuke.ListerOpts)
-}
+func (l DiskLister) List(o interface{}) ([]resource.Resource, error) {
+	opts := o.(nuke.ListerOpts)
 
-func (l DiskLister) List() ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", l.opts.SubscriptionId)
+	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
 
-	client := compute.NewDisksClient(l.opts.SubscriptionId)
-	client.Authorizer = l.opts.Authorizers.Management
+	client := compute.NewDisksClient(opts.SubscriptionId)
+	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 
@@ -66,7 +63,7 @@ func (l DiskLister) List() ([]resource.Resource, error) {
 	logrus.Trace("attempting to list ssh key")
 
 	ctx := context.Background()
-	list, err := client.ListByResourceGroup(ctx, l.opts.ResourceGroup)
+	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +76,7 @@ func (l DiskLister) List() ([]resource.Resource, error) {
 			resources = append(resources, &Disk{
 				client: client,
 				name:   *g.Name,
-				rg:     l.opts.ResourceGroup,
+				rg:     opts.ResourceGroup,
 			})
 		}
 

@@ -22,18 +22,15 @@ func init() {
 }
 
 type KeyVaultLister struct {
-	opts nuke.ListerOpts
 }
 
-func (l KeyVaultLister) SetOptions(opts interface{}) {
-	l.opts = opts.(nuke.ListerOpts)
-}
+func (l KeyVaultLister) List(o interface{}) ([]resource.Resource, error) {
+	opts := o.(nuke.ListerOpts)
 
-func (l KeyVaultLister) List() ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", l.opts.SubscriptionId)
+	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
 
-	client := keyvault.NewVaultsClient(l.opts.SubscriptionId)
-	client.Authorizer = l.opts.Authorizers.Management
+	client := keyvault.NewVaultsClient(opts.SubscriptionId)
+	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 
@@ -42,7 +39,7 @@ func (l KeyVaultLister) List() ([]resource.Resource, error) {
 	logrus.Trace("attempting to list ssh key")
 
 	ctx := context.Background()
-	list, err := client.ListByResourceGroup(ctx, l.opts.ResourceGroup, nil)
+	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +52,7 @@ func (l KeyVaultLister) List() ([]resource.Resource, error) {
 			resources = append(resources, &KeyVault{
 				client: client,
 				name:   *g.Name,
-				rg:     l.opts.ResourceGroup,
+				rg:     opts.ResourceGroup,
 			})
 		}
 

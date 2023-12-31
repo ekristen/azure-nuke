@@ -46,18 +46,15 @@ func (r *PolicyAssignment) String() string {
 }
 
 type PolicyAssignmentLister struct {
-	opts nuke.ListerOpts
 }
 
-func (l PolicyAssignmentLister) SetOptions(opts interface{}) {
-	l.opts = opts.(nuke.ListerOpts)
-}
+func (l PolicyAssignmentLister) List(o interface{}) ([]resource.Resource, error) {
+	opts := o.(nuke.ListerOpts)
 
-func (l PolicyAssignmentLister) List() ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", l.opts.SubscriptionId)
+	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
 
-	client := policy.NewAssignmentsClient(l.opts.SubscriptionId)
-	client.Authorizer = l.opts.Authorizers.Management
+	client := policy.NewAssignmentsClient(opts.SubscriptionId)
+	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 
