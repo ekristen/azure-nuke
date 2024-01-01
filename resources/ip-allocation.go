@@ -13,9 +13,11 @@ import (
 	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 )
 
+const IPAllocationResource = "IPAllocation"
+
 func init() {
 	resource.Register(resource.Registration{
-		Name:   "IPAllocation",
+		Name:   IPAllocationResource,
 		Scope:  nuke.ResourceGroup,
 		Lister: IPAllocationLister{},
 	})
@@ -27,7 +29,7 @@ type IPAllocationLister struct {
 func (l IPAllocationLister) List(o interface{}) ([]resource.Resource, error) {
 	opts := o.(nuke.ListerOpts)
 
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+	log := logrus.WithField("r", IPAllocationResource).WithField("s", opts.SubscriptionId)
 
 	client := network.NewIPAllocationsClient(opts.SubscriptionId)
 	client.Authorizer = opts.Authorizers.Management
@@ -36,19 +38,19 @@ func (l IPAllocationLister) List(o interface{}) ([]resource.Resource, error) {
 
 	resources := make([]resource.Resource, 0)
 
-	logrus.Trace("attempting to list virtual networks")
+	log.Trace("attempting to list virtual networks")
 
-	ctx := context.Background()
+	ctx := context.TODO()
 
 	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup)
 	if err != nil {
 		return nil, err
 	}
 
-	logrus.Trace("listing ....")
+	log.Trace("listing resources")
 
 	for list.NotDone() {
-		logrus.Trace("list not done")
+		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &IPAllocation{
 				client: client,
@@ -61,6 +63,8 @@ func (l IPAllocationLister) List(o interface{}) ([]resource.Resource, error) {
 			return nil, err
 		}
 	}
+
+	log.Trace("done")
 
 	return resources, nil
 }

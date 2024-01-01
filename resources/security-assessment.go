@@ -12,9 +12,11 @@ import (
 	"strings"
 )
 
+const SecurityAssessmentResource = "SecurityAssessment"
+
 func init() {
 	resource.Register(resource.Registration{
-		Name:   "SecurityAssessment",
+		Name:   SecurityAssessmentResource,
 		Scope:  nuke.Subscription,
 		Lister: SecurityAssessmentLister{},
 	})
@@ -61,9 +63,8 @@ func (l SecurityAssessmentLister) List(o interface{}) ([]resource.Resource, erro
 	opts := o.(nuke.ListerOpts)
 
 	log := logrus.
-		WithField("resource", "SecurityAssessment").
-		WithField("scope", nuke.Subscription).
-		WithField("subscription", opts.SubscriptionId)
+		WithField("r", SecurityAssessmentResource).
+		WithField("s", opts.SubscriptionId)
 
 	log.Trace("creating client")
 
@@ -102,6 +103,8 @@ func (l SecurityAssessmentLister) List(o interface{}) ([]resource.Resource, erro
 			})
 		}
 	}
+
+	log.WithField("total", len(resources)).Trace("done")
 
 	return resources, nil
 }

@@ -11,9 +11,11 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/preview/resources/mgmt/2021-06-01-preview/policy"
 )
 
+const PolicyAssignmentResource = "PolicyAssignment"
+
 func init() {
 	resource.Register(resource.Registration{
-		Name:   "PolicyAssignment",
+		Name:   PolicyAssignmentResource,
 		Scope:  nuke.Subscription,
 		Lister: PolicyAssignmentLister{},
 	})
@@ -51,7 +53,7 @@ type PolicyAssignmentLister struct {
 func (l PolicyAssignmentLister) List(o interface{}) ([]resource.Resource, error) {
 	opts := o.(nuke.ListerOpts)
 
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+	log := logrus.WithField("r", PolicyAssignmentResource).WithField("s", opts.SubscriptionId)
 
 	client := policy.NewAssignmentsClient(opts.SubscriptionId)
 	client.Authorizer = opts.Authorizers.Management
@@ -60,18 +62,18 @@ func (l PolicyAssignmentLister) List(o interface{}) ([]resource.Resource, error)
 
 	resources := make([]resource.Resource, 0)
 
-	logrus.Trace("attempting to list policy assignments")
+	log.Trace("attempting to list policy assignments")
 
-	ctx := context.Background()
+	ctx := context.TODO()
 	list, err := client.List(ctx, "", nil)
 	if err != nil {
 		return nil, err
 	}
 
-	logrus.Trace("listing ....")
+	log.Trace("listing policy assignments")
 
 	for list.NotDone() {
-		logrus.Trace("list not done")
+		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &PolicyAssignment{
 				client:          client,
@@ -85,6 +87,8 @@ func (l PolicyAssignmentLister) List(o interface{}) ([]resource.Resource, error)
 			return nil, err
 		}
 	}
+
+	log.Trace("done")
 
 	return resources, nil
 }

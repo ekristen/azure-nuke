@@ -13,9 +13,11 @@ import (
 	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 )
 
+const AppServicePlanResource = "AppServicePlan"
+
 func init() {
 	resource.Register(resource.Registration{
-		Name:   "AppServicePlan",
+		Name:   AppServicePlanResource,
 		Scope:  nuke.ResourceGroup,
 		Lister: AppServicePlanLister{},
 	})
@@ -27,7 +29,7 @@ type AppServicePlanLister struct {
 func (l AppServicePlanLister) List(o interface{}) ([]resource.Resource, error) {
 	opts := o.(nuke.ListerOpts)
 
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+	log := logrus.WithField("r", AppServicePlanResource).WithField("s", opts.SubscriptionId)
 
 	client := web.NewAppServicePlansClient(opts.SubscriptionId)
 	client.Authorizer = opts.Authorizers.Management
@@ -36,7 +38,7 @@ func (l AppServicePlanLister) List(o interface{}) ([]resource.Resource, error) {
 
 	resources := make([]resource.Resource, 0)
 
-	logrus.Trace("attempting to list ssh key")
+	log.Trace("attempting to list ssh key")
 
 	ctx := context.Background()
 	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup)
@@ -44,10 +46,10 @@ func (l AppServicePlanLister) List(o interface{}) ([]resource.Resource, error) {
 		return nil, err
 	}
 
-	logrus.Trace("listing ....")
+	log.Trace("listing resources")
 
 	for list.NotDone() {
-		logrus.Trace("list not done")
+		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &AppServicePlan{
 				client: client,
@@ -60,6 +62,8 @@ func (l AppServicePlanLister) List(o interface{}) ([]resource.Resource, error) {
 			return nil, err
 		}
 	}
+
+	log.Trace("done")
 
 	return resources, nil
 }

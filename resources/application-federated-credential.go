@@ -12,9 +12,11 @@ import (
 	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 )
 
+const ApplicationFederatedCredentialResource = "ApplicationFederatedCredential"
+
 func init() {
 	resource.Register(resource.Registration{
-		Name:   "ApplicationFederatedCredential",
+		Name:   ApplicationFederatedCredentialResource,
 		Scope:  nuke.Tenant,
 		Lister: ApplicationFederatedCredentialLister{},
 	})
@@ -57,7 +59,7 @@ type ApplicationFederatedCredentialLister struct {
 func (l ApplicationFederatedCredentialLister) List(o interface{}) ([]resource.Resource, error) {
 	opts := o.(nuke.ListerOpts)
 
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+	log := logrus.WithField("r", ApplicationFederatedCredentialResource).WithField("s", opts.SubscriptionId)
 
 	client := msgraph.NewApplicationsClient()
 	client.BaseClient.Authorizer = opts.Authorizers.Graph
@@ -65,16 +67,16 @@ func (l ApplicationFederatedCredentialLister) List(o interface{}) ([]resource.Re
 
 	resources := make([]resource.Resource, 0)
 
-	logrus.Trace("attempting to list service principals")
+	log.Trace("attempting to list application federated creds")
 
-	ctx := context.Background()
+	ctx := context.TODO()
 
 	entities, _, err := client.List(ctx, odata.Query{})
 	if err != nil {
 		return nil, err
 	}
 
-	logrus.Trace("listing ....")
+	log.Trace("listing application federated creds")
 
 	for _, entity := range *entities {
 		creds, _, err := client.ListFederatedIdentityCredentials(ctx, *entity.ID(), odata.Query{})
@@ -91,6 +93,8 @@ func (l ApplicationFederatedCredentialLister) List(o interface{}) ([]resource.Re
 			})
 		}
 	}
+
+	log.Trace("done")
 
 	return resources, nil
 }

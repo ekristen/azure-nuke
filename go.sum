@@ -130,6 +130,14 @@ github.com/ekristen/cloud-nuke-sdk v0.0.0-20231231022238-b697616fbbf5 h1:xlB2q66
 github.com/ekristen/cloud-nuke-sdk v0.0.0-20231231022238-b697616fbbf5/go.mod h1:lZ0xZAN2qZMdGc/qbm4YSRoltT6ehjwrR9kKxtYwpOc=
 github.com/ekristen/cloud-nuke-sdk v0.0.0-20231231023410-5297dbb04d4a h1:j93xxzVCQzyYdvhqpHSnws3iOYPuircQSIjSo3YhidM=
 github.com/ekristen/cloud-nuke-sdk v0.0.0-20231231023410-5297dbb04d4a/go.mod h1:lZ0xZAN2qZMdGc/qbm4YSRoltT6ehjwrR9kKxtYwpOc=
+github.com/ekristen/cloud-nuke-sdk v0.0.0-20240101001246-e0f5a9590ab6 h1:Fl4F0/rFShEyCPz8WAkvGizZE3i8s9lPFQJ4gsGqX9Q=
+github.com/ekristen/cloud-nuke-sdk v0.0.0-20240101001246-e0f5a9590ab6/go.mod h1:lZ0xZAN2qZMdGc/qbm4YSRoltT6ehjwrR9kKxtYwpOc=
+github.com/ekristen/cloud-nuke-sdk v0.0.0-20240101024613-3da76a65cc6b h1:9Q1x3z71WiuIck535EkPgZdi23aeQOdxOkq2Hc8bXqk=
+github.com/ekristen/cloud-nuke-sdk v0.0.0-20240101024613-3da76a65cc6b/go.mod h1:lZ0xZAN2qZMdGc/qbm4YSRoltT6ehjwrR9kKxtYwpOc=
+github.com/ekristen/cloud-nuke-sdk v0.0.0-20240101030631-277e136f454f h1:c+QyWjeTAq8G/+u25nqC2b1fouRH9+Kjdw9j5s8Vaz8=
+github.com/ekristen/cloud-nuke-sdk v0.0.0-20240101030631-277e136f454f/go.mod h1:lZ0xZAN2qZMdGc/qbm4YSRoltT6ehjwrR9kKxtYwpOc=
+github.com/ekristen/cloud-nuke-sdk v0.0.0-20240101030740-70330ca30aa7 h1:CTqmXGgIUIQ2BW7H1A1Pw1POuNfD4xkKa+vDwHUw4iA=
+github.com/ekristen/cloud-nuke-sdk v0.0.0-20240101030740-70330ca30aa7/go.mod h1:lZ0xZAN2qZMdGc/qbm4YSRoltT6ehjwrR9kKxtYwpOc=
 github.com/emirpasic/gods v1.12.0/go.mod h1:YfzfFFoVP/catgzJb4IKIqXjX78Ha8FMSDh3ymbK86o=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=

@@ -14,9 +14,11 @@ import (
 	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 )
 
+const BudgetResource = "Budget"
+
 func init() {
 	resource.Register(resource.Registration{
-		Name:   "Budget",
+		Name:   BudgetResource,
 		Scope:  nuke.Subscription,
 		Lister: BudgetLister{},
 	})
@@ -33,7 +35,7 @@ type BudgetLister struct{}
 func (l BudgetLister) List(o interface{}) ([]resource.Resource, error) {
 	opts := o.(nuke.ListerOpts)
 
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+	log := logrus.WithField("r", BudgetResource).WithField("s", opts.SubscriptionId)
 
 	resources := make([]resource.Resource, 0)
 
@@ -51,9 +53,9 @@ func (l BudgetLister) List(o interface{}) ([]resource.Resource, error) {
 	//client.RetryAttempts = 1
 	//client.RetryDuration = time.Second * 2
 
-	logrus.Trace("attempting to list budgets for subscription")
+	log.Trace("attempting to list budgets for subscription")
 
-	pctx := context.Background()
+	pctx := context.TODO()
 	ctx, cancel := context.WithDeadline(pctx, time.Now().Add(10*time.Second))
 	defer cancel()
 
@@ -64,7 +66,7 @@ func (l BudgetLister) List(o interface{}) ([]resource.Resource, error) {
 		return nil, err
 	}
 
-	logrus.Trace("listing ....")
+	log.Trace("listing budgets for subscription")
 
 	for _, entry := range *list.Model {
 		resources = append(resources, &Budget{
@@ -72,6 +74,8 @@ func (l BudgetLister) List(o interface{}) ([]resource.Resource, error) {
 			name:   *entry.Name,
 		})
 	}
+
+	log.Trace("done")
 
 	return resources, nil
 }

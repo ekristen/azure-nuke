@@ -13,9 +13,11 @@ import (
 	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 )
 
+const ResourceGroupResource = "ResourceGroup"
+
 func init() {
 	resource.Register(resource.Registration{
-		Name:   "ResourceGroup",
+		Name:   ResourceGroupResource,
 		Lister: ResourceGroupLister{},
 		Scope:  nuke.Subscription,
 	})
@@ -51,7 +53,7 @@ type ResourceGroupLister struct {
 func (l ResourceGroupLister) List(o interface{}) ([]resource.Resource, error) {
 	opts := o.(nuke.ListerOpts)
 
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+	log := logrus.WithField("r", ResourceGroupResource).WithField("s", opts.SubscriptionId)
 
 	client := resources.NewGroupsClient(opts.SubscriptionId)
 	client.Authorizer = opts.Authorizers.Management
@@ -60,19 +62,19 @@ func (l ResourceGroupLister) List(o interface{}) ([]resource.Resource, error) {
 
 	resources := make([]resource.Resource, 0)
 
-	logrus.Trace("attempting to list groups")
+	log.Trace("attempting to list groups")
 
-	ctx := context.Background()
+	ctx := context.TODO()
 
 	list, err := client.List(ctx, "", nil)
 	if err != nil {
 		return nil, err
 	}
 
-	logrus.Trace("listing ....")
+	log.Trace("listing ....")
 
 	for list.NotDone() {
-		logrus.Trace("list not done")
+		log.Trace("list not done")
 		for _, entity := range list.Values() {
 			resources = append(resources, &ResourceGroup{
 				client: client,
@@ -84,6 +86,8 @@ func (l ResourceGroupLister) List(o interface{}) ([]resource.Resource, error) {
 			return nil, err
 		}
 	}
+
+	log.Trace("done")
 
 	return resources, nil
 }

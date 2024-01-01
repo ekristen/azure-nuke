@@ -13,9 +13,11 @@ import (
 	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 )
 
+const NetworkSecurityGroupResource = "NetworkSecurityGroup"
+
 func init() {
 	resource.Register(resource.Registration{
-		Name:   "NetworkSecurityGroup",
+		Name:   NetworkSecurityGroupResource,
 		Scope:  nuke.ResourceGroup,
 		Lister: NetworkSecurityGroupLister{},
 	})
@@ -52,7 +54,7 @@ type NetworkSecurityGroupLister struct {
 func (l NetworkSecurityGroupLister) List(o interface{}) ([]resource.Resource, error) {
 	opts := o.(nuke.ListerOpts)
 
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+	log := logrus.WithField("r", NetworkSecurityGroupResource).WithField("s", opts.SubscriptionId)
 
 	client := network.NewSecurityGroupsClient(opts.SubscriptionId)
 	client.Authorizer = opts.Authorizers.Management
@@ -61,19 +63,19 @@ func (l NetworkSecurityGroupLister) List(o interface{}) ([]resource.Resource, er
 
 	resources := make([]resource.Resource, 0)
 
-	logrus.Trace("attempting to list groups")
+	log.Trace("attempting to list groups")
 
-	ctx := context.Background()
+	ctx := context.TODO()
 
 	list, err := client.List(ctx, opts.ResourceGroup)
 	if err != nil {
 		return nil, err
 	}
 
-	logrus.Trace("listing ....")
+	log.Trace("listing")
 
 	for list.NotDone() {
-		logrus.Trace("list not done")
+		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &NetworkSecurityGroup{
 				client:   client,
@@ -87,6 +89,8 @@ func (l NetworkSecurityGroupLister) List(o interface{}) ([]resource.Resource, er
 			return nil, err
 		}
 	}
+
+	log.Trace("done")
 
 	return resources, nil
 }

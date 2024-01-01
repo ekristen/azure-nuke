@@ -13,12 +13,16 @@ import (
 	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 )
 
+const DiskResource = "Disk"
+
 func init() {
 	resource.Register(resource.Registration{
-		Name:      "Disk",
-		Scope:     nuke.ResourceGroup,
-		Lister:    DiskLister{},
-		DependsOn: []string{"VirtualMachine"},
+		Name:   DiskResource,
+		Scope:  nuke.ResourceGroup,
+		Lister: DiskLister{},
+		DependsOn: []string{
+			VirtualMachineResource,
+		},
 	})
 }
 
@@ -51,7 +55,7 @@ type DiskLister struct {
 func (l DiskLister) List(o interface{}) ([]resource.Resource, error) {
 	opts := o.(nuke.ListerOpts)
 
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+	log := logrus.WithField("r", DiskResource).WithField("s", opts.SubscriptionId)
 
 	client := compute.NewDisksClient(opts.SubscriptionId)
 	client.Authorizer = opts.Authorizers.Management
@@ -60,18 +64,18 @@ func (l DiskLister) List(o interface{}) ([]resource.Resource, error) {
 
 	resources := make([]resource.Resource, 0)
 
-	logrus.Trace("attempting to list ssh key")
+	log.Trace("attempting to list disks")
 
-	ctx := context.Background()
+	ctx := context.TODO()
 	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup)
 	if err != nil {
 		return nil, err
 	}
 
-	logrus.Trace("listing ....")
+	log.Trace("listing ....")
 
 	for list.NotDone() {
-		logrus.Trace("list not done")
+		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &Disk{
 				client: client,
@@ -84,6 +88,8 @@ func (l DiskLister) List(o interface{}) ([]resource.Resource, error) {
 			return nil, err
 		}
 	}
+
+	log.Trace("done")
 
 	return resources, nil
 }

@@ -14,13 +14,15 @@ import (
 	"time"
 )
 
+const RecoveryServicesBackupPolicyResource = "RecoveryServicesBackupPolicy"
+
 func init() {
 	resource.Register(resource.Registration{
-		Name:   "RecoveryServicesBackupPolicy",
+		Name:   RecoveryServicesBackupPolicyResource,
 		Scope:  nuke.ResourceGroup,
 		Lister: RecoveryServicesBackupPolicyLister{},
 		DependsOn: []string{
-			"RecoveryServicesBackupProtectedItem",
+			RecoveryServicesBackupProtectedItemResource,
 		},
 	})
 }
@@ -65,9 +67,8 @@ func (l RecoveryServicesBackupPolicyLister) List(o interface{}) ([]resource.Reso
 	opts := o.(nuke.ListerOpts)
 
 	log := logrus.
-		WithField("resource", "RecoveryServicesBackupPolicy").
-		WithField("scope", nuke.ResourceGroup).
-		WithField("subscription", opts.SubscriptionId).
+		WithField("r", RecoveryServicesBackupPolicyResource).
+		WithField("s", opts.SubscriptionId).
 		WithField("rg", opts.ResourceGroup)
 
 	log.Trace("creating client")
@@ -117,6 +118,8 @@ func (l RecoveryServicesBackupPolicyLister) List(o interface{}) ([]resource.Reso
 			})
 		}
 	}
+
+	log.Trace("done")
 
 	return resources, nil
 }

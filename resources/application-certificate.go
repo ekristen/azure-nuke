@@ -12,9 +12,11 @@ import (
 	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 )
 
+const ApplicationCertificateResource = "ApplicationCertificate"
+
 func init() {
 	resource.Register(resource.Registration{
-		Name:   "ApplicationCertificate",
+		Name:   ApplicationCertificateResource,
 		Scope:  nuke.Tenant,
 		Lister: ApplicationCertificateLister{},
 	})
@@ -54,7 +56,7 @@ type ApplicationCertificateLister struct {
 func (l ApplicationCertificateLister) List(o interface{}) ([]resource.Resource, error) {
 	opts := o.(nuke.ListerOpts)
 
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+	log := logrus.WithField("r", ApplicationCertificateResource).WithField("s", opts.SubscriptionId)
 
 	client := msgraph.NewApplicationsClient()
 	client.BaseClient.Authorizer = opts.Authorizers.Graph
@@ -62,18 +64,18 @@ func (l ApplicationCertificateLister) List(o interface{}) ([]resource.Resource, 
 
 	resources := make([]resource.Resource, 0)
 
-	logrus.Trace("attempting to list service principals")
+	log.Trace("attempting to list application certificates")
 
-	ctx := context.Background()
+	ctx := context.TODO()
 
-	entites, _, err := client.List(ctx, odata.Query{})
+	entities, _, err := client.List(ctx, odata.Query{})
 	if err != nil {
 		return nil, err
 	}
 
-	logrus.Trace("listing ....")
+	log.Trace("listing application certificate")
 
-	for _, entity := range *entites {
+	for _, entity := range *entities {
 		for _, cred := range *entity.KeyCredentials {
 			resources = append(resources, &ApplicationCertificate{
 				client: client,
@@ -83,6 +85,8 @@ func (l ApplicationCertificateLister) List(o interface{}) ([]resource.Resource, 
 			})
 		}
 	}
+
+	log.Trace("done")
 
 	return resources, nil
 }
