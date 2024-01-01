@@ -13,9 +13,11 @@ import (
 	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 )
 
+const NetworkInterfaceResource = "NetworkInterface"
+
 func init() {
 	resource.Register(resource.Registration{
-		Name:   "NetworkInterface",
+		Name:   NetworkInterfaceResource,
 		Scope:  nuke.ResourceGroup,
 		Lister: NetworkInterfaceLister{},
 	})
@@ -27,7 +29,7 @@ type NetworkInterfaceLister struct {
 func (l NetworkInterfaceLister) List(o interface{}) ([]resource.Resource, error) {
 	opts := o.(nuke.ListerOpts)
 
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+	log := logrus.WithField("r", NetworkInterfaceResource).WithField("s", opts.SubscriptionId)
 
 	client := network.NewInterfacesClient(opts.SubscriptionId)
 	client.Authorizer = opts.Authorizers.Management
@@ -36,19 +38,19 @@ func (l NetworkInterfaceLister) List(o interface{}) ([]resource.Resource, error)
 
 	resources := make([]resource.Resource, 0)
 
-	logrus.Trace("attempting to list network interfaces")
+	log.Trace("attempting to list network interfaces")
 
-	ctx := context.Background()
+	ctx := context.TODO()
 
 	list, err := client.List(ctx, opts.ResourceGroup)
 	if err != nil {
 		return nil, err
 	}
 
-	logrus.Trace("listing ....")
+	log.Trace("listing ....")
 
 	for list.NotDone() {
-		logrus.Trace("list not done")
+		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &NetworkInterface{
 				client: client,
@@ -61,6 +63,8 @@ func (l NetworkInterfaceLister) List(o interface{}) ([]resource.Resource, error)
 			return nil, err
 		}
 	}
+
+	log.Trace("done listing network interfaces")
 
 	return resources, nil
 }

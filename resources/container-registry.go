@@ -13,9 +13,11 @@ import (
 	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 )
 
+const ContainerRegistryResource = "ContainerRegistry"
+
 func init() {
 	resource.Register(resource.Registration{
-		Name:   "ContainerRegistry",
+		Name:   ContainerRegistryResource,
 		Scope:  nuke.ResourceGroup,
 		Lister: ContainerRegistryLister{},
 	})
@@ -51,7 +53,7 @@ type ContainerRegistryLister struct {
 func (l ContainerRegistryLister) List(o interface{}) ([]resource.Resource, error) {
 	opts := o.(nuke.ListerOpts)
 
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+	log := logrus.WithField("r", ContainerRegistryResource).WithField("s", opts.SubscriptionId)
 
 	client := containerregistry.NewRegistriesClient(opts.SubscriptionId)
 	client.Authorizer = opts.Authorizers.Management
@@ -60,19 +62,19 @@ func (l ContainerRegistryLister) List(o interface{}) ([]resource.Resource, error
 
 	resources := make([]resource.Resource, 0)
 
-	logrus.Trace("attempting to list container registries")
+	log.Trace("attempting to list container registries")
 
-	ctx := context.Background()
+	ctx := context.TODO()
 
 	list, err := client.List(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	logrus.Trace("listing ....")
+	log.Trace("listing resources")
 
 	for list.NotDone() {
-		logrus.Trace("list not done")
+		log.Trace("list not done")
 		for _, entity := range list.Values() {
 			resources = append(resources, &ContainerRegistry{
 				client:        client,
@@ -85,6 +87,8 @@ func (l ContainerRegistryLister) List(o interface{}) ([]resource.Resource, error
 			return nil, err
 		}
 	}
+
+	log.Trace("done")
 
 	return resources, nil
 }

@@ -12,9 +12,11 @@ import (
 	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 )
 
+const AzureAdGroupResource = "AzureADGroup"
+
 func init() {
 	resource.Register(resource.Registration{
-		Name:   "AzureADGroup",
+		Name:   AzureAdGroupResource,
 		Scope:  nuke.Tenant,
 		Lister: AzureAdGroupLister{},
 	})
@@ -32,7 +34,7 @@ type AzureAdGroupLister struct {
 func (l AzureAdGroupLister) List(o interface{}) ([]resource.Resource, error) {
 	opts := o.(nuke.ListerOpts)
 
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+	log := logrus.WithField("r", AzureAdGroupResource).WithField("s", opts.SubscriptionId)
 
 	client := msgraph.NewGroupsClient()
 	client.BaseClient.Authorizer = opts.Authorizers.MicrosoftGraph
@@ -40,7 +42,7 @@ func (l AzureAdGroupLister) List(o interface{}) ([]resource.Resource, error) {
 
 	resources := make([]resource.Resource, 0)
 
-	logrus.Trace("attempting to list ssh key")
+	log.Trace("attempting to list azure ad groups")
 
 	ctx := context.Background()
 
@@ -49,7 +51,7 @@ func (l AzureAdGroupLister) List(o interface{}) ([]resource.Resource, error) {
 		return nil, err
 	}
 
-	logrus.Trace("listing ....")
+	log.Trace("listing resources")
 
 	for _, group := range *groups {
 		resources = append(resources, &AzureAdGroup{

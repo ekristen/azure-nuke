@@ -15,9 +15,11 @@ import (
 	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 )
 
+const ServicePrincipalResource = "ServicePrincipal"
+
 func init() {
 	resource.Register(resource.Registration{
-		Name:   "ServicePrincipal",
+		Name:   ServicePrincipalResource,
 		Scope:  nuke.Tenant,
 		Lister: ServicePrincipalsLister{},
 	})
@@ -78,10 +80,7 @@ type ServicePrincipalsLister struct {
 func (l ServicePrincipalsLister) List(o interface{}) ([]resource.Resource, error) {
 	opts := o.(nuke.ListerOpts)
 
-	log := logrus.
-		WithField("resource", "ServicePrincipal").
-		WithField("scope", nuke.Subscription).
-		WithField("subscription", opts.SubscriptionId)
+	log := logrus.WithField("r", ServicePrincipalResource).WithField("s", opts.SubscriptionId)
 
 	client := msgraph.NewServicePrincipalsClient()
 	client.BaseClient.Authorizer = opts.Authorizers.MicrosoftGraph
@@ -97,7 +96,7 @@ func (l ServicePrincipalsLister) List(o interface{}) ([]resource.Resource, error
 		return nil, err
 	}
 
-	log.Trace("listing entities")
+	log.Trace("listing resource start")
 
 	for _, entity := range *entities {
 		resources = append(resources, &ServicePrincipal{
@@ -108,6 +107,8 @@ func (l ServicePrincipalsLister) List(o interface{}) ([]resource.Resource, error
 			spType:   entity.ServicePrincipalType,
 		})
 	}
+
+	log.Trace("listing resources end")
 
 	return resources, nil
 }

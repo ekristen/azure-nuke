@@ -12,9 +12,11 @@ import (
 	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 )
 
+const ApplicationResource = "Application"
+
 func init() {
 	resource.Register(resource.Registration{
-		Name:   "Application",
+		Name:   ApplicationResource,
 		Scope:  nuke.Tenant,
 		Lister: ApplicationLister{},
 	})
@@ -26,7 +28,7 @@ type ApplicationLister struct {
 func (l ApplicationLister) List(o interface{}) ([]resource.Resource, error) {
 	opts := o.(nuke.ListerOpts)
 
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+	log := logrus.WithField("r", ApplicationResource).WithField("s", opts.SubscriptionId)
 
 	client := msgraph.NewApplicationsClient()
 	client.BaseClient.Authorizer = opts.Authorizers.Graph
@@ -34,16 +36,16 @@ func (l ApplicationLister) List(o interface{}) ([]resource.Resource, error) {
 
 	resources := make([]resource.Resource, 0)
 
-	logrus.Trace("attempting to list service principals")
+	log.Trace("attempting to list applications")
 
-	ctx := context.Background()
+	ctx := context.TODO()
 
 	entities, _, err := client.List(ctx, odata.Query{})
 	if err != nil {
 		return nil, err
 	}
 
-	logrus.Trace("listing ....")
+	log.Trace("listing applications")
 
 	for _, entity := range *entities {
 		resources = append(resources, &Application{
@@ -52,6 +54,8 @@ func (l ApplicationLister) List(o interface{}) ([]resource.Resource, error) {
 			name:   entity.DisplayName,
 		})
 	}
+
+	log.Trace("done")
 
 	return resources, nil
 }

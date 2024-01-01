@@ -12,13 +12,15 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/preview/security/mgmt/v3.0/security"
 )
 
+const SecurityPricingResource = "SecurityPricing"
+
 func init() {
 	resource.Register(resource.Registration{
-		Name:   "SecurityPricing",
+		Name:   SecurityPricingResource,
 		Scope:  nuke.Subscription,
 		Lister: SecurityPricingLister{},
 		DependsOn: []string{
-			"SecurityAlert",
+			SecurityAlertResource,
 		},
 	})
 }
@@ -69,9 +71,8 @@ func (l SecurityPricingLister) List(o interface{}) ([]resource.Resource, error) 
 	opts := o.(nuke.ListerOpts)
 
 	log := logrus.
-		WithField("resource", "SecurityPricing").
-		WithField("scope", nuke.Subscription).
-		WithField("subscription", opts.SubscriptionId)
+		WithField("r", SecurityPricingResource).
+		WithField("s", opts.SubscriptionId)
 
 	log.Trace("creating client")
 
@@ -98,6 +99,8 @@ func (l SecurityPricingLister) List(o interface{}) ([]resource.Resource, error) 
 			tier:   string(price.PricingTier),
 		})
 	}
+
+	log.Trace("done")
 
 	return resources, nil
 }

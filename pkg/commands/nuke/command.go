@@ -2,6 +2,7 @@ package nuke
 
 import (
 	"context"
+	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/ekristen/azure-nuke/pkg/azure"
 	"github.com/ekristen/azure-nuke/pkg/commands/global"
@@ -112,6 +113,7 @@ func execute(c *cli.Context) error {
 
 	params := sdknuke.Parameters{
 		ConfigPath: c.Path("config"),
+		Force:      c.Bool("force"),
 		ForceSleep: c.Int("force-sleep"),
 		Quiet:      c.Bool("quiet"),
 		NoDryRun:   c.Bool("no-dry-run"),
@@ -122,6 +124,8 @@ func execute(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+
+	params.ID = c.String("tenant-id")
 
 	n := nuke.New(params, tenant)
 
@@ -179,7 +183,8 @@ func execute(c *cli.Context) error {
 		},
 	)
 
-	n.RegisterScanner(nuke.Tenant, sdknuke.NewScanner(tenantResourceTypes, nuke.ListerOpts{
+	logrus.Debug("registering scanner for tenant resources")
+	n.RegisterScanner(nuke.Tenant, sdknuke.NewScanner(fmt.Sprintf("ten/%s", n.Tenant.ID), tenantResourceTypes, nuke.ListerOpts{
 		Authorizers:    n.Tenant.Authorizers,
 		TenantId:       n.Tenant.ID,
 		SubscriptionId: "tenant",
@@ -187,7 +192,8 @@ func execute(c *cli.Context) error {
 	}))
 
 	for _, subscriptionId := range n.Tenant.SubscriptionIds {
-		n.RegisterScanner(nuke.Subscription, sdknuke.NewScanner(subscriptionResourceTypes, nuke.ListerOpts{
+		logrus.Debug("registering scanner for subscription resources")
+		n.RegisterScanner(nuke.Subscription, sdknuke.NewScanner(fmt.Sprintf("sub/%s", subscriptionId), subscriptionResourceTypes, nuke.ListerOpts{
 			Authorizers:    n.Tenant.Authorizers,
 			TenantId:       n.Tenant.ID,
 			SubscriptionId: subscriptionId,
@@ -195,7 +201,8 @@ func execute(c *cli.Context) error {
 		}))
 
 		for _, resourceGroup := range n.Tenant.ResourceGroups[subscriptionId] {
-			n.RegisterScanner(nuke.ResourceGroup, sdknuke.NewScanner(resourceGroupResourceTypes, nuke.ListerOpts{
+			logrus.Debug("registering scanner for resource group resources")
+			n.RegisterScanner(nuke.ResourceGroup, sdknuke.NewScanner(fmt.Sprintf("rg/%s", resourceGroup), resourceGroupResourceTypes, nuke.ListerOpts{
 				Authorizers:    n.Tenant.Authorizers,
 				TenantId:       n.Tenant.ID,
 				SubscriptionId: subscriptionId,
@@ -204,6 +211,7 @@ func execute(c *cli.Context) error {
 		}
 	}
 
+	logrus.Debug("running ...")
 	return n.Run()
 }
 

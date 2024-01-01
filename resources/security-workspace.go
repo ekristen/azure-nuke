@@ -11,9 +11,11 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/preview/security/mgmt/v3.0/security"
 )
 
+const SecurityWorkspaceResource = "SecurityWorkspace"
+
 func init() {
 	resource.Register(resource.Registration{
-		Name:   "SecurityWorkspace",
+		Name:   SecurityWorkspaceResource,
 		Scope:  nuke.Subscription,
 		Lister: SecurityWorkspaceLister{},
 	})
@@ -52,9 +54,8 @@ func (l SecurityWorkspaceLister) List(o interface{}) ([]resource.Resource, error
 	opts := o.(nuke.ListerOpts)
 
 	log := logrus.
-		WithField("resource", "SecurityWorkspace").
-		WithField("scope", nuke.Subscription).
-		WithField("subscription", opts.SubscriptionId)
+		WithField("r", SecurityWorkspaceResource).
+		WithField("s", opts.SubscriptionId)
 
 	log.Trace("creating client")
 
@@ -87,6 +88,8 @@ func (l SecurityWorkspaceLister) List(o interface{}) ([]resource.Resource, error
 			return nil, err
 		}
 	}
+
+	log.Trace("done")
 
 	return resources, nil
 }

@@ -14,9 +14,11 @@ import (
 	"strings"
 )
 
+const RecoveryServicesBackupProtectedItemResource = "RecoveryServicesBackupProtectedItem"
+
 func init() {
 	resource.Register(resource.Registration{
-		Name:   "RecoveryServicesBackupProtectedItem",
+		Name:   RecoveryServicesBackupProtectedItemResource,
 		Scope:  nuke.ResourceGroup,
 		Lister: RecoveryServicesBackupProtectedItemLister{},
 	})
@@ -69,9 +71,8 @@ func (l RecoveryServicesBackupProtectedItemLister) List(o interface{}) ([]resour
 	resources := make([]resource.Resource, 0)
 
 	log := logrus.
-		WithField("resource", "RecoveryServicesBackupProtectedItem").
-		WithField("scope", nuke.ResourceGroup).
-		WithField("subscription", opts.SubscriptionId).
+		WithField("r", RecoveryServicesBackupProtectedItemResource).
+		WithField("s", opts.SubscriptionId).
 		WithField("rg", opts.ResourceGroup)
 
 	log.Trace("creating client")
@@ -95,13 +96,13 @@ func (l RecoveryServicesBackupProtectedItemLister) List(o interface{}) ([]resour
 	ctx := context.TODO()
 	vaultsPager := vaultsClient.NewListByResourceGroupPager(opts.ResourceGroup, nil)
 	for vaultsPager.More() {
+		log.Trace("not done")
 		page, err := vaultsPager.NextPage(ctx)
 		if err != nil {
 			return resources, err
 		}
 
 		for _, v := range page.Value {
-
 			itemPager := client.NewListPager(to.String(v.Name), opts.ResourceGroup, nil)
 			for itemPager.More() {
 				page, err := itemPager.NextPage(ctx)
@@ -133,6 +134,8 @@ func (l RecoveryServicesBackupProtectedItemLister) List(o interface{}) ([]resour
 
 		}
 	}
+
+	log.Trace("done")
 
 	return resources, nil
 }

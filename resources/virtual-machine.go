@@ -13,9 +13,11 @@ import (
 	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 )
 
+const VirtualMachineResource = "VirtualMachine"
+
 func init() {
 	resource.Register(resource.Registration{
-		Name:   "VirtualMachine",
+		Name:   VirtualMachineResource,
 		Lister: VirtualMachineLister{},
 		Scope:  nuke.ResourceGroup,
 	})
@@ -53,7 +55,7 @@ type VirtualMachineLister struct {
 func (l VirtualMachineLister) List(o interface{}) ([]resource.Resource, error) {
 	opts := o.(nuke.ListerOpts)
 
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+	log := logrus.WithField("r", VirtualMachineResource).WithField("s", opts.SubscriptionId)
 
 	client := compute.NewVirtualMachinesClient(opts.SubscriptionId)
 	client.Authorizer = opts.Authorizers.Management
@@ -62,19 +64,19 @@ func (l VirtualMachineLister) List(o interface{}) ([]resource.Resource, error) {
 
 	resources := make([]resource.Resource, 0)
 
-	logrus.Trace("attempting to list virtual machines")
+	log.Trace("attempting to list virtual machines")
 
-	ctx := context.Background()
+	ctx := context.TODO()
 
 	list, err := client.List(ctx, opts.ResourceGroup)
 	if err != nil {
 		return nil, err
 	}
 
-	logrus.Trace("listing ....")
+	log.Trace("listing resources")
 
 	for list.NotDone() {
-		logrus.Trace("list not done")
+		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &VirtualMachine{
 				client:        client,
@@ -87,6 +89,8 @@ func (l VirtualMachineLister) List(o interface{}) ([]resource.Resource, error) {
 			return nil, err
 		}
 	}
+
+	log.Trace("done")
 
 	return resources, nil
 }

@@ -13,11 +13,13 @@ import (
 	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 )
 
+const VirtualNetworkResource = "VirtualNetwork"
+
 func init() {
 	resource.Register(resource.Registration{
-		Name:   "VirtualNetwork",
-		Lister: VirtualNetworkLister{},
+		Name:   VirtualNetworkResource,
 		Scope:  nuke.ResourceGroup,
+		Lister: VirtualNetworkLister{},
 	})
 }
 
@@ -53,7 +55,7 @@ type VirtualNetworkLister struct {
 func (l VirtualNetworkLister) List(o interface{}) ([]resource.Resource, error) {
 	opts := o.(nuke.ListerOpts)
 
-	log := logrus.WithField("handler", "ListVirtualNetwork").WithField("subscription", opts.SubscriptionId)
+	log := logrus.WithField("r", VirtualNetworkResource).WithField("s", opts.SubscriptionId)
 
 	client := network.NewVirtualNetworksClient(opts.SubscriptionId)
 	client.Authorizer = opts.Authorizers.Management
@@ -86,6 +88,8 @@ func (l VirtualNetworkLister) List(o interface{}) ([]resource.Resource, error) {
 			return nil, err
 		}
 	}
+
+	log.Trace("debug")
 
 	return resources, nil
 }

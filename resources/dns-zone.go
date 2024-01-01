@@ -13,9 +13,11 @@ import (
 	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 )
 
+const DNSZoneResource = "DNSZone"
+
 func init() {
 	resource.Register(resource.Registration{
-		Name:   "DNSZone",
+		Name:   DNSZoneResource,
 		Scope:  nuke.ResourceGroup,
 		Lister: DNSZoneLister{},
 	})
@@ -28,8 +30,8 @@ func (l DNSZoneLister) List(o interface{}) ([]resource.Resource, error) {
 	opts := o.(nuke.ListerOpts)
 
 	log := logrus.WithFields(logrus.Fields{
-		"subscription": opts.SubscriptionId,
-		"handler":      "ListDNSZone",
+		"r": DNSZoneResource,
+		"s": opts.SubscriptionId,
 	})
 
 	log.Trace("start")
@@ -41,7 +43,7 @@ func (l DNSZoneLister) List(o interface{}) ([]resource.Resource, error) {
 
 	resources := make([]resource.Resource, 0)
 
-	ctx := context.Background()
+	ctx := context.TODO()
 
 	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup, nil)
 	if err != nil {
@@ -67,6 +69,8 @@ func (l DNSZoneLister) List(o interface{}) ([]resource.Resource, error) {
 			return nil, err
 		}
 	}
+
+	log.Trace("done")
 
 	return resources, nil
 }

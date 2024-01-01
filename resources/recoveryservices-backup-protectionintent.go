@@ -12,9 +12,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const RecoveryServicesBackupProtectionIntentResource = "RecoveryServicesBackupProtectionIntent"
+
 func init() {
 	resource.Register(resource.Registration{
-		Name:   "RecoveryServicesBackupProtectionIntent",
+		Name:   RecoveryServicesBackupProtectionIntentResource,
 		Scope:  nuke.ResourceGroup,
 		Lister: RecoveryServicesBackupProtectionIntentLister{},
 	})
@@ -63,9 +65,8 @@ func (l RecoveryServicesBackupProtectionIntentLister) List(o interface{}) ([]res
 	resources := make([]resource.Resource, 0)
 
 	log := logrus.
-		WithField("resource", "RecoveryServicesBackupProtectionIntent").
-		WithField("scope", nuke.ResourceGroup).
-		WithField("subscription", opts.SubscriptionId).
+		WithField("r", RecoveryServicesBackupProtectionIntentResource).
+		WithField("s", opts.SubscriptionId).
 		WithField("rg", opts.ResourceGroup)
 
 	log.Trace("creating client")
@@ -120,6 +121,8 @@ func (l RecoveryServicesBackupProtectionIntentLister) List(o interface{}) ([]res
 
 		}
 	}
+
+	log.Trace("done")
 
 	return resources, nil
 }

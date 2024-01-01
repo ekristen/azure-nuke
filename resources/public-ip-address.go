@@ -13,9 +13,11 @@ import (
 	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 )
 
+const PublicIPAddressesResource = "PublicIPAddresses"
+
 func init() {
 	resource.Register(resource.Registration{
-		Name:   "PublicIPAddresses",
+		Name:   PublicIPAddressesResource,
 		Scope:  nuke.ResourceGroup,
 		Lister: PublicIPAddressesLister{},
 	})
@@ -51,7 +53,7 @@ type PublicIPAddressesLister struct {
 func (l PublicIPAddressesLister) List(o interface{}) ([]resource.Resource, error) {
 	opts := o.(nuke.ListerOpts)
 
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+	log := logrus.WithField("r", PublicIPAddressesResource).WithField("s", opts.SubscriptionId)
 
 	client := network.NewPublicIPAddressesClient(opts.SubscriptionId)
 	client.Authorizer = opts.Authorizers.Management
@@ -60,7 +62,7 @@ func (l PublicIPAddressesLister) List(o interface{}) ([]resource.Resource, error
 
 	resources := make([]resource.Resource, 0)
 
-	logrus.Trace("attempting to list virtual networks")
+	log.Trace("attempting to list public ip addresses")
 
 	ctx := context.Background()
 
@@ -69,10 +71,10 @@ func (l PublicIPAddressesLister) List(o interface{}) ([]resource.Resource, error
 		return nil, err
 	}
 
-	logrus.Trace("listing ....")
+	log.Trace("listing public ip addresses")
 
 	for list.NotDone() {
-		logrus.Trace("list not done")
+		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &PublicIPAddresses{
 				client: client,
@@ -85,6 +87,8 @@ func (l PublicIPAddressesLister) List(o interface{}) ([]resource.Resource, error
 			return nil, err
 		}
 	}
+
+	log.Trace("done")
 
 	return resources, nil
 }

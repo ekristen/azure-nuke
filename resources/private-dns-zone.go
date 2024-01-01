@@ -13,9 +13,11 @@ import (
 	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 )
 
+const PrivateDNSZoneResource = "PrivateDNSZone"
+
 func init() {
 	resource.Register(resource.Registration{
-		Name:   "PrivateDNSZone",
+		Name:   PrivateDNSZoneResource,
 		Scope:  nuke.Subscription,
 		Lister: PrivateDNSZoneLister{},
 	})
@@ -53,8 +55,8 @@ func (l PrivateDNSZoneLister) List(o interface{}) ([]resource.Resource, error) {
 	opts := o.(nuke.ListerOpts)
 
 	log := logrus.WithFields(logrus.Fields{
-		"subscription": opts.SubscriptionId,
-		"handler":      "ListPrivateDNSZone",
+		"r": PrivateDNSZoneResource,
+		"s": opts.SubscriptionId,
 	})
 
 	log.Trace("start")
@@ -66,7 +68,7 @@ func (l PrivateDNSZoneLister) List(o interface{}) ([]resource.Resource, error) {
 
 	resources := make([]resource.Resource, 0)
 
-	ctx := context.Background()
+	ctx := context.TODO()
 
 	list, err := client.List(ctx, nil)
 	if err != nil {
@@ -92,6 +94,8 @@ func (l PrivateDNSZoneLister) List(o interface{}) ([]resource.Resource, error) {
 			return nil, err
 		}
 	}
+
+	log.Trace("done")
 
 	return resources, nil
 }

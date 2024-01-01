@@ -14,11 +14,13 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/preview/security/mgmt/v3.0/security"
 )
 
-var SecurityAlertLocation = "/Microsoft.Security/locations/(?P<location>.*)/alerts/"
+const SecurityAlertResource = "SecurityAlert"
+
+const SecurityAlertLocation = "/Microsoft.Security/locations/(?P<location>.*)/alerts/"
 
 func init() {
 	resource.Register(resource.Registration{
-		Name:   "SecurityAlert",
+		Name:   SecurityAlertResource,
 		Scope:  nuke.Subscription,
 		Lister: &SecurityAlertsLister{},
 	})
@@ -72,9 +74,8 @@ func (l SecurityAlertsLister) List(o interface{}) ([]resource.Resource, error) {
 	opts := o.(nuke.ListerOpts)
 
 	log := logrus.
-		WithField("resource", "SecurityAlert").
-		WithField("scope", nuke.Subscription).
-		WithField("subscription", opts.SubscriptionId)
+		WithField("r", SecurityAlertResource).
+		WithField("s", opts.SubscriptionId)
 
 	log.Trace("creating client")
 
@@ -114,6 +115,8 @@ func (l SecurityAlertsLister) List(o interface{}) ([]resource.Resource, error) {
 			return nil, err
 		}
 	}
+
+	log.Trace("done")
 
 	return resources, nil
 }

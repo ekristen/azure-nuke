@@ -17,15 +17,3 @@ type ListerOpts struct {
 	SubscriptionId string
 	ResourceGroup  string
 }
-
-func (o ListerOpts) ID() string {
-	return ""
-}
-
-type Lister struct {
-	opts ListerOpts
-}
-
-func (l Lister) SetOptions(opts interface{}) {
-	l.opts = opts.(ListerOpts)
-}

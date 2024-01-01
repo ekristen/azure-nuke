@@ -13,9 +13,11 @@ import (
 	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 )
 
+const KeyVaultResource = "KeyVault"
+
 func init() {
 	resource.Register(resource.Registration{
-		Name:   "KeyVault",
+		Name:   KeyVaultResource,
 		Scope:  nuke.ResourceGroup,
 		Lister: KeyVaultLister{},
 	})
@@ -27,7 +29,7 @@ type KeyVaultLister struct {
 func (l KeyVaultLister) List(o interface{}) ([]resource.Resource, error) {
 	opts := o.(nuke.ListerOpts)
 
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+	log := logrus.WithField("r", KeyVaultResource).WithField("s", opts.SubscriptionId)
 
 	client := keyvault.NewVaultsClient(opts.SubscriptionId)
 	client.Authorizer = opts.Authorizers.Management
@@ -36,18 +38,18 @@ func (l KeyVaultLister) List(o interface{}) ([]resource.Resource, error) {
 
 	resources := make([]resource.Resource, 0)
 
-	logrus.Trace("attempting to list ssh key")
+	log.Trace("attempting to list key vaults")
 
-	ctx := context.Background()
+	ctx := context.TODO()
 	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	logrus.Trace("listing ....")
+	log.Trace("listing key vaults")
 
 	for list.NotDone() {
-		logrus.Trace("list not done")
+		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &KeyVault{
 				client: client,
@@ -60,6 +62,8 @@ func (l KeyVaultLister) List(o interface{}) ([]resource.Resource, error) {
 			return nil, err
 		}
 	}
+
+	log.Trace("done")
 
 	return resources, nil
 }

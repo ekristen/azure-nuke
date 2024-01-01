@@ -13,13 +13,15 @@ import (
 	"github.com/hashicorp/go-azure-sdk/resource-manager/recoveryservices/2023-02-01/vaults"
 )
 
+const RecoveryServicesVaultResource = "RecoveryServicesVault"
+
 func init() {
 	resource.Register(resource.Registration{
-		Name:   "RecoveryServicesVault",
+		Name:   RecoveryServicesVaultResource,
 		Scope:  nuke.ResourceGroup,
 		Lister: RecoveryServicesVaultLister{},
 		DependsOn: []string{
-			"RecoveryServicesBackupProtectedItem",
+			RecoveryServicesBackupProtectedItemResource,
 		},
 	})
 }
@@ -63,9 +65,8 @@ func (l RecoveryServicesVaultLister) List(o interface{}) ([]resource.Resource, e
 	opts := o.(nuke.ListerOpts)
 
 	log := logrus.
-		WithField("resource", "RecoveryServicesVault").
-		WithField("scope", nuke.ResourceGroup).
-		WithField("subscription", opts.SubscriptionId).
+		WithField("r", RecoveryServicesVaultResource).
+		WithField("s", opts.SubscriptionId).
 		WithField("rg", opts.ResourceGroup)
 
 	log.Trace("creating client")
@@ -95,6 +96,8 @@ func (l RecoveryServicesVaultLister) List(o interface{}) ([]resource.Resource, e
 			rg:       opts.ResourceGroup,
 		})
 	}
+
+	log.Trace("done")
 
 	return resources, nil
 }

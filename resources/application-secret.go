@@ -12,9 +12,11 @@ import (
 	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 )
 
+const ApplicationSecretResource = "ApplicationSecret"
+
 func init() {
 	resource.Register(resource.Registration{
-		Name:   "ApplicationSecret",
+		Name:   ApplicationSecretResource,
 		Scope:  nuke.Tenant,
 		Lister: ApplicationSecretLister{},
 	})
@@ -55,7 +57,8 @@ type ApplicationSecretLister struct {
 
 func (l ApplicationSecretLister) List(o interface{}) ([]resource.Resource, error) {
 	opts := o.(nuke.ListerOpts)
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+
+	log := logrus.WithField("r", ApplicationSecretResource).WithField("s", opts.SubscriptionId)
 
 	client := msgraph.NewApplicationsClient()
 	client.BaseClient.Authorizer = opts.Authorizers.Graph
@@ -63,16 +66,16 @@ func (l ApplicationSecretLister) List(o interface{}) ([]resource.Resource, error
 
 	resources := make([]resource.Resource, 0)
 
-	logrus.Trace("attempting to list service principals")
+	log.Trace("attempting to list application secrets")
 
-	ctx := context.Background()
+	ctx := context.TODO()
 
 	entities, _, err := client.List(ctx, odata.Query{})
 	if err != nil {
 		return nil, err
 	}
 
-	logrus.Trace("listing ....")
+	log.Trace("listing application secrets")
 
 	for _, entity := range *entities {
 		for _, cred := range *entity.PasswordCredentials {
@@ -85,6 +88,8 @@ func (l ApplicationSecretLister) List(o interface{}) ([]resource.Resource, error
 			})
 		}
 	}
+
+	log.Trace("done")
 
 	return resources, nil
 }

@@ -13,12 +13,16 @@ import (
 	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
 )
 
+const StorageAccountResource = "StorageAccount"
+
 func init() {
 	resource.Register(resource.Registration{
-		Name:      "StorageAccount",
-		Scope:     nuke.ResourceGroup,
-		Lister:    StorageAccountLister{},
-		DependsOn: []string{"VirtualMachine"},
+		Name:   StorageAccountResource,
+		Scope:  nuke.ResourceGroup,
+		Lister: StorageAccountLister{},
+		DependsOn: []string{
+			VirtualMachineResource,
+		},
 	})
 }
 
@@ -53,7 +57,7 @@ type StorageAccountLister struct {
 func (l StorageAccountLister) List(o interface{}) ([]resource.Resource, error) {
 	opts := o.(nuke.ListerOpts)
 
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+	log := logrus.WithField("r", StorageAccountResource).WithField("s", opts.SubscriptionId)
 
 	client := storage.NewAccountsClient(opts.SubscriptionId)
 	client.Authorizer = opts.Authorizers.Management
@@ -62,7 +66,7 @@ func (l StorageAccountLister) List(o interface{}) ([]resource.Resource, error) {
 
 	resources := make([]resource.Resource, 0)
 
-	logrus.Trace("attempting to list ssh key")
+	log.Trace("attempting to list ssh key")
 
 	ctx := context.Background()
 	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup)
@@ -70,10 +74,10 @@ func (l StorageAccountLister) List(o interface{}) ([]resource.Resource, error) {
 		return nil, err
 	}
 
-	logrus.Trace("listing ....")
+	log.Trace("listing storage accounts")
 
 	for list.NotDone() {
-		logrus.Trace("list not done")
+		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &StorageAccount{
 				client: client,
@@ -86,6 +90,8 @@ func (l StorageAccountLister) List(o interface{}) ([]resource.Resource, error) {
 			return nil, err
 		}
 	}
+
+	log.Trace("done")
 
 	return resources, nil
 }
