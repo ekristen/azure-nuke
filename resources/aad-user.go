@@ -8,8 +8,8 @@ import (
 	"github.com/manicminer/hamilton/msgraph"
 	"github.com/sirupsen/logrus"
 
-	"github.com/ekristen/cloud-nuke-sdk/pkg/resource"
-	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
+	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/types"
 )
 
 const AzureADUserResource = "AzureADUser"
@@ -23,31 +23,6 @@ func init() {
 			AzureAdGroupResource,
 		},
 	})
-}
-
-type AzureADUser struct {
-	client *msgraph.UsersClient
-	id     *string
-	name   *string
-	upn    *string
-}
-
-func (r *AzureADUser) Remove() error {
-	_, err := r.client.Delete(context.TODO(), *r.id)
-	return err
-}
-
-func (r *AzureADUser) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", *r.name)
-	properties.Set("UserPrincipalName", *r.upn)
-
-	return properties
-}
-
-func (r *AzureADUser) String() string {
-	return *r.id
 }
 
 type AzureADUserLister struct {
@@ -85,4 +60,29 @@ func (l AzureADUserLister) List(o interface{}) ([]resource.Resource, error) {
 	}
 
 	return resources, nil
+}
+
+type AzureADUser struct {
+	client *msgraph.UsersClient
+	id     *string
+	name   *string
+	upn    *string
+}
+
+func (r *AzureADUser) Remove() error {
+	_, err := r.client.Delete(context.TODO(), *r.id)
+	return err
+}
+
+func (r *AzureADUser) Properties() types.Properties {
+	properties := types.NewProperties()
+
+	properties.Set("Name", *r.name)
+	properties.Set("UserPrincipalName", *r.upn)
+
+	return properties
+}
+
+func (r *AzureADUser) String() string {
+	return *r.id
 }

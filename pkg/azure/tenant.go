@@ -3,7 +3,7 @@ package azure
 import (
 	"context"
 	"fmt"
-	"github.com/ekristen/cloud-nuke-sdk/pkg/utils"
+	"slices"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -61,7 +61,7 @@ func NewTenant(pctx context.Context, authorizers Authorizers, tenantId string, s
 			return nil, err
 		}
 		for _, s := range list.Values() {
-			if len(subscriptionIds) > 0 && !utils.StringSliceContains(subscriptionIds, *s.SubscriptionID) {
+			if len(subscriptionIds) > 0 && !slices.Contains(subscriptionIds, *s.SubscriptionID) {
 				logrus.Warn("skipping subscription id: %s (reason: not requested)", *s.SubscriptionID)
 				continue
 			}

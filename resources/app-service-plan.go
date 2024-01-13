@@ -9,8 +9,8 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/web/mgmt/2021-03-01/web"
 
-	"github.com/ekristen/cloud-nuke-sdk/pkg/resource"
-	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
+	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/types"
 )
 
 const AppServicePlanResource = "AppServicePlan"

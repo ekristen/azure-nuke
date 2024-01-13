@@ -9,8 +9,8 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
 
-	"github.com/ekristen/cloud-nuke-sdk/pkg/resource"
-	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
+	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/types"
 )
 
 const PrivateDNSZoneResource = "PrivateDNSZone"

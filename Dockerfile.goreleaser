@@ -1,9 +1,0 @@
-FROM alpine:3.16.0
-ENTRYPOINT ["/usr/local/bin/azure-nuke"]
-
-RUN apk add --no-cache ca-certificates 
-RUN adduser -D azure-nuke
-
-COPY azure-nuke /usr/local/bin/azure-nuke
-
-USER azure-nuke

@@ -9,8 +9,8 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-05-01/network"
 
-	"github.com/ekristen/cloud-nuke-sdk/pkg/resource"
-	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
+	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/types"
 )
 
 const VirtualNetworkResource = "VirtualNetwork"
@@ -22,32 +22,6 @@ func init() {
 		Lister: VirtualNetworkLister{},
 	})
 }
-
-type VirtualNetwork struct {
-	client network.VirtualNetworksClient
-	name   *string
-	rg     *string
-}
-
-func (r *VirtualNetwork) Remove() error {
-	_, err := r.client.Delete(context.TODO(), *r.rg, *r.name)
-	return err
-}
-
-func (r *VirtualNetwork) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", *r.name)
-	properties.Set("ResourceGroup", *r.rg)
-
-	return properties
-}
-
-func (r *VirtualNetwork) String() string {
-	return *r.name
-}
-
-// ---------------------------------------------
 
 type VirtualNetworkLister struct {
 }
@@ -92,4 +66,30 @@ func (l VirtualNetworkLister) List(o interface{}) ([]resource.Resource, error) {
 	log.Trace("debug")
 
 	return resources, nil
+}
+
+// ---------------------------------------------
+
+type VirtualNetwork struct {
+	client network.VirtualNetworksClient
+	name   *string
+	rg     *string
+}
+
+func (r *VirtualNetwork) Remove() error {
+	_, err := r.client.Delete(context.TODO(), *r.rg, *r.name)
+	return err
+}
+
+func (r *VirtualNetwork) Properties() types.Properties {
+	properties := types.NewProperties()
+
+	properties.Set("Name", *r.name)
+	properties.Set("ResourceGroup", *r.rg)
+
+	return properties
+}
+
+func (r *VirtualNetwork) String() string {
+	return *r.name
 }

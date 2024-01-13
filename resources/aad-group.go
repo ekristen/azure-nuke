@@ -8,8 +8,8 @@ import (
 	"github.com/manicminer/hamilton/msgraph"
 	"github.com/sirupsen/logrus"
 
-	"github.com/ekristen/cloud-nuke-sdk/pkg/resource"
-	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
+	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/types"
 )
 
 const AzureAdGroupResource = "AzureADGroup"
@@ -20,12 +20,6 @@ func init() {
 		Scope:  nuke.Tenant,
 		Lister: AzureAdGroupLister{},
 	})
-}
-
-type AzureAdGroup struct {
-	client *msgraph.GroupsClient
-	id     *string
-	name   *string
 }
 
 type AzureAdGroupLister struct {
@@ -62,6 +56,12 @@ func (l AzureAdGroupLister) List(o interface{}) ([]resource.Resource, error) {
 	}
 
 	return resources, nil
+}
+
+type AzureAdGroup struct {
+	client *msgraph.GroupsClient
+	id     *string
+	name   *string
 }
 
 func (r *AzureAdGroup) Remove() error {
