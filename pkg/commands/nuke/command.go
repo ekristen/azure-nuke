@@ -9,10 +9,10 @@ import (
 	"github.com/ekristen/azure-nuke/pkg/common"
 	"github.com/ekristen/azure-nuke/pkg/config"
 	"github.com/ekristen/azure-nuke/pkg/nuke"
-	sdknuke "github.com/ekristen/cloud-nuke-sdk/pkg/nuke"
-	"github.com/ekristen/cloud-nuke-sdk/pkg/resource"
-	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
-	"github.com/ekristen/cloud-nuke-sdk/pkg/utils"
+	sdknuke "github.com/ekristen/libnuke/pkg/nuke"
+	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/types"
+	"github.com/ekristen/libnuke/pkg/utils"
 	"github.com/hashicorp/go-azure-sdk/sdk/auth"
 	"github.com/hashicorp/go-azure-sdk/sdk/auth/autorest"
 	"github.com/hashicorp/go-azure-sdk/sdk/environments"
@@ -111,13 +111,16 @@ func execute(c *cli.Context) error {
 
 	logrus.Trace("preparing to run nuke")
 
-	params := sdknuke.Parameters{
-		ConfigPath: c.Path("config"),
-		Force:      c.Bool("force"),
-		ForceSleep: c.Int("force-sleep"),
-		Quiet:      c.Bool("quiet"),
-		NoDryRun:   c.Bool("no-dry-run"),
-		Targets:    c.StringSlice("only-resource"),
+	params := nuke.Parameters{
+		Parameters: sdknuke.Parameters{
+			Force:      c.Bool("force"),
+			ForceSleep: c.Int("force-sleep"),
+			Quiet:      c.Bool("quiet"),
+			NoDryRun:   c.Bool("no-dry-run"),
+		},
+		Targets:      c.StringSlice("only-resource"),
+		Excludes:     c.StringSlice("exclude-resource"),
+		CloudControl: c.StringSlice("cloud-control"),
 	}
 
 	tenant, err := azure.NewTenant(ctx, authorizers, c.String("tenant-id"), c.StringSlice("subscription-id"))
@@ -125,15 +128,13 @@ func execute(c *cli.Context) error {
 		return err
 	}
 
-	params.ID = c.String("tenant-id")
-
 	n := nuke.New(params, tenant)
 
 	n.RegisterValidateHandler(func() error {
 		return n.Config.Validate(n.Tenant.ID)
 	})
 
-	parsedConfig, err := config.Load(params.ConfigPath)
+	parsedConfig, err := config.Load(c.Path("config"))
 	if err != nil {
 		return err
 	}
@@ -184,30 +185,36 @@ func execute(c *cli.Context) error {
 	)
 
 	logrus.Debug("registering scanner for tenant resources")
-	n.RegisterScanner(nuke.Tenant, sdknuke.NewScanner(fmt.Sprintf("ten/%s", n.Tenant.ID), tenantResourceTypes, nuke.ListerOpts{
+	if err := n.RegisterScanner(nuke.Tenant, sdknuke.NewScanner(fmt.Sprintf("ten/%s", n.Tenant.ID), tenantResourceTypes, nuke.ListerOpts{
 		Authorizers:    n.Tenant.Authorizers,
 		TenantId:       n.Tenant.ID,
 		SubscriptionId: "tenant",
 		ResourceGroup:  "",
-	}))
+	})); err != nil {
+		return err
+	}
 
 	for _, subscriptionId := range n.Tenant.SubscriptionIds {
 		logrus.Debug("registering scanner for subscription resources")
-		n.RegisterScanner(nuke.Subscription, sdknuke.NewScanner(fmt.Sprintf("sub/%s", subscriptionId), subscriptionResourceTypes, nuke.ListerOpts{
+		if err := n.RegisterScanner(nuke.Subscription, sdknuke.NewScanner(fmt.Sprintf("sub/%s", subscriptionId), subscriptionResourceTypes, nuke.ListerOpts{
 			Authorizers:    n.Tenant.Authorizers,
 			TenantId:       n.Tenant.ID,
 			SubscriptionId: subscriptionId,
 			ResourceGroup:  "",
-		}))
+		})); err != nil {
+			return err
+		}
 
 		for _, resourceGroup := range n.Tenant.ResourceGroups[subscriptionId] {
 			logrus.Debug("registering scanner for resource group resources")
-			n.RegisterScanner(nuke.ResourceGroup, sdknuke.NewScanner(fmt.Sprintf("rg/%s", resourceGroup), resourceGroupResourceTypes, nuke.ListerOpts{
+			if err := n.RegisterScanner(nuke.ResourceGroup, sdknuke.NewScanner(fmt.Sprintf("rg/%s", resourceGroup), resourceGroupResourceTypes, nuke.ListerOpts{
 				Authorizers:    n.Tenant.Authorizers,
 				TenantId:       n.Tenant.ID,
 				SubscriptionId: subscriptionId,
 				ResourceGroup:  resourceGroup,
-			}))
+			})); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -277,11 +284,12 @@ func init() {
 	}
 
 	cmd := &cli.Command{
-		Name:   "nuke",
-		Usage:  "nuke an azure tenant",
-		Flags:  append(flags, global.Flags()...),
-		Before: global.GlobalBefore,
-		Action: execute,
+		Name:    "run",
+		Aliases: []string{"nuke"},
+		Usage:   "run nuke against an azure tenant to remove all configured resources",
+		Flags:   append(flags, global.Flags()...),
+		Before:  global.Before,
+		Action:  execute,
 	}
 
 	common.RegisterCommand(cmd)

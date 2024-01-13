@@ -2,22 +2,34 @@ package nuke
 
 import (
 	"github.com/ekristen/azure-nuke/pkg/azure"
-	sdknuke "github.com/ekristen/cloud-nuke-sdk/pkg/nuke"
+	"github.com/ekristen/azure-nuke/pkg/config"
+	sdknuke "github.com/ekristen/libnuke/pkg/nuke"
 )
+
+type Parameters struct {
+	sdknuke.Parameters
+
+	Targets      []string
+	Excludes     []string
+	CloudControl []string
+}
 
 type Nuke struct {
 	sdknuke.Nuke
+	Parameters     Parameters
+	Config         *config.Nuke
 	Tenant         *azure.Tenant
 	TenantId       string
 	SubscriptionId string
 }
 
-func New(params sdknuke.Parameters, tenant *azure.Tenant) *Nuke {
+func New(params Parameters, tenant *azure.Tenant) *Nuke {
 	n := Nuke{
 		Nuke: sdknuke.Nuke{
-			Parameters: params,
+			Parameters: params.Parameters,
 		},
-		Tenant: tenant,
+		Parameters: params,
+		Tenant:     tenant,
 	}
 
 	return &n

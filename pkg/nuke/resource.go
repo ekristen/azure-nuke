@@ -2,7 +2,7 @@ package nuke
 
 import (
 	"github.com/ekristen/azure-nuke/pkg/azure"
-	"github.com/ekristen/cloud-nuke-sdk/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/resource"
 )
 
 const (

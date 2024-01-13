@@ -10,8 +10,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"time"
 
-	"github.com/ekristen/cloud-nuke-sdk/pkg/resource"
-	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
+	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/types"
 )
 
 const BudgetResource = "Budget"

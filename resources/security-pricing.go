@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/ekristen/azure-nuke/pkg/nuke"
-	"github.com/ekristen/cloud-nuke-sdk/pkg/resource"
-	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
+	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/types"
 	"github.com/sirupsen/logrus"
 	"time"
 

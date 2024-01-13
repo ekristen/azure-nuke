@@ -11,15 +11,12 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/security/armsecurity v0.11.0
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/aws/smithy-go v1.13.5
-	github.com/ekristen/cloud-nuke-sdk v0.0.0-20240101030740-70330ca30aa7
+	github.com/ekristen/libnuke v0.0.0-20240113231217-35e6af0285cc
 	github.com/hashicorp/go-azure-helpers v0.55.0
 	github.com/hashicorp/go-azure-sdk v0.20230508.1171356
 	github.com/manicminer/hamilton v0.61.0
-	github.com/rebuy-de/aws-nuke v2.10.0+incompatible
 	github.com/sirupsen/logrus v1.9.3
-	github.com/stevenle/topsort v0.2.0
 	github.com/urfave/cli/v2 v2.3.0
-	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -35,7 +32,6 @@ require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.0.0 // indirect
 	github.com/agext/levenshtein v1.2.2 // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
-	github.com/aws/aws-sdk-go v1.49.13 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/fatih/color v1.16.0 // indirect
 	github.com/gofrs/uuid v4.2.0+incompatible // indirect
@@ -56,7 +52,6 @@ require (
 	github.com/hashicorp/terraform-plugin-go v0.14.1 // indirect
 	github.com/hashicorp/terraform-plugin-log v0.7.0 // indirect
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.24.1 // indirect
-	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
@@ -64,12 +59,13 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
+	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/russross/blackfriday/v2 v2.0.1 // indirect
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
+	github.com/stevenle/topsort v0.2.0 // indirect
 	github.com/vmihailenco/msgpack v4.0.4+incompatible // indirect
 	github.com/vmihailenco/msgpack/v4 v4.3.12 // indirect
 	github.com/vmihailenco/tagparser v0.1.1 // indirect
@@ -77,11 +73,10 @@ require (
 	golang.org/x/crypto v0.14.0 // indirect
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/oauth2 v0.4.0 // indirect
+	golang.org/x/sync v0.6.0 // indirect
 	golang.org/x/sys v0.14.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	software.sslmate.com/src/go-pkcs12 v0.2.0 // indirect
 )
-
-//replace github.com/manicminer/hamilton => github.com/ekristen/hamilton v0.41.2-0.20220531231900-4379b9e63cfe

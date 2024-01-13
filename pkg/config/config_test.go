@@ -6,9 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ekristen/cloud-nuke-sdk/pkg/config"
-	"github.com/ekristen/cloud-nuke-sdk/pkg/filter"
-	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
+	"github.com/ekristen/libnuke/pkg/filter"
+	"github.com/ekristen/libnuke/pkg/types"
 )
 
 func TestConfigBlocklist(t *testing.T) {
@@ -66,17 +65,17 @@ func TestLoadExampleConfig(t *testing.T) {
 						filter.NewExactFilter("uber.admin -> AdministratorAccess"),
 					},
 				},
-				ResourceTypes: config.ResourceTypes{
+				ResourceTypes: ResourceTypes{
 					Targets:  types.Collection{"S3Bucket"},
 					Excludes: nil,
 				},
 			},
 		},
-		resourceTypes: config.ResourceTypes{
+		ResourceTypes: ResourceTypes{
 			Targets:  types.Collection{"DynamoDBTable", "S3Bucket", "S3Object"},
 			Excludes: types.Collection{"IAMRole"},
 		},
-		presets: map[string]config.PresetDefinitions{
+		Presets: map[string]PresetDefinitions{
 			"terraform": {
 				Filters: filter.Filters{
 					"S3Bucket": {

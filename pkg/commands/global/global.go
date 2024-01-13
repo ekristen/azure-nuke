@@ -35,7 +35,7 @@ func Flags() []cli.Flag {
 	return globalFlags
 }
 
-func GlobalBefore(c *cli.Context) error {
+func Before(c *cli.Context) error {
 	formatter := &logrus.TextFormatter{
 		DisableColors: c.Bool("log-disable-color"),
 		FullTimestamp: c.Bool("log-full-timestamp"),

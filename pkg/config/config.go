@@ -2,8 +2,8 @@ package config
 
 import (
 	"fmt"
-	"github.com/ekristen/cloud-nuke-sdk/pkg/config"
-	"github.com/ekristen/cloud-nuke-sdk/pkg/filter"
+	"github.com/ekristen/libnuke/pkg/filter"
+	"github.com/ekristen/libnuke/pkg/types"
 	"os"
 
 	log "github.com/sirupsen/logrus"
@@ -11,22 +11,26 @@ import (
 )
 
 type Tenant struct {
-	Filters       filter.Filters       `yaml:"filters"`
-	ResourceTypes config.ResourceTypes `yaml:"resource-types"`
-	Presets       []string             `yaml:"presets"`
+	Filters       filter.Filters `yaml:"filters"`
+	ResourceTypes ResourceTypes  `yaml:"resource-types"`
+	Presets       []string       `yaml:"presets"`
+}
+
+type ResourceTypes struct {
+	Targets      types.Collection `yaml:"targets"`
+	Excludes     types.Collection `yaml:"excludes"`
+	CloudControl types.Collection `yaml:"cloud-control"`
 }
 
 type Nuke struct {
-	Tenants         map[string]Tenant                   `yaml:"tenants"`
-	TenantBlocklist []string                            `yaml:"tenant-blocklist"`
-	ResourceTypes   config.ResourceTypes                `yaml:"resource-types"`
-	FeatureFlags    config.FeatureFlags                 `yaml:"feature-flags"`
-	Presets         map[string]config.PresetDefinitions `yaml:"presets"`
+	Tenants         map[string]Tenant            `yaml:"tenants"`
+	TenantBlocklist []string                     `yaml:"tenant-blocklist"`
+	ResourceTypes   ResourceTypes                `yaml:"resource-types"`
+	FeatureFlags    FeatureFlags                 `yaml:"feature-flags"`
+	Presets         map[string]PresetDefinitions `yaml:"presets"`
 }
 
 type FeatureFlags struct {
-	DisableDeletionProtection  DisableDeletionProtection `yaml:"disable-deletion-protection"`
-	ForceDeleteLightsailAddOns bool                      `yaml:"force-delete-lightsail-addons"`
 }
 
 type DisableDeletionProtection struct {
@@ -60,15 +64,15 @@ func Load(path string) (*Nuke, error) {
 	return cfg, nil
 }
 
-func (c *Nuke) GetResourceTypes() config.ResourceTypes {
+func (c *Nuke) GetResourceTypes() ResourceTypes {
 	return c.ResourceTypes
 }
 
-func (c *Nuke) GetFeatureFlags() config.FeatureFlags {
+func (c *Nuke) GetFeatureFlags() FeatureFlags {
 	return c.FeatureFlags
 }
 
-func (c *Nuke) GetPresets() map[string]config.PresetDefinitions {
+func (c *Nuke) GetPresets() map[string]PresetDefinitions {
 	return c.Presets
 }
 

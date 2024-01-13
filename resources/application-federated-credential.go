@@ -8,8 +8,8 @@ import (
 	"github.com/manicminer/hamilton/msgraph"
 	"github.com/sirupsen/logrus"
 
-	"github.com/ekristen/cloud-nuke-sdk/pkg/resource"
-	"github.com/ekristen/cloud-nuke-sdk/pkg/types"
+	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/types"
 )
 
 const ApplicationFederatedCredentialResource = "ApplicationFederatedCredential"
