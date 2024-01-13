@@ -17,18 +17,16 @@ This tool is designed to target an Azure Tenant and all subscriptions within the
 By default no destructive actions will be taken.
 
 ```bash
-azure-nuke nuke \
+azure-nuke run \
   --tenant-id=00000000-0000-0000-0000-000000000000 \
-  --resource-id=api://11111111-1111-1111-1111-111111111111 \
   --config=./config.yaml
 ```
 
 To actually destroy you must add the `--no-dry-run` cli parameter.
 
 ```bash
-azure-nuke nuke \
+azure-nuke run \
   --tenant-id=00000000-0000-0000-0000-000000000000 \
-  --resource-id=api://11111111-1111-1111-1111-111111111111 \
   --config=./config.yaml \
   --no-dry-run
 ```
@@ -43,14 +41,14 @@ USAGE:
    azure-nuke [global options] command [command options] [arguments...]
 
 VERSION:
-   0.7.1
+   1.0.0
 
 AUTHOR:
    Erik Kristensen <erik@erikkristensen.com>
 
 COMMANDS:
-   nuke     nuke an azure tenant
-   help, h  Shows a list of commands or help for one command
+   run, nuke  run nuke against an azure tenant to remove all configured resources
+   help, h    Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
    --help, -h     show help (default: false)
