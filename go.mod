@@ -11,7 +11,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/security/armsecurity v0.11.0
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/aws/smithy-go v1.13.5
-	github.com/ekristen/libnuke v0.0.0-20240113231217-35e6af0285cc
+	github.com/ekristen/libnuke v0.0.0-20240113235313-c6de1cd3e403
 	github.com/hashicorp/go-azure-helpers v0.55.0
 	github.com/hashicorp/go-azure-sdk v0.20230508.1171356
 	github.com/manicminer/hamilton v0.61.0

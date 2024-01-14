@@ -19,12 +19,32 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	"io/ioutil"
+	"log"
 	"os"
 )
+
+type log2LogrusWriter struct {
+	entry *logrus.Entry
+}
+
+func (w *log2LogrusWriter) Write(b []byte) (int, error) {
+	n := len(b)
+	if n > 0 && b[n-1] == '\n' {
+		b = b[:n-1]
+	}
+	w.entry.Debug(string(b))
+	return n, nil
+}
 
 func execute(c *cli.Context) error {
 	ctx, cancel := context.WithCancel(c.Context)
 	defer cancel()
+
+	// This is to purposefully capture the output from the standard logger that is written to by several
+	// of the azure sdk golang libraries by hashicorp
+	log.SetOutput(&log2LogrusWriter{
+		entry: logrus.WithField("source", "standard-logger"),
+	})
 
 	logrus.Tracef("tenant id: %s", c.String("tenant-id"))
 
@@ -128,20 +148,23 @@ func execute(c *cli.Context) error {
 		return err
 	}
 
-	n := nuke.New(params, tenant)
-
-	n.RegisterValidateHandler(func() error {
-		return n.Config.Validate(n.Tenant.ID)
-	})
-
 	parsedConfig, err := config.Load(c.Path("config"))
 	if err != nil {
 		return err
 	}
-	n.Config = parsedConfig
 
-	tenantConfig := parsedConfig.Tenants[n.Tenant.ID]
+	filters, err := parsedConfig.Filters(c.String("tenant-id"))
+	if err != nil {
+		return err
+	}
 
+	n := nuke.New(params, parsedConfig, filters, tenant)
+
+	n.RegisterValidateHandler(func() error {
+		return parsedConfig.Validate(c.String("tenant-id"))
+	})
+
+	tenantConfig := parsedConfig.Tenants[c.String("tenant-id")]
 	tenantResourceTypes := utils.ResolveResourceTypes(
 		resource.GetNamesForScope(nuke.Tenant),
 		[]types.Collection{
