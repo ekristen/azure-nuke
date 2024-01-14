@@ -3,15 +3,19 @@ package resources
 import (
 	"context"
 	"fmt"
-	"github.com/ekristen/azure-nuke/pkg/nuke"
+	"time"
+
+	"github.com/gotidy/ptr"
+	"github.com/sirupsen/logrus"
+
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonids"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/consumption/2021-10-01/budgets"
 	"github.com/hashicorp/go-azure-sdk/sdk/environments"
-	"github.com/sirupsen/logrus"
-	"time"
 
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
+
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
 const BudgetResource = "Budget"
@@ -26,8 +30,8 @@ func init() {
 
 type Budget struct {
 	client *budgets.BudgetsClient
-	name   string
-	rg     string
+	name   *string
+	id     *string
 }
 
 type BudgetLister struct{}
@@ -71,7 +75,8 @@ func (l BudgetLister) List(o interface{}) ([]resource.Resource, error) {
 	for _, entry := range *list.Model {
 		resources = append(resources, &Budget{
 			client: client,
-			name:   *entry.Name,
+			name:   entry.Name,
+			id:     entry.Id,
 		})
 	}
 
@@ -83,7 +88,7 @@ func (l BudgetLister) List(o interface{}) ([]resource.Resource, error) {
 func (r *Budget) Remove() error {
 	_, err := r.client.Delete(context.TODO(), budgets.ScopedBudgetId{
 		Scope:      "",
-		BudgetName: r.name,
+		BudgetName: ptr.ToString(r.name),
 	})
 	return err
 }
@@ -97,5 +102,5 @@ func (r *Budget) Properties() types.Properties {
 }
 
 func (r *Budget) String() string {
-	return r.name
+	return ptr.ToString(r.name)
 }
