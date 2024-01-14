@@ -3,7 +3,10 @@ package nuke
 import (
 	"github.com/ekristen/azure-nuke/pkg/azure"
 	"github.com/ekristen/azure-nuke/pkg/config"
+	"github.com/ekristen/libnuke/pkg/featureflag"
+	"github.com/ekristen/libnuke/pkg/filter"
 	sdknuke "github.com/ekristen/libnuke/pkg/nuke"
+	"github.com/sirupsen/logrus"
 )
 
 type Parameters struct {
@@ -23,14 +26,19 @@ type Nuke struct {
 	SubscriptionId string
 }
 
-func New(params Parameters, tenant *azure.Tenant) *Nuke {
+func New(params Parameters, config *config.Nuke, filters filter.Filters, tenant *azure.Tenant) *Nuke {
 	n := Nuke{
 		Nuke: sdknuke.Nuke{
-			Parameters: params.Parameters,
+			Parameters:   params.Parameters,
+			FeatureFlags: &featureflag.FeatureFlags{},
+			Filters:      filters,
 		},
 		Parameters: params,
+		Config:     config,
 		Tenant:     tenant,
 	}
+
+	n.SetLogger(logrus.WithField("component", "nuke"))
 
 	return &n
 }
