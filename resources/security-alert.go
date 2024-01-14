@@ -3,15 +3,18 @@ package resources
 import (
 	"context"
 	"fmt"
-	"github.com/aws/smithy-go/ptr"
-	"github.com/ekristen/azure-nuke/pkg/nuke"
-	"github.com/ekristen/libnuke/pkg/resource"
-	"github.com/ekristen/libnuke/pkg/types"
-	"github.com/sirupsen/logrus"
 	"regexp"
 	"time"
 
+	"github.com/gotidy/ptr"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Azure/azure-sdk-for-go/services/preview/security/mgmt/v3.0/security"
+
+	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/types"
+
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
 const SecurityAlertResource = "SecurityAlert"

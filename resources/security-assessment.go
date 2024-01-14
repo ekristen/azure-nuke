@@ -3,13 +3,17 @@ package resources
 import (
 	"context"
 	"fmt"
+	"strings"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/security/armsecurity"
 	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/ekristen/azure-nuke/pkg/nuke"
+
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
-	"github.com/sirupsen/logrus"
-	"strings"
+
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
 const SecurityAssessmentResource = "SecurityAssessment"

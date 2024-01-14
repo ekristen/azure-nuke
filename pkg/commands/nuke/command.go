@@ -18,7 +18,6 @@ import (
 	"github.com/hashicorp/go-azure-sdk/sdk/environments"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
-	"io/ioutil"
 	"log"
 	"os"
 )
@@ -95,7 +94,7 @@ func execute(c *cli.Context) error {
 		authorizers.IdentityCreds = creds
 	} else if c.String("client-federated-token-file") != "" {
 		logrus.Debug("authentication type: federated token")
-		token, err := ioutil.ReadFile(c.String("client-federated-token-file"))
+		token, err := os.ReadFile(c.String("client-federated-token-file"))
 		if err != nil {
 			return err
 		}

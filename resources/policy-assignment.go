@@ -2,13 +2,16 @@ package resources
 
 import (
 	"context"
-	"github.com/ekristen/azure-nuke/pkg/nuke"
-	"github.com/ekristen/libnuke/pkg/resource"
-	"github.com/ekristen/libnuke/pkg/types"
-	"github.com/sirupsen/logrus"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Azure/azure-sdk-for-go/services/preview/resources/mgmt/2021-06-01-preview/policy"
+
+	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/types"
+
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
 const PolicyAssignmentResource = "PolicyAssignment"

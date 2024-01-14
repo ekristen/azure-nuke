@@ -3,16 +3,19 @@ package resources
 import (
 	"context"
 	"fmt"
-	"github.com/aws/smithy-go/ptr"
-	"github.com/ekristen/azure-nuke/pkg/nuke"
+
 	"strings"
+
+	"github.com/gotidy/ptr"
+	"github.com/sirupsen/logrus"
 
 	"github.com/hashicorp/go-azure-sdk/sdk/odata"
 	"github.com/manicminer/hamilton/msgraph"
-	"github.com/sirupsen/logrus"
 
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
+
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
 const ServicePrincipalResource = "ServicePrincipal"

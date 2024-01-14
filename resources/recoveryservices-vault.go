@@ -2,15 +2,18 @@ package resources
 
 import (
 	"context"
-	"github.com/aws/smithy-go/ptr"
-	"github.com/ekristen/azure-nuke/pkg/nuke"
-	"github.com/ekristen/libnuke/pkg/resource"
-	"github.com/ekristen/libnuke/pkg/types"
-	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonids"
-	"github.com/sirupsen/logrus"
 	"time"
 
+	"github.com/gotidy/ptr"
+	"github.com/sirupsen/logrus"
+
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonids"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/recoveryservices/2023-02-01/vaults"
+
+	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/types"
+
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
 const RecoveryServicesVaultResource = "RecoveryServicesVault"

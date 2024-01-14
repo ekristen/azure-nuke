@@ -62,7 +62,7 @@ func NewTenant(pctx context.Context, authorizers Authorizers, tenantId string, s
 		}
 		for _, s := range list.Values() {
 			if len(subscriptionIds) > 0 && !slices.Contains(subscriptionIds, *s.SubscriptionID) {
-				logrus.Warn("skipping subscription id: %s (reason: not requested)", *s.SubscriptionID)
+				logrus.Warnf("skipping subscription id: %s (reason: not requested)", *s.SubscriptionID)
 				continue
 			}
 
