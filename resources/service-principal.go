@@ -61,6 +61,7 @@ func (r *ServicePrincipal) Remove() error {
 func (r *ServicePrincipal) Properties() types.Properties {
 	properties := types.NewProperties()
 
+	properties.Set("ID", r.id)
 	properties.Set("Name", r.name)
 	properties.Set("AppOwnerId", r.appOwner)
 	properties.Set("ServicePrincipalType", r.spType)
@@ -69,7 +70,7 @@ func (r *ServicePrincipal) Properties() types.Properties {
 }
 
 func (r *ServicePrincipal) String() string {
-	return ptr.ToString(r.id)
+	return ptr.ToString(r.name)
 }
 
 // -------------------------------------------------------------
@@ -99,6 +100,13 @@ func (l ServicePrincipalsLister) List(o interface{}) ([]resource.Resource, error
 	log.Trace("listing resource start")
 
 	for _, entity := range *entities {
+		// Filtering out Microsoft owned Service Principals, because otherwise it needlessly adds 3000+
+		// resources that have to get filtered out later. This instead does it optimistically here.
+		// Ideally we'd be able to use odata.Query above, but it's not supported by the graph at this time.
+		if ptr.ToString(entity.AppOwnerOrganizationId) == "f8cdef31-a31e-4b4a-93e4-5f571e91255a" {
+			continue
+		}
+
 		resources = append(resources, &ServicePrincipal{
 			client:   client,
 			id:       entity.ID(),
