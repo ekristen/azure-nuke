@@ -12,7 +12,7 @@ const (
 )
 
 type ListerOpts struct {
-	Authorizers    azure.Authorizers
+	Authorizers    *azure.Authorizers
 	TenantId       string
 	SubscriptionId string
 	ResourceGroup  string
