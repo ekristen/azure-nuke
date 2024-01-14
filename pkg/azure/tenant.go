@@ -13,7 +13,7 @@ import (
 )
 
 type Tenant struct {
-	Authorizers Authorizers
+	Authorizers *Authorizers
 
 	ID              string
 	SubscriptionIds []string
@@ -23,7 +23,7 @@ type Tenant struct {
 	ResourceGroups map[string][]string
 }
 
-func NewTenant(pctx context.Context, authorizers Authorizers, tenantId string, subscriptionIds []string) (*Tenant, error) {
+func NewTenant(pctx context.Context, authorizers *Authorizers, tenantId string, subscriptionIds []string) (*Tenant, error) {
 	ctx, cancel := context.WithTimeout(pctx, time.Second*15)
 	defer cancel()
 
