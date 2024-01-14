@@ -72,11 +72,12 @@ func (r *AzureAdGroup) Remove() error {
 func (r *AzureAdGroup) Properties() types.Properties {
 	properties := types.NewProperties()
 
-	properties.Set("Name", *r.name)
+	properties.Set("ID", r.id)
+	properties.Set("Name", r.name)
 
 	return properties
 }
 
 func (r *AzureAdGroup) String() string {
-	return *r.id
+	return *r.name
 }

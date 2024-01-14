@@ -77,12 +77,13 @@ func (r *AzureADUser) Remove() error {
 func (r *AzureADUser) Properties() types.Properties {
 	properties := types.NewProperties()
 
-	properties.Set("Name", *r.name)
-	properties.Set("UserPrincipalName", *r.upn)
+	properties.Set("ID", r.id)
+	properties.Set("Name", r.name)
+	properties.Set("UserPrincipalName", r.upn)
 
 	return properties
 }
 
 func (r *AzureADUser) String() string {
-	return *r.id
+	return *r.name
 }
