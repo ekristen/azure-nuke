@@ -20,7 +20,7 @@ func init() {
 	resource.Register(resource.Registration{
 		Name:   ApplicationCertificateResource,
 		Scope:  nuke.Tenant,
-		Lister: ApplicationCertificateLister{},
+		Lister: &ApplicationCertificateLister{},
 	})
 }
 
@@ -35,8 +35,8 @@ func (r *ApplicationCertificate) Filter() error {
 	return nil
 }
 
-func (r *ApplicationCertificate) Remove() error {
-	_, err := r.client.Delete(context.TODO(), *r.id)
+func (r *ApplicationCertificate) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, *r.id)
 	return err
 }
 
@@ -55,8 +55,8 @@ func (r *ApplicationCertificate) String() string {
 type ApplicationCertificateLister struct {
 }
 
-func (l ApplicationCertificateLister) List(o interface{}) ([]resource.Resource, error) {
-	opts := o.(nuke.ListerOpts)
+func (l ApplicationCertificateLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
 
 	log := logrus.WithField("r", ApplicationCertificateResource).WithField("s", opts.SubscriptionId)
 
@@ -67,8 +67,6 @@ func (l ApplicationCertificateLister) List(o interface{}) ([]resource.Resource, 
 	resources := make([]resource.Resource, 0)
 
 	log.Trace("attempting to list application certificates")
-
-	ctx := context.TODO()
 
 	entities, _, err := client.List(ctx, odata.Query{})
 	if err != nil {

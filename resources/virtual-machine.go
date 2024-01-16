@@ -19,7 +19,7 @@ const VirtualMachineResource = "VirtualMachine"
 func init() {
 	resource.Register(resource.Registration{
 		Name:   VirtualMachineResource,
-		Lister: VirtualMachineLister{},
+		Lister: &VirtualMachineLister{},
 		Scope:  nuke.ResourceGroup,
 	})
 }
@@ -30,8 +30,8 @@ type VirtualMachine struct {
 	resourceGroup *string
 }
 
-func (r *VirtualMachine) Remove() error {
-	_, err := r.client.Delete(context.TODO(), *r.resourceGroup, *r.name, &[]bool{true}[0])
+func (r *VirtualMachine) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, *r.resourceGroup, *r.name, &[]bool{true}[0])
 	return err
 }
 
@@ -53,8 +53,8 @@ func (r *VirtualMachine) String() string {
 type VirtualMachineLister struct {
 }
 
-func (l VirtualMachineLister) List(o interface{}) ([]resource.Resource, error) {
-	opts := o.(nuke.ListerOpts)
+func (l VirtualMachineLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
 
 	log := logrus.WithField("r", VirtualMachineResource).WithField("s", opts.SubscriptionId)
 
@@ -66,8 +66,6 @@ func (l VirtualMachineLister) List(o interface{}) ([]resource.Resource, error) {
 	resources := make([]resource.Resource, 0)
 
 	log.Trace("attempting to list virtual machines")
-
-	ctx := context.TODO()
 
 	list, err := client.List(ctx, opts.ResourceGroup)
 	if err != nil {

@@ -22,7 +22,7 @@ func init() {
 	resource.Register(resource.Registration{
 		Name:   SecurityAssessmentResource,
 		Scope:  nuke.Subscription,
-		Lister: SecurityAssessmentLister{},
+		Lister: &SecurityAssessmentLister{},
 	})
 }
 
@@ -38,8 +38,8 @@ func (r *SecurityAssessment) Filter() error {
 	return nil
 }
 
-func (r *SecurityAssessment) Remove() error {
-	_, err := r.client.Delete(context.TODO(), strings.TrimLeft(to.String(r.resourceId), "/"), to.String(r.name), nil)
+func (r *SecurityAssessment) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, strings.TrimLeft(to.String(r.resourceId), "/"), to.String(r.name), nil)
 	return err
 }
 
@@ -63,8 +63,8 @@ func (r *SecurityAssessment) String() string {
 type SecurityAssessmentLister struct {
 }
 
-func (l SecurityAssessmentLister) List(o interface{}) ([]resource.Resource, error) {
-	opts := o.(nuke.ListerOpts)
+func (l SecurityAssessmentLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
 
 	log := logrus.
 		WithField("r", SecurityAssessmentResource).
@@ -83,7 +83,6 @@ func (l SecurityAssessmentLister) List(o interface{}) ([]resource.Resource, erro
 
 	log.Trace("listing resources")
 
-	ctx := context.TODO()
 	pager := client.NewListPager(fmt.Sprintf("/subscriptions/%s", opts.SubscriptionId), nil)
 	for pager.More() {
 		log.Trace("listing not done")

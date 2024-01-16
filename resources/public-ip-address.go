@@ -20,7 +20,7 @@ func init() {
 	resource.Register(resource.Registration{
 		Name:   PublicIPAddressesResource,
 		Scope:  nuke.ResourceGroup,
-		Lister: PublicIPAddressesLister{},
+		Lister: &PublicIPAddressesLister{},
 	})
 }
 
@@ -30,8 +30,8 @@ type PublicIPAddresses struct {
 	rg     *string
 }
 
-func (r *PublicIPAddresses) Remove() error {
-	_, err := r.client.Delete(context.TODO(), *r.rg, *r.name)
+func (r *PublicIPAddresses) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, *r.rg, *r.name)
 	return err
 }
 
@@ -51,8 +51,8 @@ func (r *PublicIPAddresses) String() string {
 type PublicIPAddressesLister struct {
 }
 
-func (l PublicIPAddressesLister) List(o interface{}) ([]resource.Resource, error) {
-	opts := o.(nuke.ListerOpts)
+func (l PublicIPAddressesLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
 
 	log := logrus.WithField("r", PublicIPAddressesResource).WithField("s", opts.SubscriptionId)
 
@@ -64,8 +64,6 @@ func (l PublicIPAddressesLister) List(o interface{}) ([]resource.Resource, error
 	resources := make([]resource.Resource, 0)
 
 	log.Trace("attempting to list public ip addresses")
-
-	ctx := context.Background()
 
 	list, err := client.List(ctx, opts.ResourceGroup)
 	if err != nil {

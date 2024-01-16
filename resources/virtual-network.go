@@ -20,15 +20,15 @@ func init() {
 	resource.Register(resource.Registration{
 		Name:   VirtualNetworkResource,
 		Scope:  nuke.ResourceGroup,
-		Lister: VirtualNetworkLister{},
+		Lister: &VirtualNetworkLister{},
 	})
 }
 
 type VirtualNetworkLister struct {
 }
 
-func (l VirtualNetworkLister) List(o interface{}) ([]resource.Resource, error) {
-	opts := o.(nuke.ListerOpts)
+func (l VirtualNetworkLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
 
 	log := logrus.WithField("r", VirtualNetworkResource).WithField("s", opts.SubscriptionId)
 
@@ -40,8 +40,6 @@ func (l VirtualNetworkLister) List(o interface{}) ([]resource.Resource, error) {
 	resources := make([]resource.Resource, 0)
 
 	log.Trace("attempting to list virtual networks")
-
-	ctx := context.Background()
 
 	list, err := client.List(ctx, opts.ResourceGroup)
 	if err != nil {
@@ -77,8 +75,8 @@ type VirtualNetwork struct {
 	rg     *string
 }
 
-func (r *VirtualNetwork) Remove() error {
-	_, err := r.client.Delete(context.TODO(), *r.rg, *r.name)
+func (r *VirtualNetwork) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, *r.rg, *r.name)
 	return err
 }
 

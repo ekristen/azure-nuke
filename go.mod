@@ -1,6 +1,6 @@
 module github.com/ekristen/azure-nuke
 
-go 1.21.0
+go 1.21.6
 
 require (
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible
@@ -10,7 +10,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/recoveryservices/armrecoveryservicesbackup v1.0.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/security/armsecurity v0.11.0
 	github.com/Azure/go-autorest/autorest/to v0.4.0
-	github.com/ekristen/libnuke v0.0.0-20240113235313-c6de1cd3e403
+	github.com/ekristen/libnuke v0.0.0-20240115160410-493db5654770
 	github.com/gotidy/ptr v1.4.0
 	github.com/hashicorp/go-azure-helpers v0.55.0
 	github.com/hashicorp/go-azure-sdk v0.20230508.1171356

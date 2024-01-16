@@ -20,7 +20,7 @@ func init() {
 	resource.Register(resource.Registration{
 		Name:   ContainerRegistryResource,
 		Scope:  nuke.ResourceGroup,
-		Lister: ContainerRegistryLister{},
+		Lister: &ContainerRegistryLister{},
 	})
 }
 
@@ -30,8 +30,8 @@ type ContainerRegistry struct {
 	resourceGroup *string
 }
 
-func (r *ContainerRegistry) Remove() error {
-	_, err := r.client.Delete(context.TODO(), *r.resourceGroup, *r.name)
+func (r *ContainerRegistry) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, *r.resourceGroup, *r.name)
 	return err
 }
 
@@ -51,8 +51,8 @@ func (r *ContainerRegistry) String() string {
 type ContainerRegistryLister struct {
 }
 
-func (l ContainerRegistryLister) List(o interface{}) ([]resource.Resource, error) {
-	opts := o.(nuke.ListerOpts)
+func (l ContainerRegistryLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
 
 	log := logrus.WithField("r", ContainerRegistryResource).WithField("s", opts.SubscriptionId)
 
@@ -64,8 +64,6 @@ func (l ContainerRegistryLister) List(o interface{}) ([]resource.Resource, error
 	resources := make([]resource.Resource, 0)
 
 	log.Trace("attempting to list container registries")
-
-	ctx := context.TODO()
 
 	list, err := client.List(ctx)
 	if err != nil {

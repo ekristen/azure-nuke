@@ -20,7 +20,7 @@ func init() {
 	resource.Register(resource.Registration{
 		Name:   StorageAccountResource,
 		Scope:  nuke.ResourceGroup,
-		Lister: StorageAccountLister{},
+		Lister: &StorageAccountLister{},
 		DependsOn: []string{
 			VirtualMachineResource,
 		},
@@ -33,8 +33,8 @@ type StorageAccount struct {
 	rg     string
 }
 
-func (r *StorageAccount) Remove() error {
-	_, err := r.client.Delete(context.TODO(), r.rg, r.name)
+func (r *StorageAccount) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, r.rg, r.name)
 	return err
 }
 
@@ -55,8 +55,8 @@ func (r *StorageAccount) String() string {
 type StorageAccountLister struct {
 }
 
-func (l StorageAccountLister) List(o interface{}) ([]resource.Resource, error) {
-	opts := o.(nuke.ListerOpts)
+func (l StorageAccountLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
 
 	log := logrus.WithField("r", StorageAccountResource).WithField("s", opts.SubscriptionId)
 
@@ -69,7 +69,6 @@ func (l StorageAccountLister) List(o interface{}) ([]resource.Resource, error) {
 
 	log.Trace("attempting to list ssh key")
 
-	ctx := context.Background()
 	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup)
 	if err != nil {
 		return nil, err

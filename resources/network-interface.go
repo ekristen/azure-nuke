@@ -20,15 +20,15 @@ func init() {
 	resource.Register(resource.Registration{
 		Name:   NetworkInterfaceResource,
 		Scope:  nuke.ResourceGroup,
-		Lister: NetworkInterfaceLister{},
+		Lister: &NetworkInterfaceLister{},
 	})
 }
 
 type NetworkInterfaceLister struct {
 }
 
-func (l NetworkInterfaceLister) List(o interface{}) ([]resource.Resource, error) {
-	opts := o.(nuke.ListerOpts)
+func (l NetworkInterfaceLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
 
 	log := logrus.WithField("r", NetworkInterfaceResource).WithField("s", opts.SubscriptionId)
 
@@ -40,8 +40,6 @@ func (l NetworkInterfaceLister) List(o interface{}) ([]resource.Resource, error)
 	resources := make([]resource.Resource, 0)
 
 	log.Trace("attempting to list network interfaces")
-
-	ctx := context.TODO()
 
 	list, err := client.List(ctx, opts.ResourceGroup)
 	if err != nil {
@@ -76,8 +74,8 @@ type NetworkInterface struct {
 	rg     *string
 }
 
-func (r *NetworkInterface) Remove() error {
-	_, err := r.client.Delete(context.TODO(), *r.rg, *r.name)
+func (r *NetworkInterface) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, *r.rg, *r.name)
 	return err
 }
 

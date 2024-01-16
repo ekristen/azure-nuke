@@ -22,7 +22,7 @@ func init() {
 	resource.Register(resource.Registration{
 		Name:   PolicyDefinitionResource,
 		Scope:  nuke.Subscription,
-		Lister: PolicyDefinitionLister{},
+		Lister: &PolicyDefinitionLister{},
 	})
 }
 
@@ -40,8 +40,8 @@ func (r *PolicyDefinition) Filter() error {
 	return nil
 }
 
-func (r *PolicyDefinition) Remove() error {
-	_, err := r.client.Delete(context.TODO(), r.name)
+func (r *PolicyDefinition) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, r.name)
 	return err
 }
 
@@ -62,8 +62,8 @@ func (r *PolicyDefinition) String() string {
 type PolicyDefinitionLister struct {
 }
 
-func (l PolicyDefinitionLister) List(o interface{}) ([]resource.Resource, error) {
-	opts := o.(nuke.ListerOpts)
+func (l PolicyDefinitionLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
 
 	log := logrus.WithField("r", PolicyDefinitionResource).WithField("s", opts.SubscriptionId)
 
@@ -76,7 +76,6 @@ func (l PolicyDefinitionLister) List(o interface{}) ([]resource.Resource, error)
 
 	log.Trace("attempting to list policy definitions")
 
-	ctx := context.TODO()
 	list, err := client.List(ctx, "", nil)
 	if err != nil {
 		return nil, err

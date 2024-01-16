@@ -46,10 +46,10 @@ func (r *SecurityAlert) Filter() error {
 	return nil
 }
 
-func (r *SecurityAlert) Remove() error {
+func (r *SecurityAlert) Remove(ctx context.Context) error {
 	// Note: we cannot actually remove alerts :(
 	// So we just have to dismiss them instead
-	_, err := r.client.UpdateSubscriptionLevelStateToDismiss(context.TODO(), r.location, r.name)
+	_, err := r.client.UpdateSubscriptionLevelStateToDismiss(ctx, r.location, r.name)
 	return err
 }
 
@@ -73,8 +73,8 @@ func (r *SecurityAlert) String() string {
 type SecurityAlertsLister struct {
 }
 
-func (l SecurityAlertsLister) List(o interface{}) ([]resource.Resource, error) {
-	opts := o.(nuke.ListerOpts)
+func (l SecurityAlertsLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
 
 	log := logrus.
 		WithField("r", SecurityAlertResource).
@@ -93,7 +93,6 @@ func (l SecurityAlertsLister) List(o interface{}) ([]resource.Resource, error) {
 
 	log.Trace("listing resources")
 
-	ctx := context.TODO()
 	list, err := client.List(ctx)
 	if err != nil {
 		return nil, err

@@ -20,7 +20,7 @@ func init() {
 	resource.Register(resource.Registration{
 		Name:   AzureADUserResource,
 		Scope:  nuke.Tenant,
-		Lister: AzureADUserLister{},
+		Lister: &AzureADUserLister{},
 		DependsOn: []string{
 			AzureAdGroupResource,
 		},
@@ -30,8 +30,8 @@ func init() {
 type AzureADUserLister struct {
 }
 
-func (l AzureADUserLister) List(o interface{}) ([]resource.Resource, error) {
-	opts := o.(nuke.ListerOpts)
+func (l AzureADUserLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
 
 	log := logrus.WithField("r", AzureADUserResource).WithField("s", opts.SubscriptionId)
 
@@ -42,8 +42,6 @@ func (l AzureADUserLister) List(o interface{}) ([]resource.Resource, error) {
 	resources := make([]resource.Resource, 0)
 
 	log.Trace("attempting to list azure ad users")
-
-	ctx := context.Background()
 
 	users, _, err := client.List(ctx, odata.Query{})
 	if err != nil {
@@ -71,8 +69,8 @@ type AzureADUser struct {
 	upn    *string
 }
 
-func (r *AzureADUser) Remove() error {
-	_, err := r.client.Delete(context.TODO(), *r.id)
+func (r *AzureADUser) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, *r.id)
 	return err
 }
 

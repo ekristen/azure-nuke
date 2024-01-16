@@ -20,15 +20,15 @@ func init() {
 	resource.Register(resource.Registration{
 		Name:   AppServicePlanResource,
 		Scope:  nuke.ResourceGroup,
-		Lister: AppServicePlanLister{},
+		Lister: &AppServicePlanLister{},
 	})
 }
 
 type AppServicePlanLister struct {
 }
 
-func (l AppServicePlanLister) List(o interface{}) ([]resource.Resource, error) {
-	opts := o.(nuke.ListerOpts)
+func (l AppServicePlanLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
 
 	log := logrus.WithField("r", AppServicePlanResource).WithField("s", opts.SubscriptionId)
 
@@ -41,7 +41,6 @@ func (l AppServicePlanLister) List(o interface{}) ([]resource.Resource, error) {
 
 	log.Trace("attempting to list ssh key")
 
-	ctx := context.Background()
 	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup)
 	if err != nil {
 		return nil, err
@@ -75,8 +74,8 @@ type AppServicePlan struct {
 	rg     string
 }
 
-func (r *AppServicePlan) Remove() error {
-	_, err := r.client.Delete(context.TODO(), r.rg, r.name)
+func (r *AppServicePlan) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, r.rg, r.name)
 	return err
 }
 

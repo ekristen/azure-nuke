@@ -24,7 +24,7 @@ func init() {
 	resource.Register(resource.Registration{
 		Name:   ServicePrincipalResource,
 		Scope:  nuke.Tenant,
-		Lister: ServicePrincipalsLister{},
+		Lister: &ServicePrincipalsLister{},
 	})
 }
 
@@ -56,8 +56,8 @@ func (r *ServicePrincipal) Filter() error {
 	return nil
 }
 
-func (r *ServicePrincipal) Remove() error {
-	_, err := r.client.Delete(context.TODO(), *r.id)
+func (r *ServicePrincipal) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, *r.id)
 	return err
 }
 
@@ -81,8 +81,8 @@ func (r *ServicePrincipal) String() string {
 type ServicePrincipalsLister struct {
 }
 
-func (l ServicePrincipalsLister) List(o interface{}) ([]resource.Resource, error) {
-	opts := o.(nuke.ListerOpts)
+func (l ServicePrincipalsLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
 
 	log := logrus.WithField("r", ServicePrincipalResource).WithField("s", opts.SubscriptionId)
 
@@ -94,7 +94,6 @@ func (l ServicePrincipalsLister) List(o interface{}) ([]resource.Resource, error
 
 	log.Trace("attempting to list service principals")
 
-	ctx := context.TODO()
 	entities, _, err := client.List(ctx, odata.Query{})
 	if err != nil {
 		return nil, err

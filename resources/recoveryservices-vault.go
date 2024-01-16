@@ -22,7 +22,7 @@ func init() {
 	resource.Register(resource.Registration{
 		Name:   RecoveryServicesVaultResource,
 		Scope:  nuke.ResourceGroup,
-		Lister: RecoveryServicesVaultLister{},
+		Lister: &RecoveryServicesVaultLister{},
 		DependsOn: []string{
 			RecoveryServicesBackupProtectedItemResource,
 		},
@@ -42,8 +42,8 @@ func (r *RecoveryServicesVault) Filter() error {
 	return nil
 }
 
-func (r *RecoveryServicesVault) Remove() error {
-	_, err := r.client.Delete(context.TODO(), r.vaultId)
+func (r *RecoveryServicesVault) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, r.vaultId)
 	return err
 }
 
@@ -64,8 +64,8 @@ func (r *RecoveryServicesVault) String() string {
 type RecoveryServicesVaultLister struct {
 }
 
-func (l RecoveryServicesVaultLister) List(o interface{}) ([]resource.Resource, error) {
-	opts := o.(nuke.ListerOpts)
+func (l RecoveryServicesVaultLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
 
 	log := logrus.
 		WithField("r", RecoveryServicesVaultResource).
@@ -83,7 +83,6 @@ func (l RecoveryServicesVaultLister) List(o interface{}) ([]resource.Resource, e
 
 	log.Trace("listing resources")
 
-	ctx := context.TODO()
 	items, err := client.ListByResourceGroupComplete(ctx, commonids.NewResourceGroupID(opts.SubscriptionId, opts.ResourceGroup))
 	if err != nil {
 		return nil, err

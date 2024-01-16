@@ -20,15 +20,15 @@ func init() {
 	resource.Register(resource.Registration{
 		Name:   AzureAdGroupResource,
 		Scope:  nuke.Tenant,
-		Lister: AzureAdGroupLister{},
+		Lister: &AzureAdGroupLister{},
 	})
 }
 
 type AzureAdGroupLister struct {
 }
 
-func (l AzureAdGroupLister) List(o interface{}) ([]resource.Resource, error) {
-	opts := o.(nuke.ListerOpts)
+func (l AzureAdGroupLister) List(_ context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
 
 	log := logrus.WithField("r", AzureAdGroupResource).WithField("s", opts.SubscriptionId)
 
@@ -66,8 +66,8 @@ type AzureAdGroup struct {
 	name   *string
 }
 
-func (r *AzureAdGroup) Remove() error {
-	_, err := r.client.Delete(context.TODO(), *r.id)
+func (r *AzureAdGroup) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, *r.id)
 	return err
 }
 

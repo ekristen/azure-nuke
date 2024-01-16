@@ -22,7 +22,7 @@ func init() {
 	resource.Register(resource.Registration{
 		Name:   RecoveryServicesBackupProtectionIntentResource,
 		Scope:  nuke.ResourceGroup,
-		Lister: RecoveryServicesBackupProtectionIntentLister{},
+		Lister: &RecoveryServicesBackupProtectionIntentLister{},
 	})
 }
 
@@ -41,8 +41,8 @@ func (r *RecoveryServicesBackupProtectionIntent) Filter() error {
 	return nil
 }
 
-func (r *RecoveryServicesBackupProtectionIntent) Remove() error {
-	_, err := r.pClient.Delete(context.TODO(), to.String(r.vaultName), to.String(r.resourceGroup), to.String(r.backupFabric), to.String(r.name), nil)
+func (r *RecoveryServicesBackupProtectionIntent) Remove(ctx context.Context) error {
+	_, err := r.pClient.Delete(ctx, to.String(r.vaultName), to.String(r.resourceGroup), to.String(r.backupFabric), to.String(r.name), nil)
 	return err
 }
 
@@ -64,8 +64,8 @@ func (r *RecoveryServicesBackupProtectionIntent) String() string {
 type RecoveryServicesBackupProtectionIntentLister struct {
 }
 
-func (l RecoveryServicesBackupProtectionIntentLister) List(o interface{}) ([]resource.Resource, error) {
-	opts := o.(nuke.ListerOpts)
+func (l RecoveryServicesBackupProtectionIntentLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
 	resources := make([]resource.Resource, 0)
 
 	log := logrus.
@@ -92,7 +92,6 @@ func (l RecoveryServicesBackupProtectionIntentLister) List(o interface{}) ([]res
 
 	log.Trace("listing resources")
 
-	ctx := context.TODO()
 	vaultsPager := vaultsClient.NewListByResourceGroupPager(opts.ResourceGroup, nil)
 	for vaultsPager.More() {
 		page, err := vaultsPager.NextPage(ctx)

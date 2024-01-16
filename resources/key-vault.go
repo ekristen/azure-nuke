@@ -20,15 +20,15 @@ func init() {
 	resource.Register(resource.Registration{
 		Name:   KeyVaultResource,
 		Scope:  nuke.ResourceGroup,
-		Lister: KeyVaultLister{},
+		Lister: &KeyVaultLister{},
 	})
 }
 
 type KeyVaultLister struct {
 }
 
-func (l KeyVaultLister) List(o interface{}) ([]resource.Resource, error) {
-	opts := o.(nuke.ListerOpts)
+func (l KeyVaultLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
 
 	log := logrus.WithField("r", KeyVaultResource).WithField("s", opts.SubscriptionId)
 
@@ -41,7 +41,6 @@ func (l KeyVaultLister) List(o interface{}) ([]resource.Resource, error) {
 
 	log.Trace("attempting to list key vaults")
 
-	ctx := context.TODO()
 	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup, nil)
 	if err != nil {
 		return nil, err
@@ -75,8 +74,8 @@ type KeyVault struct {
 	rg     string
 }
 
-func (r *KeyVault) Remove() error {
-	_, err := r.client.Delete(context.TODO(), r.rg, r.name)
+func (r *KeyVault) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, r.rg, r.name)
 	return err
 }
 

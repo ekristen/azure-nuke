@@ -20,7 +20,7 @@ func init() {
 	resource.Register(resource.Registration{
 		Name:   DiskResource,
 		Scope:  nuke.ResourceGroup,
-		Lister: DiskLister{},
+		Lister: &DiskLister{},
 		DependsOn: []string{
 			VirtualMachineResource,
 		},
@@ -33,8 +33,8 @@ type Disk struct {
 	rg     string
 }
 
-func (r *Disk) Remove() error {
-	_, err := r.client.Delete(context.TODO(), r.rg, r.name)
+func (r *Disk) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, r.rg, r.name)
 	return err
 }
 
@@ -53,8 +53,8 @@ func (r *Disk) String() string {
 type DiskLister struct {
 }
 
-func (l DiskLister) List(o interface{}) ([]resource.Resource, error) {
-	opts := o.(nuke.ListerOpts)
+func (l DiskLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
 
 	log := logrus.WithField("r", DiskResource).WithField("s", opts.SubscriptionId)
 
@@ -67,7 +67,6 @@ func (l DiskLister) List(o interface{}) ([]resource.Resource, error) {
 
 	log.Trace("attempting to list disks")
 
-	ctx := context.TODO()
 	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup)
 	if err != nil {
 		return nil, err

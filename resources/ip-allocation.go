@@ -20,15 +20,15 @@ func init() {
 	resource.Register(resource.Registration{
 		Name:   IPAllocationResource,
 		Scope:  nuke.ResourceGroup,
-		Lister: IPAllocationLister{},
+		Lister: &IPAllocationLister{},
 	})
 }
 
 type IPAllocationLister struct {
 }
 
-func (l IPAllocationLister) List(o interface{}) ([]resource.Resource, error) {
-	opts := o.(nuke.ListerOpts)
+func (l IPAllocationLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
 
 	log := logrus.WithField("r", IPAllocationResource).WithField("s", opts.SubscriptionId)
 
@@ -40,8 +40,6 @@ func (l IPAllocationLister) List(o interface{}) ([]resource.Resource, error) {
 	resources := make([]resource.Resource, 0)
 
 	log.Trace("attempting to list virtual networks")
-
-	ctx := context.TODO()
 
 	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup)
 	if err != nil {
@@ -76,8 +74,8 @@ type IPAllocation struct {
 	rg     *string
 }
 
-func (r *IPAllocation) Remove() error {
-	_, err := r.client.Delete(context.TODO(), *r.rg, *r.name)
+func (r *IPAllocation) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, *r.rg, *r.name)
 	return err
 }
 

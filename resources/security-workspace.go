@@ -20,7 +20,7 @@ func init() {
 	resource.Register(resource.Registration{
 		Name:   SecurityWorkspaceResource,
 		Scope:  nuke.Subscription,
-		Lister: SecurityWorkspaceLister{},
+		Lister: &SecurityWorkspaceLister{},
 	})
 }
 
@@ -30,8 +30,8 @@ type SecurityWorkspace struct {
 	scope  string
 }
 
-func (r *SecurityWorkspace) Remove() error {
-	_, err := r.client.Delete(context.TODO(), r.name)
+func (r *SecurityWorkspace) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, r.name)
 	return err
 }
 
@@ -53,8 +53,8 @@ func (r *SecurityWorkspace) String() string {
 type SecurityWorkspaceLister struct {
 }
 
-func (l SecurityWorkspaceLister) List(o interface{}) ([]resource.Resource, error) {
-	opts := o.(nuke.ListerOpts)
+func (l SecurityWorkspaceLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
 
 	log := logrus.
 		WithField("r", SecurityWorkspaceResource).
@@ -71,7 +71,6 @@ func (l SecurityWorkspaceLister) List(o interface{}) ([]resource.Resource, error
 
 	log.Trace("listing resources")
 
-	ctx := context.TODO()
 	list, err := client.List(ctx)
 	if err != nil {
 		return nil, err
