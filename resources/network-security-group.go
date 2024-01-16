@@ -20,7 +20,7 @@ func init() {
 	resource.Register(resource.Registration{
 		Name:   NetworkSecurityGroupResource,
 		Scope:  nuke.ResourceGroup,
-		Lister: NetworkSecurityGroupLister{},
+		Lister: &NetworkSecurityGroupLister{},
 	})
 }
 
@@ -31,8 +31,8 @@ type NetworkSecurityGroup struct {
 	rg       *string
 }
 
-func (r *NetworkSecurityGroup) Remove() error {
-	_, err := r.client.Delete(context.TODO(), *r.rg, *r.name)
+func (r *NetworkSecurityGroup) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, *r.rg, *r.name)
 	return err
 }
 
@@ -52,8 +52,8 @@ func (r *NetworkSecurityGroup) String() string {
 type NetworkSecurityGroupLister struct {
 }
 
-func (l NetworkSecurityGroupLister) List(o interface{}) ([]resource.Resource, error) {
-	opts := o.(nuke.ListerOpts)
+func (l NetworkSecurityGroupLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
 
 	log := logrus.WithField("r", NetworkSecurityGroupResource).WithField("s", opts.SubscriptionId)
 
@@ -65,8 +65,6 @@ func (l NetworkSecurityGroupLister) List(o interface{}) ([]resource.Resource, er
 	resources := make([]resource.Resource, 0)
 
 	log.Trace("attempting to list groups")
-
-	ctx := context.TODO()
 
 	list, err := client.List(ctx, opts.ResourceGroup)
 	if err != nil {

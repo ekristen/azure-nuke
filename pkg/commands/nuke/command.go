@@ -163,7 +163,7 @@ func execute(c *cli.Context) error {
 	}
 
 	logrus.Debug("running ...")
-	return n.Run()
+	return n.Run(c.Context)
 }
 
 func init() {

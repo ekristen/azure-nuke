@@ -20,7 +20,7 @@ func init() {
 	resource.Register(resource.Registration{
 		Name:   ApplicationSecretResource,
 		Scope:  nuke.Tenant,
-		Lister: ApplicationSecretLister{},
+		Lister: &ApplicationSecretLister{},
 	})
 }
 
@@ -36,8 +36,8 @@ func (r *ApplicationSecret) Filter() error {
 	return nil
 }
 
-func (r *ApplicationSecret) Remove() error {
-	_, err := r.client.Delete(context.TODO(), *r.id)
+func (r *ApplicationSecret) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, *r.id)
 	return err
 }
 
@@ -57,8 +57,8 @@ func (r *ApplicationSecret) String() string {
 type ApplicationSecretLister struct {
 }
 
-func (l ApplicationSecretLister) List(o interface{}) ([]resource.Resource, error) {
-	opts := o.(nuke.ListerOpts)
+func (l ApplicationSecretLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
 
 	log := logrus.WithField("r", ApplicationSecretResource).WithField("s", opts.SubscriptionId)
 
@@ -69,8 +69,6 @@ func (l ApplicationSecretLister) List(o interface{}) ([]resource.Resource, error
 	resources := make([]resource.Resource, 0)
 
 	log.Trace("attempting to list application secrets")
-
-	ctx := context.TODO()
 
 	entities, _, err := client.List(ctx, odata.Query{})
 	if err != nil {

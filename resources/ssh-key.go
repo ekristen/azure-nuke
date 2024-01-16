@@ -19,7 +19,7 @@ const SSHPublicKeyResource = "SSHPublicKey"
 func init() {
 	resource.Register(resource.Registration{
 		Name:   SSHPublicKeyResource,
-		Lister: SSHPublicKeyLister{},
+		Lister: &SSHPublicKeyLister{},
 		Scope:  nuke.ResourceGroup,
 	})
 }
@@ -30,8 +30,8 @@ type SSHPublicKey struct {
 	rg     *string
 }
 
-func (r *SSHPublicKey) Remove() error {
-	_, err := r.client.Delete(context.TODO(), *r.rg, *r.name)
+func (r *SSHPublicKey) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, *r.rg, *r.name)
 	return err
 }
 
@@ -52,8 +52,8 @@ func (r *SSHPublicKey) String() string {
 type SSHPublicKeyLister struct {
 }
 
-func (l SSHPublicKeyLister) List(o interface{}) ([]resource.Resource, error) {
-	opts := o.(nuke.ListerOpts)
+func (l SSHPublicKeyLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
 
 	log := logrus.WithField("r", SSHPublicKeyResource).WithField("s", opts.SubscriptionId)
 
@@ -65,8 +65,6 @@ func (l SSHPublicKeyLister) List(o interface{}) ([]resource.Resource, error) {
 	resources := make([]resource.Resource, 0)
 
 	log.Trace("attempting to list ssh key")
-
-	ctx := context.TODO()
 
 	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup)
 	if err != nil {

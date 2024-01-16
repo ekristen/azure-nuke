@@ -20,7 +20,7 @@ func init() {
 	resource.Register(resource.Registration{
 		Name:   ApplicationFederatedCredentialResource,
 		Scope:  nuke.Tenant,
-		Lister: ApplicationFederatedCredentialLister{},
+		Lister: &ApplicationFederatedCredentialLister{},
 	})
 }
 
@@ -36,7 +36,7 @@ func (r *ApplicationFederatedCredential) Filter() error {
 	return nil
 }
 
-func (r *ApplicationFederatedCredential) Remove() error {
+func (r *ApplicationFederatedCredential) Remove(ctx context.Context) error {
 	_, err := r.client.DeleteFederatedIdentityCredential(context.TODO(), *r.appId, *r.id)
 	return err
 }
@@ -58,8 +58,8 @@ func (r *ApplicationFederatedCredential) String() string {
 type ApplicationFederatedCredentialLister struct {
 }
 
-func (l ApplicationFederatedCredentialLister) List(o interface{}) ([]resource.Resource, error) {
-	opts := o.(nuke.ListerOpts)
+func (l ApplicationFederatedCredentialLister) List(_ context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
 
 	log := logrus.WithField("r", ApplicationFederatedCredentialResource).WithField("s", opts.SubscriptionId)
 

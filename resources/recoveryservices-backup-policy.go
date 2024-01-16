@@ -24,7 +24,7 @@ func init() {
 	resource.Register(resource.Registration{
 		Name:   RecoveryServicesBackupPolicyResource,
 		Scope:  nuke.ResourceGroup,
-		Lister: RecoveryServicesBackupPolicyLister{},
+		Lister: &RecoveryServicesBackupPolicyLister{},
 		DependsOn: []string{
 			RecoveryServicesBackupProtectedItemResource,
 		},
@@ -45,8 +45,8 @@ func (r *RecoveryServicesBackupPolicy) Filter() error {
 	return nil
 }
 
-func (r *RecoveryServicesBackupPolicy) Remove() error {
-	_, err := r.protectionsClient.Delete(context.TODO(), r.backupPolicyId)
+func (r *RecoveryServicesBackupPolicy) Remove(ctx context.Context) error {
+	_, err := r.protectionsClient.Delete(ctx, r.backupPolicyId)
 	return err
 }
 
@@ -67,8 +67,8 @@ func (r *RecoveryServicesBackupPolicy) String() string {
 type RecoveryServicesBackupPolicyLister struct {
 }
 
-func (l RecoveryServicesBackupPolicyLister) List(o interface{}) ([]resource.Resource, error) {
-	opts := o.(nuke.ListerOpts)
+func (l RecoveryServicesBackupPolicyLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
 
 	log := logrus.
 		WithField("r", RecoveryServicesBackupPolicyResource).
@@ -95,8 +95,6 @@ func (l RecoveryServicesBackupPolicyLister) List(o interface{}) ([]resource.Reso
 	resources := make([]resource.Resource, 0)
 
 	log.Trace("listing resources")
-
-	ctx := context.TODO()
 
 	vaultsRes, err := vaultsClient.ListByResourceGroupComplete(ctx, commonids.NewResourceGroupID(opts.SubscriptionId, opts.ResourceGroup))
 	if err != nil {

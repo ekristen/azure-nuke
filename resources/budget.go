@@ -24,7 +24,7 @@ func init() {
 	resource.Register(resource.Registration{
 		Name:   BudgetResource,
 		Scope:  nuke.Subscription,
-		Lister: BudgetLister{},
+		Lister: &BudgetLister{},
 	})
 }
 
@@ -36,8 +36,8 @@ type Budget struct {
 
 type BudgetLister struct{}
 
-func (l BudgetLister) List(o interface{}) ([]resource.Resource, error) {
-	opts := o.(nuke.ListerOpts)
+func (l BudgetLister) List(pctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
 
 	log := logrus.WithField("r", BudgetResource).WithField("s", opts.SubscriptionId)
 
@@ -59,7 +59,6 @@ func (l BudgetLister) List(o interface{}) ([]resource.Resource, error) {
 
 	log.Trace("attempting to list budgets for subscription")
 
-	pctx := context.TODO()
 	ctx, cancel := context.WithDeadline(pctx, time.Now().Add(10*time.Second))
 	defer cancel()
 
@@ -85,8 +84,8 @@ func (l BudgetLister) List(o interface{}) ([]resource.Resource, error) {
 	return resources, nil
 }
 
-func (r *Budget) Remove() error {
-	_, err := r.client.Delete(context.TODO(), budgets.ScopedBudgetId{
+func (r *Budget) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, budgets.ScopedBudgetId{
 		Scope:      "",
 		BudgetName: ptr.ToString(r.name),
 	})

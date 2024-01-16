@@ -20,7 +20,7 @@ func init() {
 	resource.Register(resource.Registration{
 		Name:   PolicyAssignmentResource,
 		Scope:  nuke.Subscription,
-		Lister: PolicyAssignmentLister{},
+		Lister: &PolicyAssignmentLister{},
 	})
 }
 
@@ -31,8 +31,8 @@ type PolicyAssignment struct {
 	enforcementMode string
 }
 
-func (r *PolicyAssignment) Remove() error {
-	_, err := r.client.Delete(context.TODO(), r.scope, r.name)
+func (r *PolicyAssignment) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, r.scope, r.name)
 	return err
 }
 
@@ -53,8 +53,8 @@ func (r *PolicyAssignment) String() string {
 type PolicyAssignmentLister struct {
 }
 
-func (l PolicyAssignmentLister) List(o interface{}) ([]resource.Resource, error) {
-	opts := o.(nuke.ListerOpts)
+func (l PolicyAssignmentLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
 
 	log := logrus.WithField("r", PolicyAssignmentResource).WithField("s", opts.SubscriptionId)
 
@@ -67,7 +67,6 @@ func (l PolicyAssignmentLister) List(o interface{}) ([]resource.Resource, error)
 
 	log.Trace("attempting to list policy assignments")
 
-	ctx := context.TODO()
 	list, err := client.List(ctx, "", nil)
 	if err != nil {
 		return nil, err

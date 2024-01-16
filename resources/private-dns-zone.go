@@ -20,7 +20,7 @@ func init() {
 	resource.Register(resource.Registration{
 		Name:   PrivateDNSZoneResource,
 		Scope:  nuke.Subscription,
-		Lister: PrivateDNSZoneLister{},
+		Lister: &PrivateDNSZoneLister{},
 	})
 }
 
@@ -31,8 +31,8 @@ type PrivateDNSZone struct {
 	rg       *string
 }
 
-func (r *PrivateDNSZone) Remove() error {
-	_, err := r.client.Delete(context.TODO(), *r.rg, *r.name, "")
+func (r *PrivateDNSZone) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, *r.rg, *r.name, "")
 	return err
 }
 
@@ -52,8 +52,8 @@ func (r *PrivateDNSZone) String() string {
 type PrivateDNSZoneLister struct {
 }
 
-func (l PrivateDNSZoneLister) List(o interface{}) ([]resource.Resource, error) {
-	opts := o.(nuke.ListerOpts)
+func (l PrivateDNSZoneLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
 
 	log := logrus.WithFields(logrus.Fields{
 		"r": PrivateDNSZoneResource,
@@ -68,8 +68,6 @@ func (l PrivateDNSZoneLister) List(o interface{}) ([]resource.Resource, error) {
 	client.RetryDuration = time.Second * 2
 
 	resources := make([]resource.Resource, 0)
-
-	ctx := context.TODO()
 
 	list, err := client.List(ctx, nil)
 	if err != nil {

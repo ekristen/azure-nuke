@@ -19,7 +19,7 @@ const ResourceGroupResource = "ResourceGroup"
 func init() {
 	resource.Register(resource.Registration{
 		Name:   ResourceGroupResource,
-		Lister: ResourceGroupLister{},
+		Lister: &ResourceGroupLister{},
 		Scope:  nuke.Subscription,
 	})
 }
@@ -29,8 +29,8 @@ type ResourceGroup struct {
 	name   *string
 }
 
-func (r *ResourceGroup) Remove() error {
-	_, err := r.client.Delete(context.TODO(), *r.name)
+func (r *ResourceGroup) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, *r.name)
 	return err
 }
 
@@ -51,8 +51,8 @@ func (r *ResourceGroup) String() string {
 type ResourceGroupLister struct {
 }
 
-func (l ResourceGroupLister) List(o interface{}) ([]resource.Resource, error) {
-	opts := o.(nuke.ListerOpts)
+func (l ResourceGroupLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
 
 	log := logrus.WithField("r", ResourceGroupResource).WithField("s", opts.SubscriptionId)
 
@@ -64,8 +64,6 @@ func (l ResourceGroupLister) List(o interface{}) ([]resource.Resource, error) {
 	resources := make([]resource.Resource, 0)
 
 	log.Trace("attempting to list groups")
-
-	ctx := context.TODO()
 
 	list, err := client.List(ctx, "", nil)
 	if err != nil {

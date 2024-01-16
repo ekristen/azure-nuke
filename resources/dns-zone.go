@@ -20,15 +20,15 @@ func init() {
 	resource.Register(resource.Registration{
 		Name:   DNSZoneResource,
 		Scope:  nuke.ResourceGroup,
-		Lister: DNSZoneLister{},
+		Lister: &DNSZoneLister{},
 	})
 }
 
 type DNSZoneLister struct {
 }
 
-func (l DNSZoneLister) List(o interface{}) ([]resource.Resource, error) {
-	opts := o.(nuke.ListerOpts)
+func (l DNSZoneLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
 
 	log := logrus.WithFields(logrus.Fields{
 		"r": DNSZoneResource,
@@ -43,8 +43,6 @@ func (l DNSZoneLister) List(o interface{}) ([]resource.Resource, error) {
 	client.RetryDuration = time.Second * 2
 
 	resources := make([]resource.Resource, 0)
-
-	ctx := context.TODO()
 
 	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup, nil)
 	if err != nil {
@@ -83,8 +81,8 @@ type DNSZone struct {
 	rg       *string
 }
 
-func (r *DNSZone) Remove() error {
-	_, err := r.client.Delete(context.TODO(), *r.rg, *r.name, "")
+func (r *DNSZone) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, *r.rg, *r.name, "")
 	return err
 }
 

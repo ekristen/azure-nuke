@@ -21,7 +21,7 @@ func init() {
 	resource.Register(resource.Registration{
 		Name:   SecurityPricingResource,
 		Scope:  nuke.Subscription,
-		Lister: SecurityPricingLister{},
+		Lister: &SecurityPricingLister{},
 		DependsOn: []string{
 			SecurityAlertResource,
 		},
@@ -42,8 +42,8 @@ func (r *SecurityPricing) Filter() error {
 	return nil
 }
 
-func (r *SecurityPricing) Remove() error {
-	_, err := r.client.Update(context.TODO(), r.name, security.Pricing{
+func (r *SecurityPricing) Remove(ctx context.Context) error {
+	_, err := r.client.Update(ctx, r.name, security.Pricing{
 		PricingProperties: &security.PricingProperties{
 			PricingTier: "Free",
 		},
@@ -70,8 +70,8 @@ func (r *SecurityPricing) String() string {
 type SecurityPricingLister struct {
 }
 
-func (l SecurityPricingLister) List(o interface{}) ([]resource.Resource, error) {
-	opts := o.(nuke.ListerOpts)
+func (l SecurityPricingLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
 
 	log := logrus.
 		WithField("r", SecurityPricingResource).
@@ -88,7 +88,6 @@ func (l SecurityPricingLister) List(o interface{}) ([]resource.Resource, error) 
 
 	log.Trace("listing resources")
 
-	ctx := context.TODO()
 	list, err := client.List(ctx)
 	if err != nil {
 		return nil, err

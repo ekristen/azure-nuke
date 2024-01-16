@@ -24,7 +24,7 @@ func init() {
 	resource.Register(resource.Registration{
 		Name:   RecoveryServicesBackupProtectedItemResource,
 		Scope:  nuke.ResourceGroup,
-		Lister: RecoveryServicesBackupProtectedItemLister{},
+		Lister: &RecoveryServicesBackupProtectedItemLister{},
 	})
 }
 
@@ -44,8 +44,8 @@ func (r *RecoveryServicesBackupProtectedItem) Filter() error {
 	return nil
 }
 
-func (r *RecoveryServicesBackupProtectedItem) Remove() error {
-	_, err := r.itemClient.Delete(context.TODO(), to.String(r.vaultName), to.String(r.resourceGroup), to.String(r.backupFabric), to.String(r.containerName), to.String(r.name), nil)
+func (r *RecoveryServicesBackupProtectedItem) Remove(ctx context.Context) error {
+	_, err := r.itemClient.Delete(ctx, to.String(r.vaultName), to.String(r.resourceGroup), to.String(r.backupFabric), to.String(r.containerName), to.String(r.name), nil)
 	return err
 }
 
@@ -69,8 +69,8 @@ func (r *RecoveryServicesBackupProtectedItem) String() string {
 type RecoveryServicesBackupProtectedItemLister struct {
 }
 
-func (l RecoveryServicesBackupProtectedItemLister) List(o interface{}) ([]resource.Resource, error) {
-	opts := o.(nuke.ListerOpts)
+func (l RecoveryServicesBackupProtectedItemLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
 
 	resources := make([]resource.Resource, 0)
 
@@ -97,7 +97,6 @@ func (l RecoveryServicesBackupProtectedItemLister) List(o interface{}) ([]resour
 
 	log.Trace("listing resources")
 
-	ctx := context.TODO()
 	vaultsPager := vaultsClient.NewListByResourceGroupPager(opts.ResourceGroup, nil)
 	for vaultsPager.More() {
 		log.Trace("not done")

@@ -20,15 +20,15 @@ func init() {
 	resource.Register(resource.Registration{
 		Name:   ApplicationResource,
 		Scope:  nuke.Tenant,
-		Lister: ApplicationLister{},
+		Lister: &ApplicationLister{},
 	})
 }
 
 type ApplicationLister struct {
 }
 
-func (l ApplicationLister) List(o interface{}) ([]resource.Resource, error) {
-	opts := o.(nuke.ListerOpts)
+func (l ApplicationLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
 
 	log := logrus.WithField("r", ApplicationResource).WithField("s", opts.SubscriptionId)
 
@@ -39,8 +39,6 @@ func (l ApplicationLister) List(o interface{}) ([]resource.Resource, error) {
 	resources := make([]resource.Resource, 0)
 
 	log.Trace("attempting to list applications")
-
-	ctx := context.TODO()
 
 	entities, _, err := client.List(ctx, odata.Query{})
 	if err != nil {
@@ -72,8 +70,8 @@ func (r *Application) Filter() error {
 	return nil
 }
 
-func (r *Application) Remove() error {
-	if _, err := r.client.Delete(context.TODO(), *r.id); err != nil {
+func (r *Application) Remove(ctx context.Context) error {
+	if _, err := r.client.Delete(ctx, *r.id); err != nil {
 		return err
 	}
 
