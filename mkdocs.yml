@@ -1,0 +1,35 @@
+site_name: Azure Nuke
+site_url: https://ekristen.github.io/azure-nuke
+repo_name: ekristen/azure-nuke
+repo_url: https://github.com/ekristen/azure-nuke
+edit_uri: ""
+
+site_dir: public
+
+# Configuration
+theme:
+  name: material
+  language: en
+  palette:
+    primary: blue
+    accent: indigo
+  features:
+    - navigation.sections
+
+# Plugins
+plugins:
+  - search
+
+# Extensions
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true
+
+# Page tree
+nav:
+  - Home: index.md
