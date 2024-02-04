@@ -17,7 +17,7 @@ import (
 const VirtualNetworkResource = "VirtualNetwork"
 
 func init() {
-	resource.Register(resource.Registration{
+	resource.Register(&resource.Registration{
 		Name:   VirtualNetworkResource,
 		Scope:  nuke.ResourceGroup,
 		Lister: &VirtualNetworkLister{},

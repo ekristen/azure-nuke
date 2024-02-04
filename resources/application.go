@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	"github.com/gotidy/ptr"
 
 	"github.com/sirupsen/logrus"
 
@@ -17,7 +18,7 @@ import (
 const ApplicationResource = "Application"
 
 func init() {
-	resource.Register(resource.Registration{
+	resource.Register(&resource.Registration{
 		Name:   ApplicationResource,
 		Scope:  nuke.Tenant,
 		Lister: &ApplicationLister{},
@@ -85,11 +86,12 @@ func (r *Application) Remove(ctx context.Context) error {
 func (r *Application) Properties() types.Properties {
 	properties := types.NewProperties()
 
+	properties.Set("ClientID", *r.id)
 	properties.Set("Name", *r.name)
 
 	return properties
 }
 
 func (r *Application) String() string {
-	return *r.id
+	return ptr.ToString(r.name)
 }

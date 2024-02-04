@@ -17,7 +17,7 @@ import (
 const StorageAccountResource = "StorageAccount"
 
 func init() {
-	resource.Register(resource.Registration{
+	resource.Register(&resource.Registration{
 		Name:   StorageAccountResource,
 		Scope:  nuke.ResourceGroup,
 		Lister: &StorageAccountLister{},
@@ -31,6 +31,7 @@ type StorageAccount struct {
 	client storage.AccountsClient
 	name   string
 	rg     string
+	tags   map[string]*string
 }
 
 func (r *StorageAccount) Remove(ctx context.Context) error {
@@ -42,6 +43,11 @@ func (r *StorageAccount) Properties() types.Properties {
 	properties := types.NewProperties()
 
 	properties.Set("Name", r.name)
+	properties.Set("ResourceGroup", r.rg)
+
+	for tag, value := range r.tags {
+		properties.SetTag(&tag, value)
+	}
 
 	return properties
 }

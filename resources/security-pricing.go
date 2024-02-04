@@ -18,7 +18,7 @@ import (
 const SecurityPricingResource = "SecurityPricing"
 
 func init() {
-	resource.Register(resource.Registration{
+	resource.Register(&resource.Registration{
 		Name:   SecurityPricingResource,
 		Scope:  nuke.Subscription,
 		Lister: &SecurityPricingLister{},

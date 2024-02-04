@@ -17,7 +17,7 @@ import (
 const VirtualMachineResource = "VirtualMachine"
 
 func init() {
-	resource.Register(resource.Registration{
+	resource.Register(&resource.Registration{
 		Name:   VirtualMachineResource,
 		Lister: &VirtualMachineLister{},
 		Scope:  nuke.ResourceGroup,

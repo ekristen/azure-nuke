@@ -17,7 +17,7 @@ import (
 const DNSZoneResource = "DNSZone"
 
 func init() {
-	resource.Register(resource.Registration{
+	resource.Register(&resource.Registration{
 		Name:   DNSZoneResource,
 		Scope:  nuke.ResourceGroup,
 		Lister: &DNSZoneLister{},

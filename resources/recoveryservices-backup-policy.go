@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	"github.com/hashicorp/go-azure-sdk/sdk/environments"
 	"time"
 
 	"github.com/gotidy/ptr"
@@ -21,7 +22,7 @@ import (
 const RecoveryServicesBackupPolicyResource = "RecoveryServicesBackupPolicy"
 
 func init() {
-	resource.Register(resource.Registration{
+	resource.Register(&resource.Registration{
 		Name:   RecoveryServicesBackupPolicyResource,
 		Scope:  nuke.ResourceGroup,
 		Lister: &RecoveryServicesBackupPolicyLister{},
@@ -70,6 +71,9 @@ type RecoveryServicesBackupPolicyLister struct {
 func (l RecoveryServicesBackupPolicyLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*nuke.ListerOpts)
 
+	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(30*time.Second))
+	defer cancel()
+
 	log := logrus.
 		WithField("r", RecoveryServicesBackupPolicyResource).
 		WithField("s", opts.SubscriptionId).
@@ -77,10 +81,11 @@ func (l RecoveryServicesBackupPolicyLister) List(ctx context.Context, o interfac
 
 	log.Trace("creating client")
 
-	vaultsClient := vaults.NewVaultsClientWithBaseURI("https://management.azure.com") // TODO: pass in the endpoint
+	vaultsClient, err := vaults.NewVaultsClientWithBaseURI(environments.AzurePublic().ResourceManager) // TODO: pass in the endpoint
+	if err != nil {
+		return nil, err
+	}
 	vaultsClient.Client.Authorizer = opts.Authorizers.Management
-	vaultsClient.Client.RetryAttempts = 1
-	vaultsClient.Client.RetryDuration = time.Second * 2
 
 	client := backuppolicies.NewBackupPoliciesClientWithBaseURI("https://management.azure.com") // TODO: pass in the endpoint
 	client.Client.Authorizer = opts.Authorizers.Management

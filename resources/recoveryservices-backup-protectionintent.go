@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	"time"
 
 	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
@@ -19,7 +20,7 @@ import (
 const RecoveryServicesBackupProtectionIntentResource = "RecoveryServicesBackupProtectionIntent"
 
 func init() {
-	resource.Register(resource.Registration{
+	resource.Register(&resource.Registration{
 		Name:   RecoveryServicesBackupProtectionIntentResource,
 		Scope:  nuke.ResourceGroup,
 		Lister: &RecoveryServicesBackupProtectionIntentLister{},
@@ -67,6 +68,9 @@ type RecoveryServicesBackupProtectionIntentLister struct {
 func (l RecoveryServicesBackupProtectionIntentLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*nuke.ListerOpts)
 	resources := make([]resource.Resource, 0)
+
+	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(30*time.Second))
+	defer cancel()
 
 	log := logrus.
 		WithField("r", RecoveryServicesBackupProtectionIntentResource).

@@ -21,7 +21,7 @@ import (
 const ServicePrincipalResource = "ServicePrincipal"
 
 func init() {
-	resource.Register(resource.Registration{
+	resource.Register(&resource.Registration{
 		Name:   ServicePrincipalResource,
 		Scope:  nuke.Tenant,
 		Lister: &ServicePrincipalsLister{},

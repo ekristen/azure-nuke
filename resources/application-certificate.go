@@ -17,7 +17,7 @@ import (
 const ApplicationCertificateResource = "ApplicationCertificate"
 
 func init() {
-	resource.Register(resource.Registration{
+	resource.Register(&resource.Registration{
 		Name:   ApplicationCertificateResource,
 		Scope:  nuke.Tenant,
 		Lister: &ApplicationCertificateLister{},

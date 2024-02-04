@@ -17,7 +17,7 @@ import (
 const DiskResource = "Disk"
 
 func init() {
-	resource.Register(resource.Registration{
+	resource.Register(&resource.Registration{
 		Name:   DiskResource,
 		Scope:  nuke.ResourceGroup,
 		Lister: &DiskLister{},
@@ -42,6 +42,7 @@ func (r *Disk) Properties() types.Properties {
 	properties := types.NewProperties()
 
 	properties.Set("Name", r.name)
+	properties.Set("ResourceGroup", r.rg)
 
 	return properties
 }

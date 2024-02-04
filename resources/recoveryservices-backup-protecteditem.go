@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
@@ -21,7 +22,7 @@ import (
 const RecoveryServicesBackupProtectedItemResource = "RecoveryServicesBackupProtectedItem"
 
 func init() {
-	resource.Register(resource.Registration{
+	resource.Register(&resource.Registration{
 		Name:   RecoveryServicesBackupProtectedItemResource,
 		Scope:  nuke.ResourceGroup,
 		Lister: &RecoveryServicesBackupProtectedItemLister{},
@@ -71,6 +72,9 @@ type RecoveryServicesBackupProtectedItemLister struct {
 
 func (l RecoveryServicesBackupProtectedItemLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*nuke.ListerOpts)
+
+	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(30*time.Second))
+	defer cancel()
 
 	resources := make([]resource.Resource, 0)
 

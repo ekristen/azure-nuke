@@ -17,7 +17,7 @@ import (
 const ApplicationFederatedCredentialResource = "ApplicationFederatedCredential"
 
 func init() {
-	resource.Register(resource.Registration{
+	resource.Register(&resource.Registration{
 		Name:   ApplicationFederatedCredentialResource,
 		Scope:  nuke.Tenant,
 		Lister: &ApplicationFederatedCredentialLister{},

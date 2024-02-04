@@ -17,7 +17,7 @@ import (
 const SSHPublicKeyResource = "SSHPublicKey"
 
 func init() {
-	resource.Register(resource.Registration{
+	resource.Register(&resource.Registration{
 		Name:   SSHPublicKeyResource,
 		Lister: &SSHPublicKeyLister{},
 		Scope:  nuke.ResourceGroup,
@@ -28,6 +28,7 @@ type SSHPublicKey struct {
 	client compute.SSHPublicKeysClient
 	name   *string
 	rg     *string
+	tags   map[string]*string
 }
 
 func (r *SSHPublicKey) Remove(ctx context.Context) error {
@@ -39,6 +40,11 @@ func (r *SSHPublicKey) Properties() types.Properties {
 	properties := types.NewProperties()
 
 	properties.Set("Name", *r.name)
+	properties.Set("ResourceGroup", *r.rg)
+
+	for tag, value := range r.tags {
+		properties.SetTag(&tag, value)
+	}
 
 	return properties
 }
@@ -80,6 +86,7 @@ func (l SSHPublicKeyLister) List(ctx context.Context, o interface{}) ([]resource
 				client: client,
 				name:   g.Name,
 				rg:     &opts.ResourceGroup,
+				tags:   g.Tags,
 			})
 		}
 

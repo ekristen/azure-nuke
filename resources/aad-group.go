@@ -17,7 +17,7 @@ import (
 const AzureAdGroupResource = "AzureADGroup"
 
 func init() {
-	resource.Register(resource.Registration{
+	resource.Register(&resource.Registration{
 		Name:   AzureAdGroupResource,
 		Scope:  nuke.Tenant,
 		Lister: &AzureAdGroupLister{},

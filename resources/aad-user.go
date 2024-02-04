@@ -17,7 +17,7 @@ import (
 const AzureADUserResource = "AzureADUser"
 
 func init() {
-	resource.Register(resource.Registration{
+	resource.Register(&resource.Registration{
 		Name:   AzureADUserResource,
 		Scope:  nuke.Tenant,
 		Lister: &AzureADUserLister{},

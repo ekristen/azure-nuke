@@ -17,7 +17,7 @@ import (
 const KeyVaultResource = "KeyVault"
 
 func init() {
-	resource.Register(resource.Registration{
+	resource.Register(&resource.Registration{
 		Name:   KeyVaultResource,
 		Scope:  nuke.ResourceGroup,
 		Lister: &KeyVaultLister{},

@@ -17,7 +17,7 @@ import (
 const NetworkSecurityGroupResource = "NetworkSecurityGroup"
 
 func init() {
-	resource.Register(resource.Registration{
+	resource.Register(&resource.Registration{
 		Name:   NetworkSecurityGroupResource,
 		Scope:  nuke.ResourceGroup,
 		Lister: &NetworkSecurityGroupLister{},

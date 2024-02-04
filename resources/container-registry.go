@@ -17,7 +17,7 @@ import (
 const ContainerRegistryResource = "ContainerRegistry"
 
 func init() {
-	resource.Register(resource.Registration{
+	resource.Register(&resource.Registration{
 		Name:   ContainerRegistryResource,
 		Scope:  nuke.ResourceGroup,
 		Lister: &ContainerRegistryLister{},

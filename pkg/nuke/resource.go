@@ -16,4 +16,5 @@ type ListerOpts struct {
 	TenantId       string
 	SubscriptionId string
 	ResourceGroup  string
+	Location       string
 }

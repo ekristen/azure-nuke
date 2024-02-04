@@ -17,7 +17,7 @@ import (
 const SecurityWorkspaceResource = "SecurityWorkspace"
 
 func init() {
-	resource.Register(resource.Registration{
+	resource.Register(&resource.Registration{
 		Name:   SecurityWorkspaceResource,
 		Scope:  nuke.Subscription,
 		Lister: &SecurityWorkspaceLister{},

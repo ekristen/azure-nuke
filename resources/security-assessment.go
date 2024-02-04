@@ -19,7 +19,7 @@ import (
 const SecurityAssessmentResource = "SecurityAssessment"
 
 func init() {
-	resource.Register(resource.Registration{
+	resource.Register(&resource.Registration{
 		Name:   SecurityAssessmentResource,
 		Scope:  nuke.Subscription,
 		Lister: &SecurityAssessmentLister{},

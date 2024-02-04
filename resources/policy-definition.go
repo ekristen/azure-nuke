@@ -19,7 +19,7 @@ import (
 const PolicyDefinitionResource = "PolicyDefinition"
 
 func init() {
-	resource.Register(resource.Registration{
+	resource.Register(&resource.Registration{
 		Name:   PolicyDefinitionResource,
 		Scope:  nuke.Subscription,
 		Lister: &PolicyDefinitionLister{},

@@ -17,7 +17,7 @@ import (
 const PublicIPAddressesResource = "PublicIPAddresses"
 
 func init() {
-	resource.Register(resource.Registration{
+	resource.Register(&resource.Registration{
 		Name:   PublicIPAddressesResource,
 		Scope:  nuke.ResourceGroup,
 		Lister: &PublicIPAddressesLister{},

@@ -17,7 +17,7 @@ import (
 const NetworkInterfaceResource = "NetworkInterface"
 
 func init() {
-	resource.Register(resource.Registration{
+	resource.Register(&resource.Registration{
 		Name:   NetworkInterfaceResource,
 		Scope:  nuke.ResourceGroup,
 		Lister: &NetworkInterfaceLister{},

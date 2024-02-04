@@ -3,6 +3,7 @@ package azure
 import (
 	"context"
 	"fmt"
+	"github.com/gotidy/ptr"
 	"slices"
 	"time"
 
@@ -23,7 +24,7 @@ type Tenant struct {
 	ResourceGroups map[string][]string
 }
 
-func NewTenant(pctx context.Context, authorizers *Authorizers, tenantId string, subscriptionIds []string) (*Tenant, error) {
+func NewTenant(pctx context.Context, authorizers *Authorizers, tenantId string, subscriptionIds []string, locations []string) (*Tenant, error) {
 	ctx, cancel := context.WithTimeout(pctx, time.Second*15)
 	defer cancel()
 
@@ -69,30 +70,27 @@ func NewTenant(pctx context.Context, authorizers *Authorizers, tenantId string, 
 			logrus.Tracef("adding subscriptions id: %s", *s.SubscriptionID)
 			tenant.SubscriptionIds = append(tenant.SubscriptionIds, *s.SubscriptionID)
 
-			logrus.Trace("listing locations")
-			res, err := client.ListLocations(ctx, *s.SubscriptionID)
-			if err != nil {
-				return nil, err
-			}
-			for _, loc := range *res.Value {
-				logrus.Tracef("adding location: %s", *loc.Name)
-				tenant.Locations[*s.SubscriptionID] = append(tenant.Locations[*s.SubscriptionID], *loc.Name)
-			}
-
 			logrus.Trace("listing resource groups")
 			groupsClient := resources.NewGroupsClient(*s.SubscriptionID)
 			groupsClient.Authorizer = authorizers.Management
 
+			logrus.Info("configured locations", locations)
 			for list, err := groupsClient.List(ctx, "", nil); list.NotDone(); err = list.NextWithContext(ctx) {
 				if err != nil {
 					return nil, err
 				}
 
 				for _, g := range list.Values() {
-					logrus.Tracef("resource group name: %s", *g.Name)
+					// If the location isn't in the list of locations we want to include, skip it
+					if !slices.Contains(locations, ptr.ToString(g.Location)) {
+						continue
+					}
+
+					logrus.Debugf("resource group name: %s", *g.Name)
 					tenant.ResourceGroups[*s.SubscriptionID] = append(tenant.ResourceGroups[*s.SubscriptionID], *g.Name)
 				}
 			}
+
 		}
 	}
 

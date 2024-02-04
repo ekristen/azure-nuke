@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	"time"
 
 	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
@@ -19,7 +20,7 @@ import (
 const RecoveryServicesBackupProtectionContainerResource = "RecoveryServicesBackupProtectionContainer"
 
 func init() {
-	resource.Register(resource.Registration{
+	resource.Register(&resource.Registration{
 		Name:   RecoveryServicesBackupProtectionContainerResource,
 		Scope:  nuke.ResourceGroup,
 		Lister: &RecoveryServicesBackupProtectionContainersLister{},
@@ -66,6 +67,9 @@ type RecoveryServicesBackupProtectionContainersLister struct {
 
 func (l RecoveryServicesBackupProtectionContainersLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*nuke.ListerOpts)
+
+	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(30*time.Second))
+	defer cancel()
 
 	resources := make([]resource.Resource, 0)
 

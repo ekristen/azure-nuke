@@ -17,7 +17,7 @@ import (
 const PrivateDNSZoneResource = "PrivateDNSZone"
 
 func init() {
-	resource.Register(resource.Registration{
+	resource.Register(&resource.Registration{
 		Name:   PrivateDNSZoneResource,
 		Scope:  nuke.Subscription,
 		Lister: &PrivateDNSZoneLister{},

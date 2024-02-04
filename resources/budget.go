@@ -21,7 +21,7 @@ import (
 const BudgetResource = "Budget"
 
 func init() {
-	resource.Register(resource.Registration{
+	resource.Register(&resource.Registration{
 		Name:   BudgetResource,
 		Scope:  nuke.Subscription,
 		Lister: &BudgetLister{},
@@ -43,12 +43,7 @@ func (l BudgetLister) List(pctx context.Context, o interface{}) ([]resource.Reso
 
 	resources := make([]resource.Resource, 0)
 
-	// TODO: move higher up in call stack
-	env, err := environments.FromName("global")
-	if err != nil {
-		return nil, err
-	}
-	client, err := budgets.NewBudgetsClientWithBaseURI(env.ResourceManager)
+	client, err := budgets.NewBudgetsClientWithBaseURI(environments.AzurePublic().ResourceManager)
 	if err != nil {
 		return nil, err
 	}

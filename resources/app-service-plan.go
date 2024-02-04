@@ -17,7 +17,7 @@ import (
 const AppServicePlanResource = "AppServicePlan"
 
 func init() {
-	resource.Register(resource.Registration{
+	resource.Register(&resource.Registration{
 		Name:   AppServicePlanResource,
 		Scope:  nuke.ResourceGroup,
 		Lister: &AppServicePlanLister{},

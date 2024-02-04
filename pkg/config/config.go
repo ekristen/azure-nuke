@@ -2,186 +2,65 @@ package config
 
 import (
 	"fmt"
-	"github.com/ekristen/libnuke/pkg/filter"
-	"github.com/ekristen/libnuke/pkg/types"
-	"os"
-
-	log "github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
+	"github.com/ekristen/libnuke/pkg/config"
+	"github.com/sirupsen/logrus"
 )
 
-type Tenant struct {
-	Filters       filter.Filters `yaml:"filters"`
-	ResourceTypes ResourceTypes  `yaml:"resource-types"`
-	Presets       []string       `yaml:"presets"`
-}
-
-type ResourceTypes struct {
-	Targets      types.Collection `yaml:"targets"`
-	Excludes     types.Collection `yaml:"excludes"`
-	CloudControl types.Collection `yaml:"cloud-control"`
-}
-
-type Nuke struct {
-	Tenants         map[string]Tenant            `yaml:"tenants"`
-	TenantBlocklist []string                     `yaml:"tenant-blocklist"`
-	ResourceTypes   ResourceTypes                `yaml:"resource-types"`
-	FeatureFlags    FeatureFlags                 `yaml:"feature-flags"`
-	Presets         map[string]PresetDefinitions `yaml:"presets"`
-}
-
-type FeatureFlags struct {
-}
-
-type DisableDeletionProtection struct {
-	RDSInstance         bool `yaml:"RDSInstance"`
-	EC2Instance         bool `yaml:"EC2Instance"`
-	CloudformationStack bool `yaml:"CloudformationStack"`
-}
-
-type PresetDefinitions struct {
-	Filters filter.Filters `yaml:"filters"`
-}
-
-func Load(path string) (*Nuke, error) {
-	var err error
-
-	raw, err := os.ReadFile(path)
+// New creates a new extended configuration from a file. This is necessary because we are extended the default
+// libnuke configuration to contain additional attributes that are specific to the AWS Nuke tool.
+func New(opts config.Options) (*Config, error) {
+	// Step 1 - Create the libnuke config
+	cfg, err := config.New(opts)
 	if err != nil {
 		return nil, err
 	}
 
-	cfg := new(Nuke)
-	err = yaml.UnmarshalStrict(raw, cfg)
-	if err != nil {
+	// Step 2 - Instantiate the extended config
+	c := &Config{}
+
+	// Step 3 - Load the same config file against the extended config
+	if err := c.Load(opts.Path); err != nil {
 		return nil, err
 	}
 
-	if err := cfg.ResolveDeprecations(); err != nil {
-		return nil, err
-	}
+	// Step 4 - Set the libnuke config on the extended config
+	c.Config = *cfg
 
-	return cfg, nil
-}
+	if len(c.Tenants) > 0 {
+		logrus.Warn("use of deprecated `tenants` configuration key. Please use `accounts` instead")
 
-func (c *Nuke) GetResourceTypes() ResourceTypes {
-	return c.ResourceTypes
-}
-
-func (c *Nuke) GetFeatureFlags() FeatureFlags {
-	return c.FeatureFlags
-}
-
-func (c *Nuke) GetPresets() map[string]PresetDefinitions {
-	return c.Presets
-}
-
-func (c *Nuke) ResolveBlocklist() []string {
-	if c.TenantBlocklist != nil {
-		return c.TenantBlocklist
-	}
-
-	return c.TenantBlocklist
-}
-
-func (c *Nuke) HasBlocklist() bool {
-	var blocklist = c.ResolveBlocklist()
-	return len(blocklist) > 0
-}
-
-func (c *Nuke) InBlocklist(searchID string) bool {
-	for _, blocklistID := range c.ResolveBlocklist() {
-		if blocklistID == searchID {
-			return true
-		}
-	}
-
-	return false
-}
-
-func (c *Nuke) Validate(tenantId string) error {
-	if !c.HasBlocklist() {
-		return fmt.Errorf("the config file contains an empty blocklist. " +
-			"For safety reasons you need to specify at least one tenant ID. " +
-			"This should be your production account")
-	}
-
-	if c.InBlocklist(tenantId) {
-		return fmt.Errorf("you are trying to nuke the tenant with the ID %s, "+
-			"but it is blocklisted. Aborting", tenantId)
-	}
-
-	/*
-		if len(aliases) == 0 {
-			return fmt.Errorf("the specified account doesn't have an alias. " +
-				"For safety reasons you need to specify an account alias. " +
-				"Your production account should contain the term 'prod'")
-		}
-	*/
-
-	/*
-		for _, alias := range aliases {
-			if strings.Contains(strings.ToLower(alias), "prod") {
-				return fmt.Errorf("you are trying to nuke an tenant with the alias, '%s' "+
-					"but it has the substring 'prod' in it. aborting", alias)
-			}
-		}
-	*/
-
-	if _, ok := c.Tenants[tenantId]; !ok {
-		return fmt.Errorf("your tenant ID '%s' isn't listed in the config. aborting", tenantId)
-	}
-
-	return nil
-}
-
-func (c *Nuke) Filters(tenantId string) (filter.Filters, error) {
-	tenant := c.Tenants[tenantId]
-	filters := tenant.Filters
-
-	if filters == nil {
-		filters = filter.Filters{}
-	}
-
-	if tenant.Presets == nil {
-		return filters, nil
-	}
-
-	for _, presetName := range tenant.Presets {
-		notFound := fmt.Errorf("could not find filter preset '%s'", presetName)
-		if c.Presets == nil {
-			return nil, notFound
+		if len(c.Accounts) > 0 && len(c.Tenants) > 0 {
+			return nil, fmt.Errorf("cannot use both `accounts` and `tenants` configuration keys")
 		}
 
-		preset, ok := c.Presets[presetName]
-		if !ok {
-			return nil, notFound
-		}
-
-		filters.Merge(preset.Filters)
+		c.Accounts = c.Tenants
 	}
 
-	return filters, nil
+	if len(c.TenantBlocklist) > 0 {
+		logrus.Warn("use of deprecated `tenant-blocklist` configuration key. Please use `blocklist` instead")
+
+		if len(c.Blocklist) > 0 && len(c.TenantBlocklist) > 0 {
+			return nil, fmt.Errorf("cannot use both `blocklist` and `tenant-blocklist` configuration keys")
+		}
+
+		c.Blocklist = c.TenantBlocklist
+	}
+
+	return c, nil
 }
 
-func (c *Nuke) ResolveDeprecations() error {
-	deprecations := map[string]string{}
+// Config is an extended configuration implementation that adds some additional features on top of the libnuke config.
+type Config struct {
+	// Config is the underlying libnuke configuration.
+	config.Config `yaml:",inline"`
 
-	for _, t := range c.Tenants {
-		for resourceType, resources := range t.Filters {
-			replacement, ok := deprecations[resourceType]
-			if !ok {
-				continue
-			}
-			log.Warnf("deprecated resource type '%s' - converting to '%s'\n", resourceType, replacement)
+	// These are tenants that are configured. There is a more generic Accounts in the config that is available that
+	// should be used instead of this.
+	// Deprecated: Use Accounts instead. Will be removed in 2.x
+	Tenants map[string]*config.Account `yaml:"tenants"`
 
-			if _, ok := t.Filters[replacement]; ok {
-				return fmt.Errorf("using deprecated resource type and replacement: '%s','%s'", resourceType, replacement)
-			}
-
-			t.Filters[replacement] = resources
-			delete(t.Filters, resourceType)
-		}
-	}
-	return nil
+	// TenantBlocklist is a list of tenant IDs that should be blocklisted. This is used to prevent you from accidentally
+	// nuking your production account.
+	// Deprecated: Use Blocklist instead. Will be removed in 2.x
+	TenantBlocklist []string `yaml:"tenant-blocklist"`
 }

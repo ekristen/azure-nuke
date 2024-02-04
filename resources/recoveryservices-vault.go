@@ -2,10 +2,10 @@ package resources
 
 import (
 	"context"
-	"time"
-
 	"github.com/gotidy/ptr"
+	"github.com/hashicorp/go-azure-sdk/sdk/environments"
 	"github.com/sirupsen/logrus"
+	"time"
 
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonids"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/recoveryservices/2023-02-01/vaults"
@@ -19,7 +19,7 @@ import (
 const RecoveryServicesVaultResource = "RecoveryServicesVault"
 
 func init() {
-	resource.Register(resource.Registration{
+	resource.Register(&resource.Registration{
 		Name:   RecoveryServicesVaultResource,
 		Scope:  nuke.ResourceGroup,
 		Lister: &RecoveryServicesVaultLister{},
@@ -30,7 +30,7 @@ func init() {
 }
 
 type RecoveryServicesVault struct {
-	client   vaults.VaultsClient
+	client   *vaults.VaultsClient
 	vaultId  vaults.VaultId
 	id       *string
 	name     *string
@@ -67,6 +67,9 @@ type RecoveryServicesVaultLister struct {
 func (l RecoveryServicesVaultLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*nuke.ListerOpts)
 
+	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(30*time.Second))
+	defer cancel()
+
 	log := logrus.
 		WithField("r", RecoveryServicesVaultResource).
 		WithField("s", opts.SubscriptionId).
@@ -74,10 +77,11 @@ func (l RecoveryServicesVaultLister) List(ctx context.Context, o interface{}) ([
 
 	log.Trace("creating client")
 
-	client := vaults.NewVaultsClientWithBaseURI("https://management.azure.com") // TODO: pass in the endpoint
+	client, err := vaults.NewVaultsClientWithBaseURI(environments.AzurePublic().ResourceManager) // TODO: pass in the endpoint
+	if err != nil {
+		return nil, err
+	}
 	client.Client.Authorizer = opts.Authorizers.Management
-	client.Client.RetryAttempts = 1
-	client.Client.RetryDuration = time.Second * 2
 
 	resources := make([]resource.Resource, 0)
 

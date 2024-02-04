@@ -8,13 +8,14 @@ import (
 	"github.com/ekristen/azure-nuke/pkg/common"
 	"github.com/ekristen/azure-nuke/pkg/config"
 	"github.com/ekristen/azure-nuke/pkg/nuke"
-	sdknuke "github.com/ekristen/libnuke/pkg/nuke"
+	libconfig "github.com/ekristen/libnuke/pkg/config"
+	libnuke "github.com/ekristen/libnuke/pkg/nuke"
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
-	"github.com/ekristen/libnuke/pkg/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	"log"
+	"slices"
 )
 
 type log2LogrusWriter struct {
@@ -26,7 +27,7 @@ func (w *log2LogrusWriter) Write(b []byte) (int, error) {
 	if n > 0 && b[n-1] == '\n' {
 		b = b[:n-1]
 	}
-	w.entry.Debug(string(b))
+	w.entry.Trace(string(b))
 	return n, nil
 }
 
@@ -52,24 +53,25 @@ func execute(c *cli.Context) error {
 
 	logrus.Trace("preparing to run nuke")
 
-	params := nuke.Parameters{
-		Parameters: sdknuke.Parameters{
-			Force:      c.Bool("force"),
-			ForceSleep: c.Int("force-sleep"),
-			Quiet:      c.Bool("quiet"),
-			NoDryRun:   c.Bool("no-dry-run"),
-		},
-		Targets:      c.StringSlice("only-resource"),
-		Excludes:     c.StringSlice("exclude-resource"),
-		CloudControl: c.StringSlice("cloud-control"),
+	params := &libnuke.Parameters{
+		Force:      c.Bool("force"),
+		ForceSleep: c.Int("force-sleep"),
+		Quiet:      c.Bool("quiet"),
+		NoDryRun:   c.Bool("no-dry-run"),
+		Includes:   c.StringSlice("only-resource"),
+		Excludes:   c.StringSlice("exclude-resource"),
 	}
 
-	tenant, err := azure.NewTenant(ctx, authorizers, c.String("tenant-id"), c.StringSlice("subscription-id"))
+	parsedConfig, err := config.New(libconfig.Options{
+		Path:         c.Path("config"),
+		Deprecations: resource.GetDeprecatedResourceTypeMapping(),
+	})
 	if err != nil {
 		return err
 	}
 
-	parsedConfig, err := config.Load(c.Path("config"))
+	tenant, err := azure.NewTenant(ctx,
+		authorizers, c.String("tenant-id"), c.StringSlice("subscription-id"), parsedConfig.Regions)
 	if err != nil {
 		return err
 	}
@@ -79,85 +81,97 @@ func execute(c *cli.Context) error {
 		return err
 	}
 
-	n := nuke.New(params, parsedConfig, filters, tenant)
+	n := libnuke.New(params, filters, parsedConfig.Settings)
 
-	n.RegisterValidateHandler(func() error {
-		return parsedConfig.Validate(c.String("tenant-id"))
-	})
-
-	tenantConfig := parsedConfig.Tenants[c.String("tenant-id")]
-	tenantResourceTypes := utils.ResolveResourceTypes(
+	tenantConfig := parsedConfig.Accounts[c.String("tenant-id")]
+	tenantResourceTypes := types.ResolveResourceTypes(
 		resource.GetNamesForScope(nuke.Tenant),
 		[]types.Collection{
-			n.Parameters.Targets,
-			n.Config.GetResourceTypes().Targets,
-			tenantConfig.ResourceTypes.Targets,
+			n.Parameters.Includes,
+			parsedConfig.ResourceTypes.GetIncludes(),
+			tenantConfig.ResourceTypes.GetIncludes(),
 		},
 		[]types.Collection{
 			n.Parameters.Excludes,
-			n.Config.GetResourceTypes().Excludes,
+			parsedConfig.ResourceTypes.Excludes,
 			tenantConfig.ResourceTypes.Excludes,
 		},
+		nil,
+		nil,
 	)
 
-	subscriptionResourceTypes := utils.ResolveResourceTypes(
+	subResourceTypes := types.ResolveResourceTypes(
 		resource.GetNamesForScope(nuke.Subscription),
 		[]types.Collection{
-			n.Parameters.Targets,
-			n.Config.GetResourceTypes().Targets,
-			tenantConfig.ResourceTypes.Targets,
+			n.Parameters.Includes,
+			parsedConfig.ResourceTypes.GetIncludes(),
+			tenantConfig.ResourceTypes.GetIncludes(),
 		},
 		[]types.Collection{
 			n.Parameters.Excludes,
-			n.Config.GetResourceTypes().Excludes,
+			parsedConfig.ResourceTypes.Excludes,
 			tenantConfig.ResourceTypes.Excludes,
 		},
+		nil,
+		nil,
 	)
 
-	resourceGroupResourceTypes := utils.ResolveResourceTypes(
+	rgResourceTypes := types.ResolveResourceTypes(
 		resource.GetNamesForScope(nuke.ResourceGroup),
 		[]types.Collection{
-			n.Parameters.Targets,
-			n.Config.GetResourceTypes().Targets,
-			tenantConfig.ResourceTypes.Targets,
+			n.Parameters.Includes,
+			parsedConfig.ResourceTypes.GetIncludes(),
+			tenantConfig.ResourceTypes.GetIncludes(),
 		},
 		[]types.Collection{
 			n.Parameters.Excludes,
-			n.Config.GetResourceTypes().Excludes,
+			parsedConfig.ResourceTypes.Excludes,
 			tenantConfig.ResourceTypes.Excludes,
 		},
+		nil,
+		nil,
 	)
 
-	logrus.Debug("registering scanner for tenant resources")
-	if err := n.RegisterScanner(nuke.Tenant, sdknuke.NewScanner(fmt.Sprintf("ten/%s", n.Tenant.ID), tenantResourceTypes, nuke.ListerOpts{
-		Authorizers:    n.Tenant.Authorizers,
-		TenantId:       n.Tenant.ID,
-		SubscriptionId: "tenant",
-		ResourceGroup:  "",
-	})); err != nil {
-		return err
-	}
-
-	for _, subscriptionId := range n.Tenant.SubscriptionIds {
-		logrus.Debug("registering scanner for subscription resources")
-		if err := n.RegisterScanner(nuke.Subscription, sdknuke.NewScanner(fmt.Sprintf("sub/%s", subscriptionId), subscriptionResourceTypes, nuke.ListerOpts{
-			Authorizers:    n.Tenant.Authorizers,
-			TenantId:       n.Tenant.ID,
-			SubscriptionId: subscriptionId,
-			ResourceGroup:  "",
+	if slices.Contains(parsedConfig.Regions, "global") {
+		if err := n.RegisterScanner(nuke.Tenant, libnuke.NewScanner("tenant/all", tenantResourceTypes, &nuke.ListerOpts{
+			Authorizers: authorizers,
+			TenantId:    tenant.ID,
 		})); err != nil {
 			return err
 		}
+	}
 
-		for _, resourceGroup := range n.Tenant.ResourceGroups[subscriptionId] {
-			logrus.Debug("registering scanner for resource group resources")
-			if err := n.RegisterScanner(nuke.ResourceGroup, sdknuke.NewScanner(fmt.Sprintf("rg/%s", resourceGroup), resourceGroupResourceTypes, nuke.ListerOpts{
-				Authorizers:    n.Tenant.Authorizers,
-				TenantId:       n.Tenant.ID,
-				SubscriptionId: subscriptionId,
-				ResourceGroup:  resourceGroup,
-			})); err != nil {
-				return err
+	logrus.Debug("registering scanner for tenant subscription resources")
+	for _, subscriptionId := range tenant.SubscriptionIds {
+		logrus.Debug("registering scanner for subscription resources")
+		if err := n.RegisterScanner(nuke.Subscription, libnuke.NewScanner("tenant/sub", subResourceTypes, &nuke.ListerOpts{
+			Authorizers:    tenant.Authorizers,
+			TenantId:       tenant.ID,
+			SubscriptionId: subscriptionId,
+		})); err != nil {
+			return err
+		}
+	}
+
+	for _, region := range parsedConfig.Regions {
+		if region == "global" {
+			continue
+		}
+
+		for _, subscriptionId := range tenant.SubscriptionIds {
+			logrus.Debug("registering scanner for subscription resources")
+
+			for i, resourceGroup := range tenant.ResourceGroups[subscriptionId] {
+				logrus.Debugf("registering scanner for resource group resources: rg/%s", resourceGroup)
+				if err := n.RegisterScanner(nuke.ResourceGroup, libnuke.NewScanner(fmt.Sprintf("%s/rg%d", region, i), rgResourceTypes, &nuke.ListerOpts{
+					Authorizers:    tenant.Authorizers,
+					TenantId:       tenant.ID,
+					SubscriptionId: subscriptionId,
+					ResourceGroup:  resourceGroup,
+					Location:       region,
+				})); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -222,7 +236,7 @@ func init() {
 			Usage: "no dry run",
 		},
 		&cli.StringSliceFlag{
-			Name:  "only-resource",
+			Name:  "include",
 			Usage: "only resource",
 		},
 	}

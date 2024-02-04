@@ -17,7 +17,7 @@ import (
 const ApplicationSecretResource = "ApplicationSecret"
 
 func init() {
-	resource.Register(resource.Registration{
+	resource.Register(&resource.Registration{
 		Name:   ApplicationSecretResource,
 		Scope:  nuke.Tenant,
 		Lister: &ApplicationSecretLister{},

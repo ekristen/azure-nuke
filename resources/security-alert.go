@@ -22,7 +22,7 @@ const SecurityAlertResource = "SecurityAlert"
 const SecurityAlertLocation = "/Microsoft.Security/locations/(?P<location>.*)/alerts/"
 
 func init() {
-	resource.Register(resource.Registration{
+	resource.Register(&resource.Registration{
 		Name:   SecurityAlertResource,
 		Scope:  nuke.Subscription,
 		Lister: &SecurityAlertsLister{},

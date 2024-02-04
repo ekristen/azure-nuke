@@ -17,7 +17,7 @@ import (
 const IPAllocationResource = "IPAllocation"
 
 func init() {
-	resource.Register(resource.Registration{
+	resource.Register(&resource.Registration{
 		Name:   IPAllocationResource,
 		Scope:  nuke.ResourceGroup,
 		Lister: &IPAllocationLister{},
