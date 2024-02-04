@@ -1,7 +1,8 @@
 # syntax=docker/dockerfile:1.3-labs
 FROM alpine:3.16.0 as base
+ARG PROJECT_NAME=azure-nuke
 RUN apk add --no-cache ca-certificates
-RUN useradd -D azure-nuke
+RUN adduser -D azure-nuke
 
 FROM ghcr.io/acorn-io/images-mirror/golang:1.21 AS build
 COPY / /src

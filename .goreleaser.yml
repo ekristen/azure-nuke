@@ -3,8 +3,6 @@ release:
   github:
     owner: ekristen
     name: azure-nuke
-  extra_files:
-    - glob: ./cosign.pub
 builds:
   - id: default
     env:
@@ -29,9 +27,21 @@ builds:
     ldflags:
       - -s
       - -w
+      - -extldflags="-static"
       - -X '{{ .ModulePath }}/pkg/common.SUMMARY={{ .Version }}'
       - -X '{{ .ModulePath }}/pkg/common.BRANCH={{ .Branch }}'
+      - -X '{{ .ModulePath }}/pkg/common.VERSION={{ .Tag }}'
       - -X '{{ .ModulePath }}/pkg/common.COMMIT={{ .Commit }}'
+    hooks:
+      post:
+        - cmd: |
+            {{- if eq .Os "darwin" -}} 
+            quill sign-and-notarize "{{ .Path }}" --dry-run={{ .IsSnapshot }} --ad-hoc={{ .IsSnapshot }} -vv
+            {{- else -}}
+            true
+            {{- end -}}
+          env:
+            - QUILL_LOG_FILE=/tmp/quill-{{ .Target }}.log
 archives:
   - id: default
     builds:
@@ -95,21 +105,25 @@ docker_manifests:
       - ghcr.io/ekristen/azure-nuke:v{{ .Version }}-arm64
       - ghcr.io/ekristen/azure-nuke:v{{ .Version }}-arm32v7
 signs:
-  - cmd: cosign
-    stdin: "{{ .Env.COSIGN_PASSWORD }}"
-    args:
-      ["sign-blob", "--key=cosign.key", "--output=${signature}", "${artifact}"]
+  - ids:
+      - default
+      - darwin
+    cmd: cosign
+    signature: "${artifact}.sig"
+    certificate: "${artifact}.pem"
+    args: ["sign-blob", "--yes", "--oidc-provider=github", "--oidc-issuer=https://token.actions.githubusercontent.com", "--output-certificate=${certificate}", "--output-signature=${signature}", "${artifact}"]
     artifacts: all
 docker_signs:
-  - artifacts: all
-    stdin: "{{ .Env.COSIGN_PASSWORD }}"
+  - ids:
+      - default
+    artifacts: all
+    cmd: cosign
+    args: ["sign", "--yes", "--oidc-provider=github", "--oidc-issuer=https://token.actions.githubusercontent.com", "--output-certificate=${certificate}", "--output-signature=${signature}", "${artifact}"]
 checksum:
   name_template: "checksums.txt"
 snapshot:
   name_template: '{{ trimprefix .Summary "v" }}'
+# We are skipping changelog because we are using semantic release
 changelog:
-  sort: asc
-  filters:
-    exclude:
-      - "^docs:"
-      - "^test:"
+  skip: true
+
