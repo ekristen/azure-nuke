@@ -6,6 +6,16 @@
 
 Originally based on the source code from [aws-nuke fork](https://github.com/ekristen/aws-nuke) and [aws-nuke original](https://github.com/rebuy-de/aws-nuke)
 
+## v1 (beta) is out
+
+Please test, get started right now.
+
+```console
+brew install ekristen/tap/azure-nuke@1
+```
+
+Or grab from the [next releases](https://github.com/ekristen/azure-nuke/releases?q=next&expanded=true)
+
 ## Overview
 
 This tool is designed to target an Azure Tenant and all subscriptions within the tenant and remove all resources from that tenant.
