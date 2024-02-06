@@ -16,6 +16,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"log"
 	"slices"
+	"time"
 )
 
 type log2LogrusWriter struct {
@@ -82,6 +83,8 @@ func execute(c *cli.Context) error {
 	}
 
 	n := libnuke.New(params, filters, parsedConfig.Settings)
+
+	n.SetRunSleep(5 * time.Second)
 
 	tenantConfig := parsedConfig.Accounts[c.String("tenant-id")]
 	tenantResourceTypes := types.ResolveResourceTypes(
