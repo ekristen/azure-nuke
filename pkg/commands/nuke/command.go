@@ -59,8 +59,8 @@ func execute(c *cli.Context) error {
 		ForceSleep: c.Int("force-sleep"),
 		Quiet:      c.Bool("quiet"),
 		NoDryRun:   c.Bool("no-dry-run"),
-		Includes:   c.StringSlice("only-resource"),
-		Excludes:   c.StringSlice("exclude-resource"),
+		Includes:   c.StringSlice("include"),
+		Excludes:   c.StringSlice("exclude"),
 	}
 
 	parsedConfig, err := config.New(libconfig.Options{
@@ -190,6 +190,37 @@ func init() {
 			Usage: "path to config file",
 			Value: "config.yaml",
 		},
+		&cli.StringSliceFlag{
+			Name:  "include",
+			Usage: "only include this specific resource",
+		},
+		&cli.StringSliceFlag{
+			Name:  "exclude",
+			Usage: "exclude this specific resource (this overrides everything)",
+		},
+		&cli.BoolFlag{
+			Name:  "quiet",
+			Usage: "hide filtered messages",
+		},
+		&cli.BoolFlag{
+			Name:  "no-dry-run",
+			Usage: "actually run the removal of the resources after discovery",
+		},
+		&cli.BoolFlag{
+			Name:    "no-prompt",
+			Usage:   "disable prompting for verification to run",
+			Aliases: []string{"force"},
+		},
+		&cli.IntFlag{
+			Name:    "prompt-delay",
+			Usage:   "seconds to delay after prompt before running (minimum: 3 seconds)",
+			Value:   10,
+			Aliases: []string{"force-sleep"},
+		},
+		&cli.StringSliceFlag{
+			Name:  "feature-flag",
+			Usage: "enable experimental behaviors that may not be fully tested or supported",
+		},
 		&cli.StringFlag{
 			Name:    "environment",
 			Usage:   "Azure Environment",
@@ -210,37 +241,24 @@ func init() {
 		},
 		&cli.StringFlag{
 			Name:     "client-id",
+			Usage:    "the client-id to use for authentication",
 			EnvVars:  []string{"AZURE_CLIENT_ID"},
 			Required: true,
 		},
 		&cli.StringFlag{
 			Name:    "client-secret",
+			Usage:   "the client-secret to use for authentication",
 			EnvVars: []string{"AZURE_CLIENT_SECRET"},
 		},
 		&cli.StringFlag{
 			Name:    "client-certificate-file",
+			Usage:   "the client-certificate-file to use for authentication",
 			EnvVars: []string{"AZURE_CLIENT_CERTIFICATE_FILE"},
 		},
 		&cli.StringFlag{
 			Name:    "client-federated-token-file",
+			Usage:   "the client-federated-token-file to use for authentication",
 			EnvVars: []string{"AZURE_FEDERATED_TOKEN_FILE"},
-		},
-		&cli.IntFlag{
-			Name:  "force-sleep",
-			Usage: "seconds to sleep",
-			Value: 10,
-		},
-		&cli.BoolFlag{
-			Name:  "quiet",
-			Usage: "hide filtered messages",
-		},
-		&cli.BoolFlag{
-			Name:  "no-dry-run",
-			Usage: "no dry run",
-		},
-		&cli.StringSliceFlag{
-			Name:  "include",
-			Usage: "only resource",
 		},
 	}
 
