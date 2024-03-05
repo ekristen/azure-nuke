@@ -18,7 +18,7 @@ require (
 	github.com/manicminer/hamilton v0.61.0
 	github.com/mb0/glob v0.0.0-20160210091149-1eb79d2de6c4
 	github.com/rebuy-de/aws-nuke v2.10.0+incompatible
-	github.com/sirupsen/logrus v1.8.1
+	github.com/sirupsen/logrus v1.9.3
 	github.com/stevenle/topsort v0.2.0
 	github.com/stretchr/testify v1.8.2
 	github.com/urfave/cli/v2 v2.3.0
