@@ -10,6 +10,16 @@
 **Status:** This is early beta. Expect some behaviors around safeguarding, delays, and prompts to change.
 Likely will change CLI behavior a bit as well.
 
+## v1 (beta) is out
+
+Please test, get started right now.
+
+```console
+brew install ekristen/tap/azure-nuke@1
+```
+
+Or grab from the [next releases](https://github.com/ekristen/azure-nuke/releases?q=next&expanded=true)
+
 ## Overview
 
 Remove all resources from an Azure Tenant and it's Subscriptions and Resource Groups.
