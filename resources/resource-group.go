@@ -31,7 +31,7 @@ type ResourceGroup struct {
 	client         *resourcegroups.ResourceGroupsClient
 	name           *string
 	location       string
-	subscriptionId *string
+	subscriptionId string
 }
 
 func (r *ResourceGroup) Remove(ctx context.Context) error {
@@ -44,6 +44,7 @@ func (r *ResourceGroup) Properties() types.Properties {
 
 	properties.Set("Name", r.name)
 	properties.Set("Location", r.location)
+	properties.Set("SubscriptionId", r.subscriptionId)
 
 	return properties
 }
@@ -84,9 +85,10 @@ func (l ResourceGroupLister) List(ctx context.Context, o interface{}) ([]resourc
 
 	for _, entity := range *list.Model {
 		resources = append(resources, &ResourceGroup{
-			client:   client,
-			name:     entity.Name,
-			location: entity.Location,
+			client:         client,
+			name:           entity.Name,
+			location:       entity.Location,
+			subscriptionId: opts.SubscriptionId,
 		})
 	}
 
