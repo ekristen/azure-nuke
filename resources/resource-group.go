@@ -35,7 +35,7 @@ type ResourceGroup struct {
 }
 
 func (r *ResourceGroup) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, commonids.NewResourceGroupID(*r.subscriptionId, *r.name), resourcegroups.DefaultDeleteOperationOptions())
+	_, err := r.client.Delete(ctx, commonids.NewResourceGroupID(r.subscriptionId, *r.name), resourcegroups.DefaultDeleteOperationOptions())
 	return err
 }
 
