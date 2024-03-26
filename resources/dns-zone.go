@@ -8,6 +8,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/dns/mgmt/2018-05-01/dns"
 
+	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
 
@@ -17,9 +18,9 @@ import (
 const DNSZoneResource = "DNSZone"
 
 func init() {
-	resource.Register(&resource.Registration{
+	registry.Register(&registry.Registration{
 		Name:   DNSZoneResource,
-		Scope:  nuke.ResourceGroup,
+		Scope:  nuke.Subscription,
 		Lister: &DNSZoneLister{},
 	})
 }

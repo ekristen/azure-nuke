@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/go-azure-sdk/resource-manager/consumption/2021-10-01/budgets"
 	"github.com/hashicorp/go-azure-sdk/sdk/environments"
 
+	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
 
@@ -21,7 +22,7 @@ import (
 const BudgetResource = "Budget"
 
 func init() {
-	resource.Register(&resource.Registration{
+	registry.Register(&registry.Registration{
 		Name:   BudgetResource,
 		Scope:  nuke.Subscription,
 		Lister: &BudgetLister{},

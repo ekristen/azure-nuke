@@ -8,6 +8,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/keyvault/mgmt/2019-09-01/keyvault"
 
+	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
 
@@ -17,9 +18,9 @@ import (
 const KeyVaultResource = "KeyVault"
 
 func init() {
-	resource.Register(&resource.Registration{
+	registry.Register(&registry.Registration{
 		Name:   KeyVaultResource,
-		Scope:  nuke.ResourceGroup,
+		Scope:  nuke.Subscription,
 		Lister: &KeyVaultLister{},
 	})
 }

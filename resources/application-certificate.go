@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/go-azure-sdk/sdk/odata"
 	"github.com/manicminer/hamilton/msgraph"
 
+	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
 
@@ -17,7 +18,7 @@ import (
 const ApplicationCertificateResource = "ApplicationCertificate"
 
 func init() {
-	resource.Register(&resource.Registration{
+	registry.Register(&registry.Registration{
 		Name:   ApplicationCertificateResource,
 		Scope:  nuke.Tenant,
 		Lister: &ApplicationCertificateLister{},

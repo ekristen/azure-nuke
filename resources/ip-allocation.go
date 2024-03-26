@@ -8,6 +8,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-05-01/network"
 
+	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
 
@@ -17,9 +18,9 @@ import (
 const IPAllocationResource = "IPAllocation"
 
 func init() {
-	resource.Register(&resource.Registration{
+	registry.Register(&registry.Registration{
 		Name:   IPAllocationResource,
-		Scope:  nuke.ResourceGroup,
+		Scope:  nuke.Subscription,
 		Lister: &IPAllocationLister{},
 	})
 }

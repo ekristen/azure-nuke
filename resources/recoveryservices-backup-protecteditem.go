@@ -13,6 +13,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/recoveryservices/armrecoveryservicesbackup"
 	"github.com/Azure/go-autorest/autorest/to"
 
+	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
 
@@ -22,9 +23,9 @@ import (
 const RecoveryServicesBackupProtectedItemResource = "RecoveryServicesBackupProtectedItem"
 
 func init() {
-	resource.Register(&resource.Registration{
+	registry.Register(&registry.Registration{
 		Name:   RecoveryServicesBackupProtectedItemResource,
-		Scope:  nuke.ResourceGroup,
+		Scope:  nuke.Subscription,
 		Lister: &RecoveryServicesBackupProtectedItemLister{},
 	})
 }

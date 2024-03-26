@@ -3,20 +3,25 @@ package nuke
 import (
 	"context"
 	"fmt"
+	libscanner "github.com/ekristen/libnuke/pkg/scanner"
+	"log"
+	"slices"
+	"strings"
+	"time"
+
+	"github.com/sirupsen/logrus"
+	"github.com/urfave/cli/v2"
+
+	libconfig "github.com/ekristen/libnuke/pkg/config"
+	libnuke "github.com/ekristen/libnuke/pkg/nuke"
+	"github.com/ekristen/libnuke/pkg/registry"
+	"github.com/ekristen/libnuke/pkg/types"
+
 	"github.com/ekristen/azure-nuke/pkg/azure"
 	"github.com/ekristen/azure-nuke/pkg/commands/global"
 	"github.com/ekristen/azure-nuke/pkg/common"
 	"github.com/ekristen/azure-nuke/pkg/config"
 	"github.com/ekristen/azure-nuke/pkg/nuke"
-	libconfig "github.com/ekristen/libnuke/pkg/config"
-	libnuke "github.com/ekristen/libnuke/pkg/nuke"
-	"github.com/ekristen/libnuke/pkg/resource"
-	"github.com/ekristen/libnuke/pkg/types"
-	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli/v2"
-	"log"
-	"slices"
-	"time"
 )
 
 type log2LogrusWriter struct {
@@ -65,7 +70,7 @@ func execute(c *cli.Context) error {
 
 	parsedConfig, err := config.New(libconfig.Options{
 		Path:         c.Path("config"),
-		Deprecations: resource.GetDeprecatedResourceTypeMapping(),
+		Deprecations: registry.GetDeprecatedResourceTypeMapping(),
 	})
 	if err != nil {
 		return err
@@ -85,10 +90,11 @@ func execute(c *cli.Context) error {
 	n := libnuke.New(params, filters, parsedConfig.Settings)
 
 	n.SetRunSleep(5 * time.Second)
+	n.SetLogger(logrus.WithField("component", "nuke"))
 
 	tenantConfig := parsedConfig.Accounts[c.String("tenant-id")]
 	tenantResourceTypes := types.ResolveResourceTypes(
-		resource.GetNamesForScope(nuke.Tenant),
+		registry.GetNamesForScope(nuke.Tenant),
 		[]types.Collection{
 			n.Parameters.Includes,
 			parsedConfig.ResourceTypes.GetIncludes(),
@@ -104,23 +110,7 @@ func execute(c *cli.Context) error {
 	)
 
 	subResourceTypes := types.ResolveResourceTypes(
-		resource.GetNamesForScope(nuke.Subscription),
-		[]types.Collection{
-			n.Parameters.Includes,
-			parsedConfig.ResourceTypes.GetIncludes(),
-			tenantConfig.ResourceTypes.GetIncludes(),
-		},
-		[]types.Collection{
-			n.Parameters.Excludes,
-			parsedConfig.ResourceTypes.Excludes,
-			tenantConfig.ResourceTypes.Excludes,
-		},
-		nil,
-		nil,
-	)
-
-	rgResourceTypes := types.ResolveResourceTypes(
-		resource.GetNamesForScope(nuke.ResourceGroup),
+		registry.GetNamesForScope(nuke.Subscription),
 		[]types.Collection{
 			n.Parameters.Includes,
 			parsedConfig.ResourceTypes.GetIncludes(),
@@ -136,7 +126,7 @@ func execute(c *cli.Context) error {
 	)
 
 	if slices.Contains(parsedConfig.Regions, "global") {
-		if err := n.RegisterScanner(nuke.Tenant, libnuke.NewScanner("tenant/all", tenantResourceTypes, &nuke.ListerOpts{
+		if err := n.RegisterScanner(nuke.Tenant, libscanner.New("tenant/all", tenantResourceTypes, &nuke.ListerOpts{
 			Authorizers: authorizers,
 			TenantId:    tenant.ID,
 		})); err != nil {
@@ -147,39 +137,19 @@ func execute(c *cli.Context) error {
 	logrus.Debug("registering scanner for tenant subscription resources")
 	for _, subscriptionId := range tenant.SubscriptionIds {
 		logrus.Debug("registering scanner for subscription resources")
-		if err := n.RegisterScanner(nuke.Subscription, libnuke.NewScanner("tenant/sub", subResourceTypes, &nuke.ListerOpts{
+		parts := strings.Split(subscriptionId, "-")
+		if err := n.RegisterScanner(nuke.Subscription, libscanner.New(fmt.Sprintf("sub/%s", parts[:1][0]), subResourceTypes, &nuke.ListerOpts{
 			Authorizers:    tenant.Authorizers,
 			TenantId:       tenant.ID,
 			SubscriptionId: subscriptionId,
+			Locations:      parsedConfig.Regions,
 		})); err != nil {
 			return err
 		}
 	}
 
-	for _, region := range parsedConfig.Regions {
-		if region == "global" {
-			continue
-		}
-
-		for _, subscriptionId := range tenant.SubscriptionIds {
-			logrus.Debug("registering scanner for subscription resources")
-
-			for i, resourceGroup := range tenant.ResourceGroups[subscriptionId] {
-				logrus.Debugf("registering scanner for resource group resources: rg/%s", resourceGroup)
-				if err := n.RegisterScanner(nuke.ResourceGroup, libnuke.NewScanner(fmt.Sprintf("%s/rg%d", region, i), rgResourceTypes, &nuke.ListerOpts{
-					Authorizers:    tenant.Authorizers,
-					TenantId:       tenant.ID,
-					SubscriptionId: subscriptionId,
-					ResourceGroup:  resourceGroup,
-					Location:       region,
-				})); err != nil {
-					return err
-				}
-			}
-		}
-	}
-
 	logrus.Debug("running ...")
+
 	return n.Run(c.Context)
 }
 

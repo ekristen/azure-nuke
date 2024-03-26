@@ -8,6 +8,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
 
+	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
 
@@ -17,10 +18,10 @@ import (
 const VirtualMachineResource = "VirtualMachine"
 
 func init() {
-	resource.Register(&resource.Registration{
+	registry.Register(&registry.Registration{
 		Name:   VirtualMachineResource,
 		Lister: &VirtualMachineLister{},
-		Scope:  nuke.ResourceGroup,
+		Scope:  nuke.Subscription,
 	})
 }
 

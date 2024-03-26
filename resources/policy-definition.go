@@ -10,6 +10,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/preview/resources/mgmt/2021-06-01-preview/policy"
 
+	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
 
@@ -19,7 +20,7 @@ import (
 const PolicyDefinitionResource = "PolicyDefinition"
 
 func init() {
-	resource.Register(&resource.Registration{
+	registry.Register(&registry.Registration{
 		Name:   PolicyDefinitionResource,
 		Scope:  nuke.Subscription,
 		Lister: &PolicyDefinitionLister{},

@@ -2,13 +2,13 @@ package nuke
 
 import (
 	"github.com/ekristen/azure-nuke/pkg/azure"
-	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/registry"
 )
 
 const (
-	Tenant        resource.Scope = "tenant"
-	Subscription  resource.Scope = "subscription"
-	ResourceGroup resource.Scope = "resource-group"
+	Tenant        registry.Scope = "tenant"
+	Subscription  registry.Scope = "subscription"
+	ResourceGroup registry.Scope = "resource-group"
 )
 
 type ListerOpts struct {
@@ -16,5 +16,5 @@ type ListerOpts struct {
 	TenantId       string
 	SubscriptionId string
 	ResourceGroup  string
-	Location       string
+	Locations      []string
 }

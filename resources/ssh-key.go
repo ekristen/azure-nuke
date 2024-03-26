@@ -8,6 +8,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
 
+	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
 
@@ -17,18 +18,19 @@ import (
 const SSHPublicKeyResource = "SSHPublicKey"
 
 func init() {
-	resource.Register(&resource.Registration{
+	registry.Register(&registry.Registration{
 		Name:   SSHPublicKeyResource,
 		Lister: &SSHPublicKeyLister{},
-		Scope:  nuke.ResourceGroup,
+		Scope:  nuke.Subscription,
 	})
 }
 
 type SSHPublicKey struct {
-	client compute.SSHPublicKeysClient
-	name   *string
-	rg     *string
-	tags   map[string]*string
+	client   compute.SSHPublicKeysClient
+	name     *string
+	rg       *string
+	location *string
+	tags     map[string]*string
 }
 
 func (r *SSHPublicKey) Remove(ctx context.Context) error {
@@ -39,8 +41,9 @@ func (r *SSHPublicKey) Remove(ctx context.Context) error {
 func (r *SSHPublicKey) Properties() types.Properties {
 	properties := types.NewProperties()
 
-	properties.Set("Name", *r.name)
-	properties.Set("ResourceGroup", *r.rg)
+	properties.Set("Name", r.name)
+	properties.Set("Location", r.location)
+	properties.Set("ResourceGroup", r.rg)
 
 	for tag, value := range r.tags {
 		properties.SetTag(&tag, value)
@@ -72,7 +75,7 @@ func (l SSHPublicKeyLister) List(ctx context.Context, o interface{}) ([]resource
 
 	log.Trace("attempting to list ssh key")
 
-	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup)
+	list, err := client.ListBySubscription(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -83,10 +86,11 @@ func (l SSHPublicKeyLister) List(ctx context.Context, o interface{}) ([]resource
 		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &SSHPublicKey{
-				client: client,
-				name:   g.Name,
-				rg:     &opts.ResourceGroup,
-				tags:   g.Tags,
+				client:   client,
+				name:     g.Name,
+				rg:       &opts.ResourceGroup,
+				location: g.Location,
+				tags:     g.Tags,
 			})
 		}
 

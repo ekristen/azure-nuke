@@ -2,13 +2,14 @@ package resources
 
 import (
 	"context"
-	"github.com/gotidy/ptr"
 
+	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
 	"github.com/hashicorp/go-azure-sdk/sdk/odata"
 	"github.com/manicminer/hamilton/msgraph"
 
+	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
 
@@ -18,7 +19,7 @@ import (
 const ApplicationResource = "Application"
 
 func init() {
-	resource.Register(&resource.Registration{
+	registry.Register(&registry.Registration{
 		Name:   ApplicationResource,
 		Scope:  nuke.Tenant,
 		Lister: &ApplicationLister{},

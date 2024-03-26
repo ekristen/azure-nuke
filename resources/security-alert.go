@@ -11,6 +11,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/preview/security/mgmt/v3.0/security"
 
+	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
 
@@ -22,7 +23,7 @@ const SecurityAlertResource = "SecurityAlert"
 const SecurityAlertLocation = "/Microsoft.Security/locations/(?P<location>.*)/alerts/"
 
 func init() {
-	resource.Register(&resource.Registration{
+	registry.Register(&registry.Registration{
 		Name:   SecurityAlertResource,
 		Scope:  nuke.Subscription,
 		Lister: &SecurityAlertsLister{},

@@ -2,7 +2,6 @@ package resources
 
 import (
 	"context"
-	"github.com/hashicorp/go-azure-sdk/sdk/environments"
 	"time"
 
 	"github.com/gotidy/ptr"
@@ -12,7 +11,9 @@ import (
 	"github.com/hashicorp/go-azure-sdk/resource-manager/recoveryservices/2023-02-01/vaults"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/recoveryservicesbackup/2023-02-01/backuppolicies"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/recoveryservicesbackup/2023-02-01/protectionpolicies"
+	"github.com/hashicorp/go-azure-sdk/sdk/environments"
 
+	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
 
@@ -22,9 +23,9 @@ import (
 const RecoveryServicesBackupPolicyResource = "RecoveryServicesBackupPolicy"
 
 func init() {
-	resource.Register(&resource.Registration{
+	registry.Register(&registry.Registration{
 		Name:   RecoveryServicesBackupPolicyResource,
-		Scope:  nuke.ResourceGroup,
+		Scope:  nuke.Subscription,
 		Lister: &RecoveryServicesBackupPolicyLister{},
 		DependsOn: []string{
 			RecoveryServicesBackupProtectedItemResource,

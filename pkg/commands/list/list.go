@@ -2,26 +2,27 @@ package list
 
 import (
 	"fmt"
-	"github.com/ekristen/azure-nuke/pkg/nuke"
+	"sort"
+
 	"github.com/fatih/color"
 	"github.com/urfave/cli/v2"
-	"sort"
+
+	"github.com/ekristen/libnuke/pkg/registry"
 
 	"github.com/ekristen/azure-nuke/pkg/commands/global"
 	"github.com/ekristen/azure-nuke/pkg/common"
-
-	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 
 	_ "github.com/ekristen/azure-nuke/resources"
 )
 
 func execute(c *cli.Context) error {
-	ls := resource.GetNames()
+	ls := registry.GetNames()
 
 	sort.Strings(ls)
 
 	for _, name := range ls {
-		reg := resource.GetRegistration(name)
+		reg := registry.GetRegistration(name)
 
 		if reg.AlternativeResource != "" {
 			color.New(color.Bold).Printf("%-55s\n", name)
@@ -34,7 +35,7 @@ func execute(c *cli.Context) error {
 				c = color.FgHiGreen
 			} else if reg.Scope == nuke.Subscription {
 				c = color.FgHiBlue
-			} else if reg.Scope == nuke.ResourceGroup {
+			} else if reg.Scope == nuke.Subscription {
 				c = color.FgHiMagenta
 			} else {
 
