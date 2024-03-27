@@ -3,16 +3,31 @@ package resources
 import (
 	"context"
 	"fmt"
-	"github.com/aws/smithy-go/ptr"
+
 	"strings"
+
+	"github.com/gotidy/ptr"
+	"github.com/sirupsen/logrus"
 
 	"github.com/hashicorp/go-azure-sdk/sdk/odata"
 	"github.com/manicminer/hamilton/msgraph"
-	"github.com/sirupsen/logrus"
 
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/ekristen/libnuke/pkg/registry"
+	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/types"
+
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
+
+const ServicePrincipalResource = "ServicePrincipal"
+
+func init() {
+	registry.Register(&registry.Registration{
+		Name:   ServicePrincipalResource,
+		Scope:  nuke.Tenant,
+		Lister: &ServicePrincipalsLister{},
+	})
+}
 
 type ServicePrincipal struct {
 	client   *msgraph.ServicePrincipalsClient
@@ -20,49 +35,6 @@ type ServicePrincipal struct {
 	name     *string
 	appOwner *string
 	spType   *string
-}
-
-func init() {
-	resource.RegisterV2(resource.Registration{
-		Name:   "ServicePrincipal",
-		Scope:  resource.Tenant,
-		Lister: ListServicePrincipal,
-	})
-}
-
-func ListServicePrincipal(opts resource.ListerOpts) ([]resource.Resource, error) {
-	log := logrus.
-		WithField("resource", "ServicePrincipal").
-		WithField("scope", resource.Subscription).
-		WithField("subscription", opts.SubscriptionId)
-
-	client := msgraph.NewServicePrincipalsClient()
-	client.BaseClient.Authorizer = opts.Authorizers.MicrosoftGraph
-	client.BaseClient.DisableRetries = true
-
-	resources := make([]resource.Resource, 0)
-
-	log.Trace("attempting to list service principals")
-
-	ctx := context.TODO()
-	entities, _, err := client.List(ctx, odata.Query{})
-	if err != nil {
-		return nil, err
-	}
-
-	log.Trace("listing entities")
-
-	for _, entity := range *entities {
-		resources = append(resources, &ServicePrincipal{
-			client:   client,
-			id:       entity.ID(),
-			name:     entity.DisplayName,
-			appOwner: entity.AppOwnerOrganizationId,
-			spType:   entity.ServicePrincipalType,
-		})
-	}
-
-	return resources, nil
 }
 
 func (r *ServicePrincipal) Filter() error {
@@ -85,14 +57,15 @@ func (r *ServicePrincipal) Filter() error {
 	return nil
 }
 
-func (r *ServicePrincipal) Remove() error {
-	_, err := r.client.Delete(context.TODO(), *r.id)
+func (r *ServicePrincipal) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, *r.id)
 	return err
 }
 
 func (r *ServicePrincipal) Properties() types.Properties {
 	properties := types.NewProperties()
 
+	properties.Set("ID", r.id)
 	properties.Set("Name", r.name)
 	properties.Set("AppOwnerId", r.appOwner)
 	properties.Set("ServicePrincipalType", r.spType)
@@ -101,5 +74,54 @@ func (r *ServicePrincipal) Properties() types.Properties {
 }
 
 func (r *ServicePrincipal) String() string {
-	return ptr.ToString(r.id)
+	return ptr.ToString(r.name)
+}
+
+// -------------------------------------------------------------
+
+type ServicePrincipalsLister struct {
+}
+
+func (l ServicePrincipalsLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
+
+	log := logrus.WithField("r", ServicePrincipalResource).WithField("s", opts.SubscriptionID)
+
+	client := msgraph.NewServicePrincipalsClient()
+	client.BaseClient.Authorizer = opts.Authorizers.MicrosoftGraph
+	client.BaseClient.DisableRetries = true
+
+	resources := make([]resource.Resource, 0)
+
+	log.Trace("attempting to list service principals")
+
+	entities, _, err := client.List(ctx, odata.Query{})
+	if err != nil {
+		return nil, err
+	}
+
+	log.Trace("listing resource start")
+
+	for i := range *entities {
+		entity := &(*entities)[i]
+
+		// Filtering out Microsoft owned Service Principals, because otherwise it needlessly adds 3000+
+		// resources that have to get filtered out later. This instead does it optimistically here.
+		// Ideally we'd be able to use odata.Query above, but it's not supported by the graph at this time.
+		if ptr.ToString(entity.AppOwnerOrganizationId) == "f8cdef31-a31e-4b4a-93e4-5f571e91255a" {
+			continue
+		}
+
+		resources = append(resources, &ServicePrincipal{
+			client:   client,
+			id:       entity.ID(),
+			name:     entity.DisplayName,
+			appOwner: entity.AppOwnerOrganizationId,
+			spType:   entity.ServicePrincipalType,
+		})
+	}
+
+	log.Trace("listing resources end")
+
+	return resources, nil
 }

@@ -3,19 +3,25 @@ package resources
 import (
 	"context"
 
-	"github.com/hashicorp/go-azure-sdk/sdk/odata"
-	"github.com/manicminer/hamilton/msgraph"
 	"github.com/sirupsen/logrus"
 
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/hashicorp/go-azure-sdk/sdk/odata"
+	"github.com/manicminer/hamilton/msgraph"
+
+	"github.com/ekristen/libnuke/pkg/registry"
+	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/types"
+
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
+const ApplicationCertificateResource = "ApplicationCertificate"
+
 func init() {
-	resource.RegisterV2(resource.Registration{
-		Name:   "ApplicationCertificate",
-		Scope:  resource.Tenant,
-		Lister: ListApplicationCertificate,
+	registry.Register(&registry.Registration{
+		Name:   ApplicationCertificateResource,
+		Scope:  nuke.Tenant,
+		Lister: &ApplicationCertificateLister{},
 	})
 }
 
@@ -23,15 +29,15 @@ type ApplicationCertificate struct {
 	client *msgraph.ApplicationsClient
 	id     *string
 	name   *string
-	appId  *string
+	appID  *string
 }
 
 func (r *ApplicationCertificate) Filter() error {
 	return nil
 }
 
-func (r *ApplicationCertificate) Remove() error {
-	_, err := r.client.Delete(context.TODO(), *r.id)
+func (r *ApplicationCertificate) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, *r.id)
 	return err
 }
 
@@ -47,8 +53,13 @@ func (r *ApplicationCertificate) String() string {
 	return *r.id
 }
 
-func ListApplicationCertificate(opts resource.ListerOpts) ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+type ApplicationCertificateLister struct {
+}
+
+func (l ApplicationCertificateLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
+
+	log := logrus.WithField("r", ApplicationCertificateResource).WithField("s", opts.SubscriptionID)
 
 	client := msgraph.NewApplicationsClient()
 	client.BaseClient.Authorizer = opts.Authorizers.Graph
@@ -56,27 +67,29 @@ func ListApplicationCertificate(opts resource.ListerOpts) ([]resource.Resource, 
 
 	resources := make([]resource.Resource, 0)
 
-	logrus.Trace("attempting to list service principals")
+	log.Trace("attempting to list application certificates")
 
-	ctx := context.Background()
-
-	entites, _, err := client.List(ctx, odata.Query{})
+	entities, _, err := client.List(ctx, odata.Query{})
 	if err != nil {
 		return nil, err
 	}
 
-	logrus.Trace("listing ....")
+	log.Trace("listing application certificate")
 
-	for _, entity := range *entites {
+	for i := range *entities {
+		entity := &(*entities)[i]
+
 		for _, cred := range *entity.KeyCredentials {
 			resources = append(resources, &ApplicationCertificate{
 				client: client,
 				id:     cred.KeyId,
 				name:   cred.DisplayName,
-				appId:  entity.ID(),
+				appID:  entity.ID(),
 			})
 		}
 	}
+
+	log.Trace("done")
 
 	return resources, nil
 }

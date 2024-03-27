@@ -3,39 +3,77 @@ package resources
 import (
 	"context"
 	"fmt"
+	"strings"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/security/armsecurity"
 	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
-	"github.com/sirupsen/logrus"
-	"strings"
+
+	"github.com/ekristen/libnuke/pkg/registry"
+	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/types"
+
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
+
+const SecurityAssessmentResource = "SecurityAssessment"
+
+func init() {
+	registry.Register(&registry.Registration{
+		Name:   SecurityAssessmentResource,
+		Scope:  nuke.Subscription,
+		Lister: &SecurityAssessmentLister{},
+	})
+}
 
 type SecurityAssessment struct {
 	client     *armsecurity.AssessmentsClient
 	id         *string
-	resourceId *string
+	resourceID *string
 	name       *string
 	status     *string
 }
 
-func init() {
-	resource.RegisterV2(resource.Registration{
-		Name:   "SecurityAssessment",
-		Scope:  resource.Subscription,
-		Lister: ListSecurityAssessment,
-	})
+func (r *SecurityAssessment) Filter() error {
+	return nil
 }
 
-func ListSecurityAssessment(opts resource.ListerOpts) ([]resource.Resource, error) {
+func (r *SecurityAssessment) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, strings.TrimLeft(to.String(r.resourceID), "/"), to.String(r.name), nil)
+	return err
+}
+
+func (r *SecurityAssessment) Properties() types.Properties {
+	properties := types.NewProperties()
+
+	properties.Set("ID", r.id)
+	properties.Set("ResourceID", r.resourceID)
+	properties.Set("Name", r.name)
+	properties.Set("StatusCode", r.status)
+
+	return properties
+}
+
+func (r *SecurityAssessment) String() string {
+	return to.String(r.name)
+}
+
+// -------------------------------------------------------------
+
+type SecurityAssessmentLister struct {
+}
+
+func (l SecurityAssessmentLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
+
 	log := logrus.
-		WithField("resource", "SecurityAssessment").
-		WithField("scope", resource.Subscription).
-		WithField("subscription", opts.SubscriptionId)
+		WithField("r", SecurityAssessmentResource).
+		WithField("s", opts.SubscriptionID)
 
 	log.Trace("creating client")
 
-	clientFactory, err := armsecurity.NewClientFactory(opts.SubscriptionId, opts.Authorizers.IdentityCreds, nil)
+	clientFactory, err := armsecurity.NewClientFactory(opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -46,8 +84,7 @@ func ListSecurityAssessment(opts resource.ListerOpts) ([]resource.Resource, erro
 
 	log.Trace("listing resources")
 
-	ctx := context.TODO()
-	pager := client.NewListPager(fmt.Sprintf("/subscriptions/%s", opts.SubscriptionId), nil)
+	pager := client.NewListPager(fmt.Sprintf("/subscriptions/%s", opts.SubscriptionID), nil)
 	for pager.More() {
 		log.Trace("listing not done")
 		page, err := pager.NextPage(ctx)
@@ -64,36 +101,14 @@ func ListSecurityAssessment(opts resource.ListerOpts) ([]resource.Resource, erro
 			parts := strings.Split(to.String(v.ID), "/providers/Microsoft.Security")
 			resources = append(resources, &SecurityAssessment{
 				client:     client,
-				resourceId: to.StringPtr(parts[0]),
+				resourceID: to.StringPtr(parts[0]),
 				id:         v.ID,
 				name:       v.Name,
 			})
 		}
 	}
 
+	log.WithField("total", len(resources)).Trace("done")
+
 	return resources, nil
-}
-
-func (r *SecurityAssessment) Filter() error {
-	return nil
-}
-
-func (r *SecurityAssessment) Remove() error {
-	_, err := r.client.Delete(context.TODO(), strings.TrimLeft(to.String(r.resourceId), "/"), to.String(r.name), nil)
-	return err
-}
-
-func (r *SecurityAssessment) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("ID", r.id)
-	properties.Set("ResourceID", r.resourceId)
-	properties.Set("Name", r.name)
-	properties.Set("StatusCode", r.status)
-
-	return properties
-}
-
-func (r *SecurityAssessment) String() string {
-	return to.String(r.name)
 }

@@ -3,65 +3,36 @@ package resources
 import (
 	"context"
 	"fmt"
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
-	"github.com/sirupsen/logrus"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/preview/security/mgmt/v3.0/security"
+	"github.com/sirupsen/logrus"
+
+	"github.com/Azure/azure-sdk-for-go/services/preview/security/mgmt/v3.0/security" //nolint:staticcheck
+
+	"github.com/ekristen/libnuke/pkg/registry"
+	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/types"
+
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
-type SecurityPricing struct {
-	client security.PricingsClient
-	id     string
-	name   string
-	tier   string
-}
+const SecurityPricingResource = "SecurityPricing"
 
 func init() {
-	resource.RegisterV2(resource.Registration{
-		Name:   "SecurityPricing",
-		Scope:  resource.Subscription,
-		Lister: ListSecurityPricing,
+	registry.Register(&registry.Registration{
+		Name:   SecurityPricingResource,
+		Scope:  nuke.Subscription,
+		Lister: &SecurityPricingLister{},
 		DependsOn: []string{
-			"SecurityAlert",
+			SecurityAlertResource,
 		},
 	})
 }
 
-func ListSecurityPricing(opts resource.ListerOpts) ([]resource.Resource, error) {
-	log := logrus.
-		WithField("resource", "SecurityPricing").
-		WithField("scope", resource.Subscription).
-		WithField("subscription", opts.SubscriptionId)
-
-	log.Trace("creating client")
-
-	client := security.NewPricingsClient(opts.SubscriptionId)
-	client.Authorizer = opts.Authorizers.Management
-	client.RetryAttempts = 1
-	client.RetryDuration = time.Second * 2
-
-	resources := make([]resource.Resource, 0)
-
-	log.Trace("listing resources")
-
-	ctx := context.TODO()
-	list, err := client.List(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, price := range *list.Value {
-		resources = append(resources, &SecurityPricing{
-			client: client,
-			id:     *price.ID,
-			name:   *price.Name,
-			tier:   string(price.PricingTier),
-		})
-	}
-
-	return resources, nil
+type SecurityPricing struct {
+	client security.PricingsClient
+	name   *string
+	tier   string
 }
 
 func (r *SecurityPricing) Filter() error {
@@ -71,8 +42,8 @@ func (r *SecurityPricing) Filter() error {
 	return nil
 }
 
-func (r *SecurityPricing) Remove() error {
-	_, err := r.client.Update(context.TODO(), r.name, security.Pricing{
+func (r *SecurityPricing) Remove(ctx context.Context) error {
+	_, err := r.client.Update(ctx, *r.name, security.Pricing{
 		PricingProperties: &security.PricingProperties{
 			PricingTier: "Free",
 		},
@@ -83,7 +54,6 @@ func (r *SecurityPricing) Remove() error {
 func (r *SecurityPricing) Properties() types.Properties {
 	properties := types.NewProperties()
 
-	properties.Set("ID", r.id)
 	properties.Set("Name", r.name)
 	properties.Set("PricingTier", r.tier)
 
@@ -91,5 +61,46 @@ func (r *SecurityPricing) Properties() types.Properties {
 }
 
 func (r *SecurityPricing) String() string {
-	return r.name
+	return *r.name
+}
+
+// -------------------------------------------------------------------
+
+type SecurityPricingLister struct {
+}
+
+func (l SecurityPricingLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
+
+	log := logrus.
+		WithField("r", SecurityPricingResource).
+		WithField("s", opts.SubscriptionID)
+
+	log.Trace("creating client")
+
+	client := security.NewPricingsClient(opts.SubscriptionID)
+	client.Authorizer = opts.Authorizers.Management
+	client.RetryAttempts = 1
+	client.RetryDuration = time.Second * 2
+
+	resources := make([]resource.Resource, 0)
+
+	log.Trace("listing resources")
+
+	list, err := client.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, price := range *list.Value {
+		resources = append(resources, &SecurityPricing{
+			client: client,
+			name:   price.Name,
+			tier:   string(price.PricingTier),
+		})
+	}
+
+	log.Trace("done")
+
+	return resources, nil
 }

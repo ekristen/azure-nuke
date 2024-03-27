@@ -6,56 +6,88 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-05-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2022-05-01/network" //nolint:staticcheck
 
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/ekristen/libnuke/pkg/registry"
+	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/types"
+
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
-type NetworkSecurityGroup struct {
-	client   network.SecurityGroupsClient
-	name     *string
-	location *string
-	rg       *string
-}
+const NetworkSecurityGroupResource = "NetworkSecurityGroup"
 
 func init() {
-	resource.RegisterV2(resource.Registration{
-		Name:   "NetworkSecurityGroup",
-		Scope:  resource.ResourceGroup,
-		Lister: ListNetworkSecurityGroup,
+	registry.Register(&registry.Registration{
+		Name:   NetworkSecurityGroupResource,
+		Scope:  nuke.ResourceGroup,
+		Lister: &NetworkSecurityGroupLister{},
 	})
 }
 
-func ListNetworkSecurityGroup(opts resource.ListerOpts) ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+type NetworkSecurityGroup struct {
+	client network.SecurityGroupsClient
+	name   *string
+	region *string
+	rg     *string
+	tags   map[string]*string
+}
 
-	client := network.NewSecurityGroupsClient(opts.SubscriptionId)
+func (r *NetworkSecurityGroup) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, *r.rg, *r.name)
+	return err
+}
+
+func (r *NetworkSecurityGroup) Properties() types.Properties {
+	properties := types.NewProperties()
+
+	properties.Set("Name", r.name)
+	properties.Set("Region", r.region)
+
+	for k, v := range r.tags {
+		properties.SetTag(&k, v)
+	}
+
+	return properties
+}
+
+func (r *NetworkSecurityGroup) String() string {
+	return *r.name
+}
+
+type NetworkSecurityGroupLister struct {
+}
+
+func (l NetworkSecurityGroupLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
+
+	log := logrus.WithField("r", NetworkSecurityGroupResource).WithField("s", opts.SubscriptionID)
+
+	client := network.NewSecurityGroupsClient(opts.SubscriptionID)
 	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 
 	resources := make([]resource.Resource, 0)
 
-	logrus.Trace("attempting to list groups")
-
-	ctx := context.Background()
+	log.Trace("attempting to list groups")
 
 	list, err := client.List(ctx, opts.ResourceGroup)
 	if err != nil {
 		return nil, err
 	}
 
-	logrus.Trace("listing ....")
+	log.Trace("listing")
 
 	for list.NotDone() {
-		logrus.Trace("list not done")
+		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &NetworkSecurityGroup{
-				client:   client,
-				name:     g.Name,
-				location: g.Location,
-				rg:       &opts.ResourceGroup,
+				client: client,
+				name:   g.Name,
+				region: g.Location,
+				rg:     &opts.ResourceGroup,
+				tags:   g.Tags,
 			})
 		}
 
@@ -64,23 +96,7 @@ func ListNetworkSecurityGroup(opts resource.ListerOpts) ([]resource.Resource, er
 		}
 	}
 
+	log.Trace("done")
+
 	return resources, nil
-}
-
-func (r *NetworkSecurityGroup) Remove() error {
-	_, err := r.client.Delete(context.TODO(), *r.rg, *r.name)
-	return err
-}
-
-func (r *NetworkSecurityGroup) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", *r.name)
-	properties.Set("Location", *r.location)
-
-	return properties
-}
-
-func (r *NetworkSecurityGroup) String() string {
-	return *r.name
 }

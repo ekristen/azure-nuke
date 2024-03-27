@@ -6,54 +6,91 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute" //nolint:staticcheck
 
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/ekristen/libnuke/pkg/registry"
+	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/types"
+
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
-type VirtualMachine struct {
-	client        compute.VirtualMachinesClient
-	name          *string
-	resourceGroup *string
-}
+const VirtualMachineResource = "VirtualMachine"
 
 func init() {
-	resource.RegisterV2(resource.Registration{
-		Name:   "VirtualMachine",
-		Lister: ListVirtualMachine,
-		Scope:  resource.ResourceGroup,
+	registry.Register(&registry.Registration{
+		Name:   VirtualMachineResource,
+		Scope:  nuke.ResourceGroup,
+		Lister: &VirtualMachineLister{},
 	})
 }
 
-func ListVirtualMachine(opts resource.ListerOpts) ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+type VirtualMachine struct {
+	client compute.VirtualMachinesClient
+	name   *string
+	rg     *string
+	region *string
+	tags   map[string]*string
+}
 
-	client := compute.NewVirtualMachinesClient(opts.SubscriptionId)
+func (r *VirtualMachine) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, *r.rg, *r.name, &[]bool{true}[0])
+	return err
+}
+
+func (r *VirtualMachine) Properties() types.Properties {
+	properties := types.NewProperties()
+
+	properties.Set("Name", *r.name)
+	properties.Set("ResourceGroup", *r.rg)
+	properties.Set("Region", *r.region)
+
+	for k, v := range r.tags {
+		properties.SetTag(&k, v)
+	}
+
+	return properties
+}
+
+func (r *VirtualMachine) String() string {
+	return *r.name
+}
+
+// -----------------------------------------
+
+type VirtualMachineLister struct {
+}
+
+func (l VirtualMachineLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
+
+	log := logrus.WithField("r", VirtualMachineResource).WithField("s", opts.SubscriptionID)
+
+	client := compute.NewVirtualMachinesClient(opts.SubscriptionID)
 	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 
 	resources := make([]resource.Resource, 0)
 
-	logrus.Trace("attempting to list virtual machines")
-
-	ctx := context.Background()
+	log.Trace("attempting to list virtual machines")
 
 	list, err := client.List(ctx, opts.ResourceGroup)
 	if err != nil {
 		return nil, err
 	}
 
-	logrus.Trace("listing ....")
+	log.Trace("listing resources")
 
 	for list.NotDone() {
-		logrus.Trace("list not done")
+		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &VirtualMachine{
-				client:        client,
-				name:          g.Name,
-				resourceGroup: &opts.ResourceGroup,
+				client: client,
+				name:   g.Name,
+				rg:     &opts.ResourceGroup,
+				region: g.Location,
+				tags:   g.Tags,
 			})
 		}
 
@@ -62,23 +99,7 @@ func ListVirtualMachine(opts resource.ListerOpts) ([]resource.Resource, error) {
 		}
 	}
 
+	log.Trace("done")
+
 	return resources, nil
-}
-
-func (r *VirtualMachine) Remove() error {
-	_, err := r.client.Delete(context.TODO(), *r.resourceGroup, *r.name, &[]bool{true}[0])
-	return err
-}
-
-func (r *VirtualMachine) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", *r.name)
-	properties.Set("ResourceGroup", *r.resourceGroup)
-
-	return properties
-}
-
-func (r *VirtualMachine) String() string {
-	return *r.name
 }
