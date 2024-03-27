@@ -3,7 +3,6 @@ package nuke
 import (
 	"context"
 	"fmt"
-	libscanner "github.com/ekristen/libnuke/pkg/scanner"
 	"log"
 	"slices"
 	"strings"
@@ -13,8 +12,10 @@ import (
 	"github.com/urfave/cli/v2"
 
 	libconfig "github.com/ekristen/libnuke/pkg/config"
+	"github.com/ekristen/libnuke/pkg/filter"
 	libnuke "github.com/ekristen/libnuke/pkg/nuke"
 	"github.com/ekristen/libnuke/pkg/registry"
+	libscanner "github.com/ekristen/libnuke/pkg/scanner"
 	"github.com/ekristen/libnuke/pkg/types"
 
 	"github.com/ekristen/azure-nuke/pkg/azure"
@@ -37,7 +38,7 @@ func (w *log2LogrusWriter) Write(b []byte) (int, error) {
 	return n, nil
 }
 
-func execute(c *cli.Context) error {
+func execute(c *cli.Context) error { //nolint:funlen
 	ctx, cancel := context.WithCancel(c.Context)
 	defer cancel()
 
@@ -87,6 +88,18 @@ func execute(c *cli.Context) error {
 		return err
 	}
 
+	// Region Filters
+	if len(filters[filter.Global]) == 0 {
+		filters[filter.Global] = []filter.Filter{}
+	}
+	if !slices.Contains(parsedConfig.Regions, "all") {
+		filters[filter.Global] = append(filters[filter.Global], filter.Filter{
+			Property: "Location",
+			Type:     filter.NotIn,
+			Values:   parsedConfig.Regions,
+		})
+	}
+
 	n := libnuke.New(params, filters, parsedConfig.Settings)
 
 	n.SetRunSleep(5 * time.Second)
@@ -125,26 +138,57 @@ func execute(c *cli.Context) error {
 		nil,
 	)
 
-	if slices.Contains(parsedConfig.Regions, "global") {
-		if err := n.RegisterScanner(nuke.Tenant, libscanner.New("tenant/all", tenantResourceTypes, &nuke.ListerOpts{
+	rgResourceTypes := types.ResolveResourceTypes(
+		registry.GetNamesForScope(nuke.ResourceGroup),
+		[]types.Collection{
+			n.Parameters.Includes,
+			parsedConfig.ResourceTypes.GetIncludes(),
+			tenantConfig.ResourceTypes.GetIncludes(),
+		},
+		[]types.Collection{
+			n.Parameters.Excludes,
+			parsedConfig.ResourceTypes.Excludes,
+			tenantConfig.ResourceTypes.Excludes,
+		},
+		nil,
+		nil,
+	)
+
+	if slices.Contains(parsedConfig.Regions, "global") || slices.Contains(parsedConfig.Regions, "all") {
+		if err := n.RegisterScanner(nuke.Tenant, libscanner.New("tenant", tenantResourceTypes, &nuke.ListerOpts{
 			Authorizers: authorizers,
-			TenantId:    tenant.ID,
+			TenantID:    tenant.ID,
 		})); err != nil {
 			return err
 		}
 	}
 
 	logrus.Debug("registering scanner for tenant subscription resources")
-	for _, subscriptionId := range tenant.SubscriptionIds {
+	for _, subscriptionID := range tenant.SubscriptionIds {
 		logrus.Debug("registering scanner for subscription resources")
-		parts := strings.Split(subscriptionId, "-")
+		parts := strings.Split(subscriptionID, "-")
 		if err := n.RegisterScanner(nuke.Subscription, libscanner.New(fmt.Sprintf("sub/%s", parts[:1][0]), subResourceTypes, &nuke.ListerOpts{
 			Authorizers:    tenant.Authorizers,
-			TenantId:       tenant.ID,
-			SubscriptionId: subscriptionId,
-			Locations:      parsedConfig.Regions,
+			TenantID:       tenant.ID,
+			SubscriptionID: subscriptionID,
+			Regions:        parsedConfig.Regions,
 		})); err != nil {
 			return err
+		}
+	}
+
+	for subscriptionID, resourceGroups := range tenant.ResourceGroups {
+		for _, rg := range resourceGroups {
+			logrus.Debug("registering scanner for resource group")
+			if err := n.RegisterScanner(nuke.ResourceGroup, libscanner.New(fmt.Sprintf("rg/%s", rg), rgResourceTypes, &nuke.ListerOpts{
+				Authorizers:    tenant.Authorizers,
+				TenantID:       tenant.ID,
+				SubscriptionID: subscriptionID,
+				ResourceGroup:  rg,
+				Regions:        parsedConfig.Regions,
+			})); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -169,8 +213,9 @@ func init() {
 			Usage: "exclude this specific resource (this overrides everything)",
 		},
 		&cli.BoolFlag{
-			Name:  "quiet",
-			Usage: "hide filtered messages",
+			Name:    "quiet",
+			Aliases: []string{"q"},
+			Usage:   "hide filtered messages",
 		},
 		&cli.BoolFlag{
 			Name:  "no-dry-run",

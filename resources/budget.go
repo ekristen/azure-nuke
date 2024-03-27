@@ -33,7 +33,7 @@ type Budget struct {
 	client         *budgets.BudgetsClient
 	name           *string
 	id             *string
-	subscriptionId *string
+	subscriptionID *string
 }
 
 type BudgetLister struct{}
@@ -41,7 +41,7 @@ type BudgetLister struct{}
 func (l BudgetLister) List(pctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*nuke.ListerOpts)
 
-	log := logrus.WithField("r", BudgetResource).WithField("s", opts.SubscriptionId)
+	log := logrus.WithField("r", BudgetResource).WithField("s", opts.SubscriptionID)
 
 	resources := make([]resource.Resource, 0)
 
@@ -50,9 +50,6 @@ func (l BudgetLister) List(pctx context.Context, o interface{}) ([]resource.Reso
 		return nil, err
 	}
 	client.Client.Authorizer = opts.Authorizers.Management
-	//client.Authorizer = opts.Authorizers.Management
-	//client.RetryAttempts = 1
-	//client.RetryDuration = time.Second * 2
 
 	log.Trace("attempting to list budgets for subscription")
 
@@ -60,7 +57,7 @@ func (l BudgetLister) List(pctx context.Context, o interface{}) ([]resource.Reso
 	defer cancel()
 
 	list, err := client.List(ctx, commonids.ScopeId{
-		Scope: fmt.Sprintf("/subscriptions/%s", opts.SubscriptionId),
+		Scope: fmt.Sprintf("/subscriptions/%s", opts.SubscriptionID),
 	})
 	if err != nil {
 		return nil, err
@@ -73,7 +70,7 @@ func (l BudgetLister) List(pctx context.Context, o interface{}) ([]resource.Reso
 			client:         client,
 			name:           entry.Name,
 			id:             entry.Id,
-			subscriptionId: ptr.String(opts.SubscriptionId), // note: this is just the guid
+			subscriptionID: ptr.String(opts.SubscriptionID), // note: this is just the guid
 		})
 	}
 
@@ -87,7 +84,7 @@ func (r *Budget) Remove(ctx context.Context) error {
 	defer cancel()
 
 	_, err := r.client.Delete(ctx, budgets.ScopedBudgetId{
-		Scope:      fmt.Sprintf("/subscriptions/%s", ptr.ToString(r.subscriptionId)),
+		Scope:      fmt.Sprintf("/subscriptions/%s", ptr.ToString(r.subscriptionID)),
 		BudgetName: ptr.ToString(r.name),
 	})
 	return err

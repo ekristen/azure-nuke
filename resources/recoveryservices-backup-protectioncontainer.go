@@ -23,7 +23,7 @@ const RecoveryServicesBackupProtectionContainerResource = "RecoveryServicesBacku
 func init() {
 	registry.Register(&registry.Registration{
 		Name:   RecoveryServicesBackupProtectionContainerResource,
-		Scope:  nuke.Subscription,
+		Scope:  nuke.ResourceGroup,
 		Lister: &RecoveryServicesBackupProtectionContainersLister{},
 	})
 }
@@ -33,7 +33,7 @@ type RecoveryServicesBackupProtectionContainers struct {
 	pClient       *armrecoveryservicesbackup.ProtectionContainersClient
 	id            *string
 	name          *string
-	location      *string
+	region        *string
 	resourceGroup *string
 	vaultName     *string
 	backupFabric  *string
@@ -52,7 +52,7 @@ func (r *RecoveryServicesBackupProtectionContainers) Properties() types.Properti
 	properties := types.NewProperties()
 
 	properties.Set("Name", r.name)
-	properties.Set("Location", r.location)
+	properties.Set("Region", r.region)
 	properties.Set("ResourceGroup", r.resourceGroup)
 	properties.Set("VaultName", r.vaultName)
 
@@ -76,22 +76,28 @@ func (l RecoveryServicesBackupProtectionContainersLister) List(ctx context.Conte
 
 	log := logrus.
 		WithField("r", RecoveryServicesBackupProtectionContainerResource).
-		WithField("s", opts.SubscriptionId).
+		WithField("s", opts.SubscriptionID).
 		WithField("rg", opts.ResourceGroup)
 
 	log.Trace("creating client")
 
-	vaultsClient, err := armrecoveryservices.NewVaultsClient(opts.SubscriptionId, opts.Authorizers.IdentityCreds, nil)
+	vaultsClient, err :=
+		armrecoveryservices.NewVaultsClient(
+			opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
 	if err != nil {
 		return resources, err
 	}
 
-	client, err := armrecoveryservicesbackup.NewBackupProtectionContainersClient(opts.SubscriptionId, opts.Authorizers.IdentityCreds, nil)
+	client, err :=
+		armrecoveryservicesbackup.NewBackupProtectionContainersClient(
+			opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
 	if err != nil {
 		return resources, err
 	}
 
-	protectedContainers, err := armrecoveryservicesbackup.NewProtectionContainersClient(opts.SubscriptionId, opts.Authorizers.IdentityCreds, nil)
+	protectedContainers, err :=
+		armrecoveryservicesbackup.NewProtectionContainersClient(
+			opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
 	if err != nil {
 		return resources, err
 	}
@@ -106,7 +112,6 @@ func (l RecoveryServicesBackupProtectionContainersLister) List(ctx context.Conte
 		}
 
 		for _, v := range page.Value {
-
 			itemPager := client.NewListPager(to.String(v.Name), opts.ResourceGroup, nil)
 			for itemPager.More() {
 				page, err := itemPager.NextPage(ctx)
@@ -121,13 +126,12 @@ func (l RecoveryServicesBackupProtectionContainersLister) List(ctx context.Conte
 						vaultName:     v.Name,
 						id:            i.ID,
 						name:          i.Name,
-						location:      i.Location,
+						region:        i.Location,
 						resourceGroup: to.StringPtr(opts.ResourceGroup),
 						backupFabric:  to.StringPtr("Azure"), // TODO: this should be calculated
 					})
 				}
 			}
-
 		}
 	}
 

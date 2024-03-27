@@ -2,15 +2,20 @@ package azure
 
 import (
 	"context"
+	"os"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+
 	"github.com/hashicorp/go-azure-sdk/sdk/auth"
 	"github.com/hashicorp/go-azure-sdk/sdk/auth/autorest"
 	"github.com/hashicorp/go-azure-sdk/sdk/environments"
-	"github.com/sirupsen/logrus"
-	"os"
 )
 
-func ConfigureAuth(ctx context.Context, environment, tenantID, clientID, clientSecret, clientCertFile, clientFedTokenFile string) (*Authorizers, error) {
+func ConfigureAuth(
+	ctx context.Context,
+	environment, tenantID, clientID, clientSecret, clientCertFile, clientFedTokenFile string) (*Authorizers, error) {
 	env, err := environments.FromName(environment)
 	if err != nil {
 		return nil, err

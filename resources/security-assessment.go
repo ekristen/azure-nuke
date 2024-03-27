@@ -30,7 +30,7 @@ func init() {
 type SecurityAssessment struct {
 	client     *armsecurity.AssessmentsClient
 	id         *string
-	resourceId *string
+	resourceID *string
 	name       *string
 	status     *string
 }
@@ -40,7 +40,7 @@ func (r *SecurityAssessment) Filter() error {
 }
 
 func (r *SecurityAssessment) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, strings.TrimLeft(to.String(r.resourceId), "/"), to.String(r.name), nil)
+	_, err := r.client.Delete(ctx, strings.TrimLeft(to.String(r.resourceID), "/"), to.String(r.name), nil)
 	return err
 }
 
@@ -48,7 +48,7 @@ func (r *SecurityAssessment) Properties() types.Properties {
 	properties := types.NewProperties()
 
 	properties.Set("ID", r.id)
-	properties.Set("ResourceID", r.resourceId)
+	properties.Set("ResourceID", r.resourceID)
 	properties.Set("Name", r.name)
 	properties.Set("StatusCode", r.status)
 
@@ -69,11 +69,11 @@ func (l SecurityAssessmentLister) List(ctx context.Context, o interface{}) ([]re
 
 	log := logrus.
 		WithField("r", SecurityAssessmentResource).
-		WithField("s", opts.SubscriptionId)
+		WithField("s", opts.SubscriptionID)
 
 	log.Trace("creating client")
 
-	clientFactory, err := armsecurity.NewClientFactory(opts.SubscriptionId, opts.Authorizers.IdentityCreds, nil)
+	clientFactory, err := armsecurity.NewClientFactory(opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func (l SecurityAssessmentLister) List(ctx context.Context, o interface{}) ([]re
 
 	log.Trace("listing resources")
 
-	pager := client.NewListPager(fmt.Sprintf("/subscriptions/%s", opts.SubscriptionId), nil)
+	pager := client.NewListPager(fmt.Sprintf("/subscriptions/%s", opts.SubscriptionID), nil)
 	for pager.More() {
 		log.Trace("listing not done")
 		page, err := pager.NextPage(ctx)
@@ -101,7 +101,7 @@ func (l SecurityAssessmentLister) List(ctx context.Context, o interface{}) ([]re
 			parts := strings.Split(to.String(v.ID), "/providers/Microsoft.Security")
 			resources = append(resources, &SecurityAssessment{
 				client:     client,
-				resourceId: to.StringPtr(parts[0]),
+				resourceID: to.StringPtr(parts[0]),
 				id:         v.ID,
 				name:       v.Name,
 			})

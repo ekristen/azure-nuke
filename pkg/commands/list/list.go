@@ -35,10 +35,8 @@ func execute(c *cli.Context) error {
 				c = color.FgHiGreen
 			} else if reg.Scope == nuke.Subscription {
 				c = color.FgHiBlue
-			} else if reg.Scope == nuke.Subscription {
+			} else if reg.Scope == nuke.ResourceGroup {
 				c = color.FgHiMagenta
-			} else {
-
 			}
 			color.New(c).Printf(fmt.Sprintf("%s\n", string(reg.Scope)))
 		}

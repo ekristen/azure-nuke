@@ -6,7 +6,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/dns/mgmt/2018-05-01/dns"
+	"github.com/Azure/azure-sdk-for-go/services/dns/mgmt/2018-05-01/dns" //nolint:staticcheck
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -20,7 +20,7 @@ const DNSZoneResource = "DNSZone"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:   DNSZoneResource,
-		Scope:  nuke.Subscription,
+		Scope:  nuke.ResourceGroup,
 		Lister: &DNSZoneLister{},
 	})
 }
@@ -33,12 +33,12 @@ func (l DNSZoneLister) List(ctx context.Context, o interface{}) ([]resource.Reso
 
 	log := logrus.WithFields(logrus.Fields{
 		"r": DNSZoneResource,
-		"s": opts.SubscriptionId,
+		"s": opts.SubscriptionID,
 	})
 
 	log.Trace("start")
 
-	client := dns.NewZonesClient(opts.SubscriptionId)
+	client := dns.NewZonesClient(opts.SubscriptionID)
 	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
@@ -58,10 +58,12 @@ func (l DNSZoneLister) List(ctx context.Context, o interface{}) ([]resource.Reso
 		for _, g := range list.Values() {
 			log.Trace("adding entity to list")
 			resources = append(resources, &DNSZone{
-				client:   client,
-				name:     g.Name,
-				location: g.Location,
-				rg:       &opts.ResourceGroup,
+				rg: &opts.ResourceGroup,
+
+				client: client,
+				name:   g.Name,
+				region: g.Location,
+				tags:   g.Tags,
 			})
 		}
 
@@ -76,10 +78,11 @@ func (l DNSZoneLister) List(ctx context.Context, o interface{}) ([]resource.Reso
 }
 
 type DNSZone struct {
-	client   dns.ZonesClient
-	name     *string
-	location *string
-	rg       *string
+	client dns.ZonesClient
+	name   *string
+	region *string
+	rg     *string
+	tags   map[string]*string
 }
 
 func (r *DNSZone) Remove(ctx context.Context) error {
@@ -90,7 +93,13 @@ func (r *DNSZone) Remove(ctx context.Context) error {
 func (r *DNSZone) Properties() types.Properties {
 	properties := types.NewProperties()
 
-	properties.Set("Name", *r.name)
+	properties.Set("Name", r.name)
+	properties.Set("ResourceGroup", r.rg)
+	properties.Set("Region", r.region)
+
+	for k, v := range r.tags {
+		properties.SetTag(&k, v)
+	}
 
 	return properties
 }

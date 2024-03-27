@@ -23,7 +23,7 @@ const RecoveryServicesVaultResource = "RecoveryServicesVault"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:   RecoveryServicesVaultResource,
-		Scope:  nuke.Subscription,
+		Scope:  nuke.ResourceGroup,
 		Lister: &RecoveryServicesVaultLister{},
 		DependsOn: []string{
 			RecoveryServicesBackupProtectedItemResource,
@@ -32,12 +32,12 @@ func init() {
 }
 
 type RecoveryServicesVault struct {
-	client   *vaults.VaultsClient
-	vaultId  vaults.VaultId
-	id       *string
-	name     *string
-	location string
-	rg       string
+	client  *vaults.VaultsClient
+	vaultID vaults.VaultId
+	id      *string
+	name    *string
+	region  string
+	rg      string
 }
 
 func (r *RecoveryServicesVault) Filter() error {
@@ -45,7 +45,7 @@ func (r *RecoveryServicesVault) Filter() error {
 }
 
 func (r *RecoveryServicesVault) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, r.vaultId)
+	_, err := r.client.Delete(ctx, r.vaultID)
 	return err
 }
 
@@ -53,7 +53,7 @@ func (r *RecoveryServicesVault) Properties() types.Properties {
 	properties := types.NewProperties()
 
 	properties.Set("Name", r.name)
-	properties.Set("Location", r.location)
+	properties.Set("Region", r.region)
 	properties.Set("ResourceGroup", r.rg)
 
 	return properties
@@ -74,7 +74,7 @@ func (l RecoveryServicesVaultLister) List(ctx context.Context, o interface{}) ([
 
 	log := logrus.
 		WithField("r", RecoveryServicesVaultResource).
-		WithField("s", opts.SubscriptionId).
+		WithField("s", opts.SubscriptionID).
 		WithField("rg", opts.ResourceGroup)
 
 	log.Trace("creating client")
@@ -89,19 +89,19 @@ func (l RecoveryServicesVaultLister) List(ctx context.Context, o interface{}) ([
 
 	log.Trace("listing resources")
 
-	items, err := client.ListByResourceGroupComplete(ctx, commonids.NewResourceGroupID(opts.SubscriptionId, opts.ResourceGroup))
+	items, err := client.ListByResourceGroupComplete(ctx, commonids.NewResourceGroupID(opts.SubscriptionID, opts.ResourceGroup))
 	if err != nil {
 		return nil, err
 	}
 
 	for _, item := range items.Items {
 		resources = append(resources, &RecoveryServicesVault{
-			client:   client,
-			id:       item.Id,
-			name:     item.Name,
-			location: item.Location,
-			vaultId:  vaults.NewVaultID(opts.SubscriptionId, opts.ResourceGroup, ptr.ToString(item.Id)),
-			rg:       opts.ResourceGroup,
+			client:  client,
+			id:      item.Id,
+			name:    item.Name,
+			region:  item.Location,
+			vaultID: vaults.NewVaultID(opts.SubscriptionID, opts.ResourceGroup, ptr.ToString(item.Id)),
+			rg:      opts.ResourceGroup,
 		})
 	}
 

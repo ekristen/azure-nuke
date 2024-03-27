@@ -6,7 +6,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-05-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-05-01/network" //nolint:staticcheck
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -20,7 +20,7 @@ const VirtualNetworkResource = "VirtualNetwork"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:   VirtualNetworkResource,
-		Scope:  nuke.Subscription,
+		Scope:  nuke.ResourceGroup,
 		Lister: &VirtualNetworkLister{},
 	})
 }
@@ -31,9 +31,9 @@ type VirtualNetworkLister struct {
 func (l VirtualNetworkLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*nuke.ListerOpts)
 
-	log := logrus.WithField("r", VirtualNetworkResource).WithField("s", opts.SubscriptionId)
+	log := logrus.WithField("r", VirtualNetworkResource).WithField("s", opts.SubscriptionID)
 
-	client := network.NewVirtualNetworksClient(opts.SubscriptionId)
+	client := network.NewVirtualNetworksClient(opts.SubscriptionID)
 	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
@@ -55,6 +55,8 @@ func (l VirtualNetworkLister) List(ctx context.Context, o interface{}) ([]resour
 				client: client,
 				name:   g.Name,
 				rg:     &opts.ResourceGroup,
+				region: g.Location,
+				tags:   g.Tags,
 			})
 		}
 
@@ -74,6 +76,8 @@ type VirtualNetwork struct {
 	client network.VirtualNetworksClient
 	name   *string
 	rg     *string
+	region *string
+	tags   map[string]*string
 }
 
 func (r *VirtualNetwork) Remove(ctx context.Context) error {
@@ -86,6 +90,11 @@ func (r *VirtualNetwork) Properties() types.Properties {
 
 	properties.Set("Name", *r.name)
 	properties.Set("ResourceGroup", *r.rg)
+	properties.Set("Region", *r.region)
+
+	for k, v := range r.tags {
+		properties.SetTag(&k, v)
+	}
 
 	return properties
 }

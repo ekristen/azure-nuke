@@ -6,7 +6,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-05-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-05-01/network" //nolint:staticcheck
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -20,7 +20,7 @@ const IPAllocationResource = "IPAllocation"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:   IPAllocationResource,
-		Scope:  nuke.Subscription,
+		Scope:  nuke.ResourceGroup,
 		Lister: &IPAllocationLister{},
 	})
 }
@@ -31,9 +31,9 @@ type IPAllocationLister struct {
 func (l IPAllocationLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*nuke.ListerOpts)
 
-	log := logrus.WithField("r", IPAllocationResource).WithField("s", opts.SubscriptionId)
+	log := logrus.WithField("r", IPAllocationResource).WithField("s", opts.SubscriptionID)
 
-	client := network.NewIPAllocationsClient(opts.SubscriptionId)
+	client := network.NewIPAllocationsClient(opts.SubscriptionID)
 	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
@@ -53,9 +53,11 @@ func (l IPAllocationLister) List(ctx context.Context, o interface{}) ([]resource
 		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &IPAllocation{
+				rg:     &opts.ResourceGroup,
 				client: client,
 				name:   g.Name,
-				rg:     &opts.ResourceGroup,
+				region: g.Location,
+				tags:   g.Tags,
 			})
 		}
 
@@ -73,6 +75,8 @@ type IPAllocation struct {
 	client network.IPAllocationsClient
 	name   *string
 	rg     *string
+	region *string
+	tags   map[string]*string
 }
 
 func (r *IPAllocation) Remove(ctx context.Context) error {
@@ -83,8 +87,13 @@ func (r *IPAllocation) Remove(ctx context.Context) error {
 func (r *IPAllocation) Properties() types.Properties {
 	properties := types.NewProperties()
 
-	properties.Set("Name", *r.name)
-	properties.Set("ResourceGroup", *r.rg)
+	properties.Set("Name", r.name)
+	properties.Set("ResourceGroup", r.rg)
+	properties.Set("Region", r.region)
+
+	for k, v := range r.tags {
+		properties.SetTag(&k, v)
+	}
 
 	return properties
 }

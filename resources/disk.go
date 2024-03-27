@@ -6,7 +6,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute" //nolint:staticcheck
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -20,7 +20,7 @@ const DiskResource = "Disk"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:   DiskResource,
-		Scope:  nuke.Subscription,
+		Scope:  nuke.ResourceGroup,
 		Lister: &DiskLister{},
 		DependsOn: []string{
 			VirtualMachineResource,
@@ -30,12 +30,14 @@ func init() {
 
 type Disk struct {
 	client compute.DisksClient
-	name   string
-	rg     string
+	name   *string
+	rg     *string
+	region *string
+	tags   map[string]*string
 }
 
 func (r *Disk) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, r.rg, r.name)
+	_, err := r.client.Delete(ctx, *r.rg, *r.name)
 	return err
 }
 
@@ -49,7 +51,7 @@ func (r *Disk) Properties() types.Properties {
 }
 
 func (r *Disk) String() string {
-	return r.name
+	return *r.name
 }
 
 type DiskLister struct {
@@ -58,9 +60,9 @@ type DiskLister struct {
 func (l DiskLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*nuke.ListerOpts)
 
-	log := logrus.WithField("r", DiskResource).WithField("s", opts.SubscriptionId)
+	log := logrus.WithField("r", DiskResource).WithField("s", opts.SubscriptionID)
 
-	client := compute.NewDisksClient(opts.SubscriptionId)
+	client := compute.NewDisksClient(opts.SubscriptionID)
 	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
@@ -81,8 +83,10 @@ func (l DiskLister) List(ctx context.Context, o interface{}) ([]resource.Resourc
 		for _, g := range list.Values() {
 			resources = append(resources, &Disk{
 				client: client,
-				name:   *g.Name,
-				rg:     opts.ResourceGroup,
+				name:   g.Name,
+				rg:     &opts.ResourceGroup,
+				region: g.Location,
+				tags:   g.Tags,
 			})
 		}
 

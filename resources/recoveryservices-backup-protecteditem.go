@@ -25,7 +25,7 @@ const RecoveryServicesBackupProtectedItemResource = "RecoveryServicesBackupProte
 func init() {
 	registry.Register(&registry.Registration{
 		Name:   RecoveryServicesBackupProtectedItemResource,
-		Scope:  nuke.Subscription,
+		Scope:  nuke.ResourceGroup,
 		Lister: &RecoveryServicesBackupProtectedItemLister{},
 	})
 }
@@ -36,7 +36,7 @@ type RecoveryServicesBackupProtectedItem struct {
 	vaultName     *string
 	id            *string
 	name          *string
-	location      *string
+	region        *string
 	resourceGroup *string
 	containerName *string
 	backupFabric  *string
@@ -47,7 +47,9 @@ func (r *RecoveryServicesBackupProtectedItem) Filter() error {
 }
 
 func (r *RecoveryServicesBackupProtectedItem) Remove(ctx context.Context) error {
-	_, err := r.itemClient.Delete(ctx, to.String(r.vaultName), to.String(r.resourceGroup), to.String(r.backupFabric), to.String(r.containerName), to.String(r.name), nil)
+	_, err := r.itemClient.Delete(
+		ctx, to.String(r.vaultName), to.String(r.resourceGroup),
+		to.String(r.backupFabric), to.String(r.containerName), to.String(r.name), nil)
 	return err
 }
 
@@ -56,7 +58,7 @@ func (r *RecoveryServicesBackupProtectedItem) Properties() types.Properties {
 
 	properties.Set("ID", r.id)
 	properties.Set("Name", r.name)
-	properties.Set("Location", r.location)
+	properties.Set("Region", r.region)
 	properties.Set("ResourceGroup", r.resourceGroup)
 	properties.Set("VaultName", r.vaultName)
 	properties.Set("ContainerName", r.containerName)
@@ -81,21 +83,21 @@ func (l RecoveryServicesBackupProtectedItemLister) List(ctx context.Context, o i
 
 	log := logrus.
 		WithField("r", RecoveryServicesBackupProtectedItemResource).
-		WithField("s", opts.SubscriptionId).
+		WithField("s", opts.SubscriptionID).
 		WithField("rg", opts.ResourceGroup)
 
 	log.Trace("creating client")
-	vaultsClient, err := armrecoveryservices.NewVaultsClient(opts.SubscriptionId, opts.Authorizers.IdentityCreds, nil)
+	vaultsClient, err := armrecoveryservices.NewVaultsClient(opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
 	if err != nil {
 		return resources, err
 	}
 
-	client, err := armrecoveryservicesbackup.NewBackupProtectedItemsClient(opts.SubscriptionId, opts.Authorizers.IdentityCreds, nil)
+	client, err := armrecoveryservicesbackup.NewBackupProtectedItemsClient(opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
 	if err != nil {
 		return resources, err
 	}
 
-	protectedItems, err := armrecoveryservicesbackup.NewProtectedItemsClient(opts.SubscriptionId, opts.Authorizers.IdentityCreds, nil)
+	protectedItems, err := armrecoveryservicesbackup.NewProtectedItemsClient(opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
 	if err != nil {
 		return resources, err
 	}
@@ -132,14 +134,13 @@ func (l RecoveryServicesBackupProtectedItemLister) List(ctx context.Context, o i
 						vaultName:     v.Name,
 						id:            i.ID,
 						name:          i.Name,
-						location:      i.Location,
+						region:        i.Location,
 						resourceGroup: to.StringPtr(opts.ResourceGroup),
 						containerName: to.StringPtr(containerName),
 						backupFabric:  to.StringPtr("Azure"), // TODO: this should be calculated
 					})
 				}
 			}
-
 		}
 	}
 

@@ -6,7 +6,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/containerregistry/mgmt/2019-05-01/containerregistry"
+	"github.com/Azure/azure-sdk-for-go/services/containerregistry/mgmt/2019-05-01/containerregistry" //nolint:staticcheck
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -20,7 +20,7 @@ const ContainerRegistryResource = "ContainerRegistry"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:   ContainerRegistryResource,
-		Scope:  nuke.Subscription,
+		Scope:  nuke.ResourceGroup,
 		Lister: &ContainerRegistryLister{},
 	})
 }
@@ -29,6 +29,8 @@ type ContainerRegistry struct {
 	client        containerregistry.RegistriesClient
 	name          *string
 	resourceGroup *string
+	region        *string
+	tags          map[string]*string
 }
 
 func (r *ContainerRegistry) Remove(ctx context.Context) error {
@@ -41,6 +43,11 @@ func (r *ContainerRegistry) Properties() types.Properties {
 
 	properties.Set("Name", *r.name)
 	properties.Set("ResourceGroup", *r.resourceGroup)
+	properties.Set("Region", *r.region)
+
+	for k, v := range r.tags {
+		properties.SetTag(&k, v)
+	}
 
 	return properties
 }
@@ -55,9 +62,9 @@ type ContainerRegistryLister struct {
 func (l ContainerRegistryLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*nuke.ListerOpts)
 
-	log := logrus.WithField("r", ContainerRegistryResource).WithField("s", opts.SubscriptionId)
+	log := logrus.WithField("r", ContainerRegistryResource).WithField("s", opts.SubscriptionID)
 
-	client := containerregistry.NewRegistriesClient(opts.SubscriptionId)
+	client := containerregistry.NewRegistriesClient(opts.SubscriptionID)
 	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
@@ -66,7 +73,7 @@ func (l ContainerRegistryLister) List(ctx context.Context, o interface{}) ([]res
 
 	log.Trace("attempting to list container registries")
 
-	list, err := client.List(ctx)
+	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup)
 	if err != nil {
 		return nil, err
 	}
@@ -80,6 +87,8 @@ func (l ContainerRegistryLister) List(ctx context.Context, o interface{}) ([]res
 				client:        client,
 				name:          entity.Name,
 				resourceGroup: &opts.ResourceGroup,
+				region:        entity.Location,
+				tags:          entity.Tags,
 			})
 		}
 

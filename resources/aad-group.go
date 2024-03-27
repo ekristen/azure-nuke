@@ -31,7 +31,7 @@ type AzureAdGroupLister struct {
 func (l AzureAdGroupLister) List(_ context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*nuke.ListerOpts)
 
-	log := logrus.WithField("r", AzureAdGroupResource).WithField("s", opts.SubscriptionId)
+	log := logrus.WithField("r", AzureAdGroupResource).WithField("s", opts.SubscriptionID)
 
 	client := msgraph.NewGroupsClient()
 	client.BaseClient.Authorizer = opts.Authorizers.MicrosoftGraph
@@ -43,18 +43,20 @@ func (l AzureAdGroupLister) List(_ context.Context, o interface{}) ([]resource.R
 
 	ctx := context.Background()
 
-	groups, _, err := client.List(ctx, odata.Query{})
+	entities, _, err := client.List(ctx, odata.Query{})
 	if err != nil {
 		return nil, err
 	}
 
 	log.Trace("listing resources")
 
-	for _, group := range *groups {
+	for i := range *entities {
+		entity := &(*entities)[i]
+
 		resources = append(resources, &AzureAdGroup{
 			client: client,
-			id:     group.ID(),
-			name:   group.DisplayName,
+			id:     entity.ID(),
+			name:   entity.DisplayName,
 		})
 	}
 

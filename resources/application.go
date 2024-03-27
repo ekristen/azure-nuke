@@ -32,7 +32,7 @@ type ApplicationLister struct {
 func (l ApplicationLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*nuke.ListerOpts)
 
-	log := logrus.WithField("r", ApplicationResource).WithField("s", opts.SubscriptionId)
+	log := logrus.WithField("r", ApplicationResource).WithField("s", opts.SubscriptionID)
 
 	client := msgraph.NewApplicationsClient()
 	client.BaseClient.Authorizer = opts.Authorizers.Graph
@@ -49,7 +49,9 @@ func (l ApplicationLister) List(ctx context.Context, o interface{}) ([]resource.
 
 	log.Trace("listing applications")
 
-	for _, entity := range *entities {
+	for i := range *entities {
+		entity := &(*entities)[i]
+
 		resources = append(resources, &Application{
 			client: client,
 			id:     entity.ID(),

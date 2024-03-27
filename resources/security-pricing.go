@@ -7,7 +7,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/preview/security/mgmt/v3.0/security"
+	"github.com/Azure/azure-sdk-for-go/services/preview/security/mgmt/v3.0/security" //nolint:staticcheck
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -31,8 +31,7 @@ func init() {
 
 type SecurityPricing struct {
 	client security.PricingsClient
-	id     string
-	name   string
+	name   *string
 	tier   string
 }
 
@@ -44,7 +43,7 @@ func (r *SecurityPricing) Filter() error {
 }
 
 func (r *SecurityPricing) Remove(ctx context.Context) error {
-	_, err := r.client.Update(ctx, r.name, security.Pricing{
+	_, err := r.client.Update(ctx, *r.name, security.Pricing{
 		PricingProperties: &security.PricingProperties{
 			PricingTier: "Free",
 		},
@@ -55,7 +54,6 @@ func (r *SecurityPricing) Remove(ctx context.Context) error {
 func (r *SecurityPricing) Properties() types.Properties {
 	properties := types.NewProperties()
 
-	properties.Set("ID", r.id)
 	properties.Set("Name", r.name)
 	properties.Set("PricingTier", r.tier)
 
@@ -63,7 +61,7 @@ func (r *SecurityPricing) Properties() types.Properties {
 }
 
 func (r *SecurityPricing) String() string {
-	return r.name
+	return *r.name
 }
 
 // -------------------------------------------------------------------
@@ -76,11 +74,11 @@ func (l SecurityPricingLister) List(ctx context.Context, o interface{}) ([]resou
 
 	log := logrus.
 		WithField("r", SecurityPricingResource).
-		WithField("s", opts.SubscriptionId)
+		WithField("s", opts.SubscriptionID)
 
 	log.Trace("creating client")
 
-	client := security.NewPricingsClient(opts.SubscriptionId)
+	client := security.NewPricingsClient(opts.SubscriptionID)
 	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
@@ -97,8 +95,7 @@ func (l SecurityPricingLister) List(ctx context.Context, o interface{}) ([]resou
 	for _, price := range *list.Value {
 		resources = append(resources, &SecurityPricing{
 			client: client,
-			id:     *price.ID,
-			name:   *price.Name,
+			name:   price.Name,
 			tier:   string(price.PricingTier),
 		})
 	}

@@ -2,8 +2,10 @@ package config
 
 import (
 	"fmt"
-	"github.com/ekristen/libnuke/pkg/config"
+
 	"github.com/sirupsen/logrus"
+
+	"github.com/ekristen/libnuke/pkg/config"
 )
 
 // New creates a new extended configuration from a file. This is necessary because we are extended the default

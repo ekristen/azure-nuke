@@ -85,7 +85,7 @@ type ServicePrincipalsLister struct {
 func (l ServicePrincipalsLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*nuke.ListerOpts)
 
-	log := logrus.WithField("r", ServicePrincipalResource).WithField("s", opts.SubscriptionId)
+	log := logrus.WithField("r", ServicePrincipalResource).WithField("s", opts.SubscriptionID)
 
 	client := msgraph.NewServicePrincipalsClient()
 	client.BaseClient.Authorizer = opts.Authorizers.MicrosoftGraph
@@ -102,7 +102,9 @@ func (l ServicePrincipalsLister) List(ctx context.Context, o interface{}) ([]res
 
 	log.Trace("listing resource start")
 
-	for _, entity := range *entities {
+	for i := range *entities {
+		entity := &(*entities)[i]
+
 		// Filtering out Microsoft owned Service Principals, because otherwise it needlessly adds 3000+
 		// resources that have to get filtered out later. This instead does it optimistically here.
 		// Ideally we'd be able to use odata.Query above, but it's not supported by the graph at this time.

@@ -1,8 +1,11 @@
 package nuke
 
 import (
-	"github.com/ekristen/azure-nuke/pkg/azure"
+	"regexp"
+
 	"github.com/ekristen/libnuke/pkg/registry"
+
+	"github.com/ekristen/azure-nuke/pkg/azure"
 )
 
 const (
@@ -11,10 +14,23 @@ const (
 	ResourceGroup registry.Scope = "resource-group"
 )
 
+var (
+	ResourceGroupRegex = regexp.MustCompile(`/resourceGroups/([^/]+)`)
+)
+
 type ListerOpts struct {
 	Authorizers    *azure.Authorizers
-	TenantId       string
-	SubscriptionId string
+	TenantID       string
+	SubscriptionID string
 	ResourceGroup  string
-	Locations      []string
+	Regions        []string
+}
+
+func GetResourceGroupFromID(id string) *string {
+	matches := ResourceGroupRegex.FindStringSubmatch(id)
+	if len(matches) == 2 {
+		return &matches[1]
+	}
+
+	return nil
 }

@@ -34,7 +34,7 @@ type AzureADUserLister struct {
 func (l AzureADUserLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*nuke.ListerOpts)
 
-	log := logrus.WithField("r", AzureADUserResource).WithField("s", opts.SubscriptionId)
+	log := logrus.WithField("r", AzureADUserResource).WithField("s", opts.SubscriptionID)
 
 	client := msgraph.NewUsersClient()
 	client.BaseClient.Authorizer = opts.Authorizers.Graph
@@ -44,19 +44,21 @@ func (l AzureADUserLister) List(ctx context.Context, o interface{}) ([]resource.
 
 	log.Trace("attempting to list azure ad users")
 
-	users, _, err := client.List(ctx, odata.Query{})
+	entities, _, err := client.List(ctx, odata.Query{})
 	if err != nil {
 		return nil, err
 	}
 
 	log.Trace("listing resources")
 
-	for _, user := range *users {
+	for i := range *entities {
+		entity := &(*entities)[i]
+
 		resources = append(resources, &AzureADUser{
 			client: client,
-			id:     user.ID(),
-			name:   user.DisplayName,
-			upn:    user.UserPrincipalName,
+			id:     entity.ID(),
+			name:   entity.DisplayName,
+			upn:    entity.UserPrincipalName,
 		})
 	}
 

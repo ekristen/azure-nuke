@@ -1,14 +1,16 @@
 package config
 
 import (
+	"io"
+	"testing"
+
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
+
 	libconfig "github.com/ekristen/libnuke/pkg/config"
 	"github.com/ekristen/libnuke/pkg/filter"
 	"github.com/ekristen/libnuke/pkg/settings"
 	"github.com/ekristen/libnuke/pkg/types"
-	"github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
-	"io"
-	"testing"
 )
 
 func TestLoadExampleConfig(t *testing.T) {

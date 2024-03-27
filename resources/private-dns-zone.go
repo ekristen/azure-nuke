@@ -6,7 +6,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
+	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns" //nolint:staticcheck
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -26,10 +26,11 @@ func init() {
 }
 
 type PrivateDNSZone struct {
-	client   privatedns.PrivateZonesClient
-	name     *string
-	location *string
-	rg       *string
+	client privatedns.PrivateZonesClient
+	name   *string
+	region *string
+	rg     *string
+	tags   map[string]*string
 }
 
 func (r *PrivateDNSZone) Remove(ctx context.Context) error {
@@ -40,8 +41,13 @@ func (r *PrivateDNSZone) Remove(ctx context.Context) error {
 func (r *PrivateDNSZone) Properties() types.Properties {
 	properties := types.NewProperties()
 
-	properties.Set("Name", *r.name)
-	properties.Set("ResourceGroup", *r.rg)
+	properties.Set("Name", r.name)
+	properties.Set("ResourceGroup", r.rg)
+	properties.Set("Region", r.region)
+
+	for k, v := range r.tags {
+		properties.SetTag(&k, v)
+	}
 
 	return properties
 }
@@ -58,12 +64,12 @@ func (l PrivateDNSZoneLister) List(ctx context.Context, o interface{}) ([]resour
 
 	log := logrus.WithFields(logrus.Fields{
 		"r": PrivateDNSZoneResource,
-		"s": opts.SubscriptionId,
+		"s": opts.SubscriptionID,
 	})
 
 	log.Trace("start")
 
-	client := privatedns.NewPrivateZonesClient(opts.SubscriptionId)
+	client := privatedns.NewPrivateZonesClient(opts.SubscriptionID)
 	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
@@ -83,10 +89,11 @@ func (l PrivateDNSZoneLister) List(ctx context.Context, o interface{}) ([]resour
 		for _, g := range list.Values() {
 			log.Trace("adding entity to list")
 			resources = append(resources, &PrivateDNSZone{
-				client:   client,
-				name:     g.Name,
-				location: g.Location,
-				rg:       &opts.ResourceGroup,
+				client: client,
+				name:   g.Name,
+				region: g.Location,
+				rg:     &opts.ResourceGroup,
+				tags:   g.Tags,
 			})
 		}
 

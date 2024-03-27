@@ -2,13 +2,12 @@ package resources
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/preview/resources/mgmt/2021-06-01-preview/policy"
+	"github.com/Azure/azure-sdk-for-go/services/preview/resources/mgmt/2021-06-01-preview/policy" //nolint:staticcheck
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -32,13 +31,6 @@ type PolicyDefinition struct {
 	name        string
 	displayName string
 	policyType  string
-}
-
-func (r *PolicyDefinition) Filter() error {
-	if r.policyType == "BuiltIn" || r.policyType == "Static" {
-		return fmt.Errorf("cannot delete policies with type %s", r.policyType)
-	}
-	return nil
 }
 
 func (r *PolicyDefinition) Remove(ctx context.Context) error {
@@ -66,9 +58,9 @@ type PolicyDefinitionLister struct {
 func (l PolicyDefinitionLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*nuke.ListerOpts)
 
-	log := logrus.WithField("r", PolicyDefinitionResource).WithField("s", opts.SubscriptionId)
+	log := logrus.WithField("r", PolicyDefinitionResource).WithField("s", opts.SubscriptionID)
 
-	client := policy.NewDefinitionsClient(opts.SubscriptionId)
+	client := policy.NewDefinitionsClient(opts.SubscriptionID)
 	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
@@ -87,6 +79,13 @@ func (l PolicyDefinitionLister) List(ctx context.Context, o interface{}) ([]reso
 	for list.NotDone() {
 		log.Trace("list not done")
 		for _, g := range list.Values() {
+			// Filtering out BuiltIn Policy Definitions, because otherwise it needlessly adds 3000+
+			// resources that have to get filtered out later. This instead does it optimistically here.
+			// Ideally we'd be able to use filter above, but it does not work. Thanks, Azure. :facepalm:
+			if g.PolicyType == "BuiltIn" || g.PolicyType == "Static" {
+				continue
+			}
+
 			resources = append(resources, &PolicyDefinition{
 				client:      client,
 				name:        *g.Name,

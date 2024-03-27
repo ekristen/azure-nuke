@@ -2,8 +2,6 @@ package resources
 
 import (
 	"context"
-	"fmt"
-	"slices"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -24,34 +22,24 @@ const ResourceGroupResource = "ResourceGroup"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:   ResourceGroupResource,
+		Scope:  nuke.Subscription,
 		Lister: &ResourceGroupLister{},
-		// Scope is set to ResourceGroup because we want to be able to query based on location and resource group
-		// 	which is not possible if we treat this as part of subscription because that's considered global.
-		Scope: nuke.Subscription,
 	})
 }
 
 type ResourceGroup struct {
 	client         *resourcegroups.ResourceGroupsClient
 	name           *string
-	location       string
-	subscriptionId string
+	region         string
+	subscriptionID string
 	listerOpts     *nuke.ListerOpts
-}
-
-func (r *ResourceGroup) Filter() error {
-	if !slices.Contains(r.listerOpts.Locations, r.location) {
-		return fmt.Errorf("resource not in enabled region/location")
-	}
-
-	return nil
 }
 
 func (r *ResourceGroup) Remove(ctx context.Context) error {
 	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(30*time.Second))
 	defer cancel()
 
-	_, err := r.client.Delete(ctx, commonids.NewResourceGroupID(r.subscriptionId, *r.name), resourcegroups.DefaultDeleteOperationOptions())
+	_, err := r.client.Delete(ctx, commonids.NewResourceGroupID(r.subscriptionID, *r.name), resourcegroups.DefaultDeleteOperationOptions())
 	return err
 }
 
@@ -59,8 +47,8 @@ func (r *ResourceGroup) Properties() types.Properties {
 	properties := types.NewProperties()
 
 	properties.Set("Name", r.name)
-	properties.Set("Location", r.location)
-	properties.Set("SubscriptionId", r.subscriptionId)
+	properties.Set("Region", r.region)
+	properties.Set("SubscriptionID", r.subscriptionID)
 
 	return properties
 }
@@ -80,7 +68,7 @@ func (l ResourceGroupLister) List(ctx context.Context, o interface{}) ([]resourc
 	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(30*time.Second))
 	defer cancel()
 
-	log := logrus.WithField("r", ResourceGroupResource).WithField("s", opts.SubscriptionId)
+	log := logrus.WithField("r", ResourceGroupResource).WithField("s", opts.SubscriptionID)
 
 	client, err := resourcegroups.NewResourceGroupsClientWithBaseURI(environments.AzurePublic().ResourceManager)
 	if err != nil {
@@ -92,7 +80,7 @@ func (l ResourceGroupLister) List(ctx context.Context, o interface{}) ([]resourc
 
 	log.Trace("attempting to list groups")
 
-	list, err := client.List(ctx, commonids.NewSubscriptionID(opts.SubscriptionId), resourcegroups.ListOperationOptions{})
+	list, err := client.List(ctx, commonids.NewSubscriptionID(opts.SubscriptionID), resourcegroups.ListOperationOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -103,8 +91,8 @@ func (l ResourceGroupLister) List(ctx context.Context, o interface{}) ([]resourc
 		resources = append(resources, &ResourceGroup{
 			client:         client,
 			name:           entity.Name,
-			location:       entity.Location,
-			subscriptionId: opts.SubscriptionId,
+			region:         entity.Location,
+			subscriptionID: opts.SubscriptionID,
 			listerOpts:     opts,
 		})
 	}

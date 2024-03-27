@@ -10,7 +10,8 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/recoveryservices/armrecoveryservicesbackup v1.0.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/security/armsecurity v0.11.0
 	github.com/Azure/go-autorest/autorest/to v0.4.0
-	github.com/ekristen/libnuke v0.12.0
+	github.com/ekristen/libnuke v0.12.1-0.20240326234901-fabc1a06d086
+	github.com/fatih/color v1.16.0
 	github.com/gotidy/ptr v1.4.0
 	github.com/hashicorp/go-azure-helpers v0.66.1
 	github.com/hashicorp/go-azure-sdk v0.20240125.1100331
@@ -34,7 +35,6 @@ require (
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/fatih/color v1.16.0 // indirect
 	github.com/gofrs/uuid v4.2.0+incompatible // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect

@@ -25,7 +25,7 @@ const RecoveryServicesBackupPolicyResource = "RecoveryServicesBackupPolicy"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:   RecoveryServicesBackupPolicyResource,
-		Scope:  nuke.Subscription,
+		Scope:  nuke.ResourceGroup,
 		Lister: &RecoveryServicesBackupPolicyLister{},
 		DependsOn: []string{
 			RecoveryServicesBackupProtectedItemResource,
@@ -38,9 +38,9 @@ type RecoveryServicesBackupPolicy struct {
 	protectionsClient protectionpolicies.ProtectionPoliciesClient
 	id                *string
 	name              *string
-	location          *string
+	region            *string
 	rg                string
-	backupPolicyId    protectionpolicies.BackupPolicyId
+	backupPolicyID    protectionpolicies.BackupPolicyId
 }
 
 func (r *RecoveryServicesBackupPolicy) Filter() error {
@@ -48,7 +48,7 @@ func (r *RecoveryServicesBackupPolicy) Filter() error {
 }
 
 func (r *RecoveryServicesBackupPolicy) Remove(ctx context.Context) error {
-	_, err := r.protectionsClient.Delete(ctx, r.backupPolicyId)
+	_, err := r.protectionsClient.Delete(ctx, r.backupPolicyID)
 	return err
 }
 
@@ -56,7 +56,7 @@ func (r *RecoveryServicesBackupPolicy) Properties() types.Properties {
 	properties := types.NewProperties()
 
 	properties.Set("Name", r.name)
-	properties.Set("Location", r.location)
+	properties.Set("Region", r.region)
 	properties.Set("ResourceGroup", r.rg)
 
 	return properties
@@ -77,7 +77,7 @@ func (l RecoveryServicesBackupPolicyLister) List(ctx context.Context, o interfac
 
 	log := logrus.
 		WithField("r", RecoveryServicesBackupPolicyResource).
-		WithField("s", opts.SubscriptionId).
+		WithField("s", opts.SubscriptionID).
 		WithField("rg", opts.ResourceGroup)
 
 	log.Trace("creating client")
@@ -88,12 +88,16 @@ func (l RecoveryServicesBackupPolicyLister) List(ctx context.Context, o interfac
 	}
 	vaultsClient.Client.Authorizer = opts.Authorizers.Management
 
-	client := backuppolicies.NewBackupPoliciesClientWithBaseURI("https://management.azure.com") // TODO: pass in the endpoint
+	// TODO: pass in the endpoint
+	client :=
+		backuppolicies.NewBackupPoliciesClientWithBaseURI("https://management.azure.com")
 	client.Client.Authorizer = opts.Authorizers.Management
 	client.Client.RetryAttempts = 1
 	client.Client.RetryDuration = time.Second * 2
 
-	protectionsClient := protectionpolicies.NewProtectionPoliciesClientWithBaseURI("https://management.azure.com") // TODO: pass in the endpoint
+	// TODO: pass in the endpoint
+	protectionsClient :=
+		protectionpolicies.NewProtectionPoliciesClientWithBaseURI("https://management.azure.com")
 	protectionsClient.Client.Authorizer = opts.Authorizers.Management
 	protectionsClient.Client.RetryAttempts = 1
 	protectionsClient.Client.RetryDuration = time.Second * 2
@@ -102,14 +106,16 @@ func (l RecoveryServicesBackupPolicyLister) List(ctx context.Context, o interfac
 
 	log.Trace("listing resources")
 
-	vaultsRes, err := vaultsClient.ListByResourceGroupComplete(ctx, commonids.NewResourceGroupID(opts.SubscriptionId, opts.ResourceGroup))
+	vaultsRes, err :=
+		vaultsClient.ListByResourceGroupComplete(
+			ctx, commonids.NewResourceGroupID(opts.SubscriptionID, opts.ResourceGroup))
 	if err != nil {
 		return nil, err
 	}
 
 	for _, v := range vaultsRes.Items {
-		vaultId := backuppolicies.NewVaultID(opts.SubscriptionId, opts.ResourceGroup, ptr.ToString(v.Name))
-		items, err := client.ListComplete(ctx, vaultId, backuppolicies.DefaultListOperationOptions())
+		vaultID := backuppolicies.NewVaultID(opts.SubscriptionID, opts.ResourceGroup, ptr.ToString(v.Name))
+		items, err := client.ListComplete(ctx, vaultID, backuppolicies.DefaultListOperationOptions())
 		if err != nil {
 			return nil, err
 		}
@@ -120,9 +126,10 @@ func (l RecoveryServicesBackupPolicyLister) List(ctx context.Context, o interfac
 				protectionsClient: protectionsClient,
 				id:                item.Id,
 				name:              item.Name,
-				location:          item.Location,
+				region:            item.Location,
 				rg:                opts.ResourceGroup,
-				backupPolicyId:    protectionpolicies.NewBackupPolicyID(opts.SubscriptionId, opts.ResourceGroup, ptr.ToString(v.Name), ptr.ToString(item.Name)),
+				backupPolicyID: protectionpolicies.NewBackupPolicyID(
+					opts.SubscriptionID, opts.ResourceGroup, ptr.ToString(v.Name), ptr.ToString(item.Name)),
 			})
 		}
 	}

@@ -29,7 +29,7 @@ type ApplicationFederatedCredential struct {
 	client     *msgraph.ApplicationsClient
 	id         *string
 	name       *string
-	appId      *string
+	appID      *string
 	uniqueName *string
 }
 
@@ -38,7 +38,7 @@ func (r *ApplicationFederatedCredential) Filter() error {
 }
 
 func (r *ApplicationFederatedCredential) Remove(ctx context.Context) error {
-	_, err := r.client.DeleteFederatedIdentityCredential(context.TODO(), *r.appId, *r.id)
+	_, err := r.client.DeleteFederatedIdentityCredential(context.TODO(), *r.appID, *r.id)
 	return err
 }
 
@@ -46,14 +46,14 @@ func (r *ApplicationFederatedCredential) Properties() types.Properties {
 	properties := types.NewProperties()
 
 	properties.Set("Name", *r.name)
-	properties.Set("AppID", *r.appId)
+	properties.Set("AppID", *r.appID)
 	properties.Set("AppUniqueName", r.uniqueName)
 
 	return properties
 }
 
 func (r *ApplicationFederatedCredential) String() string {
-	return *r.id
+	return *r.name
 }
 
 type ApplicationFederatedCredentialLister struct {
@@ -62,7 +62,7 @@ type ApplicationFederatedCredentialLister struct {
 func (l ApplicationFederatedCredentialLister) List(_ context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*nuke.ListerOpts)
 
-	log := logrus.WithField("r", ApplicationFederatedCredentialResource).WithField("s", opts.SubscriptionId)
+	log := logrus.WithField("r", ApplicationFederatedCredentialResource).WithField("s", opts.SubscriptionID)
 
 	client := msgraph.NewApplicationsClient()
 	client.BaseClient.Authorizer = opts.Authorizers.Graph
@@ -81,7 +81,9 @@ func (l ApplicationFederatedCredentialLister) List(_ context.Context, o interfac
 
 	log.Trace("listing application federated creds")
 
-	for _, entity := range *entities {
+	for i := range *entities {
+		entity := &(*entities)[i]
+
 		creds, _, err := client.ListFederatedIdentityCredentials(ctx, *entity.ID(), odata.Query{})
 		if err != nil {
 			return nil, err
@@ -91,7 +93,7 @@ func (l ApplicationFederatedCredentialLister) List(_ context.Context, o interfac
 				client:     client,
 				id:         cred.ID,
 				name:       cred.Name,
-				appId:      entity.ID(),
+				appID:      entity.ID(),
 				uniqueName: entity.UniqueName,
 			})
 		}

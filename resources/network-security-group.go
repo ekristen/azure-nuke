@@ -6,7 +6,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-05-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2022-05-01/network" //nolint:staticcheck
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -20,16 +20,17 @@ const NetworkSecurityGroupResource = "NetworkSecurityGroup"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:   NetworkSecurityGroupResource,
-		Scope:  nuke.Subscription,
+		Scope:  nuke.ResourceGroup,
 		Lister: &NetworkSecurityGroupLister{},
 	})
 }
 
 type NetworkSecurityGroup struct {
-	client   network.SecurityGroupsClient
-	name     *string
-	location *string
-	rg       *string
+	client network.SecurityGroupsClient
+	name   *string
+	region *string
+	rg     *string
+	tags   map[string]*string
 }
 
 func (r *NetworkSecurityGroup) Remove(ctx context.Context) error {
@@ -40,8 +41,12 @@ func (r *NetworkSecurityGroup) Remove(ctx context.Context) error {
 func (r *NetworkSecurityGroup) Properties() types.Properties {
 	properties := types.NewProperties()
 
-	properties.Set("Name", *r.name)
-	properties.Set("Location", *r.location)
+	properties.Set("Name", r.name)
+	properties.Set("Region", r.region)
+
+	for k, v := range r.tags {
+		properties.SetTag(&k, v)
+	}
 
 	return properties
 }
@@ -56,9 +61,9 @@ type NetworkSecurityGroupLister struct {
 func (l NetworkSecurityGroupLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*nuke.ListerOpts)
 
-	log := logrus.WithField("r", NetworkSecurityGroupResource).WithField("s", opts.SubscriptionId)
+	log := logrus.WithField("r", NetworkSecurityGroupResource).WithField("s", opts.SubscriptionID)
 
-	client := network.NewSecurityGroupsClient(opts.SubscriptionId)
+	client := network.NewSecurityGroupsClient(opts.SubscriptionID)
 	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
@@ -78,10 +83,11 @@ func (l NetworkSecurityGroupLister) List(ctx context.Context, o interface{}) ([]
 		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &NetworkSecurityGroup{
-				client:   client,
-				name:     g.Name,
-				location: g.Location,
-				rg:       &opts.ResourceGroup,
+				client: client,
+				name:   g.Name,
+				region: g.Location,
+				rg:     &opts.ResourceGroup,
+				tags:   g.Tags,
 			})
 		}
 

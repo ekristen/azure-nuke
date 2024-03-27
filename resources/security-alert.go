@@ -9,7 +9,7 @@ import (
 	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/preview/security/mgmt/v3.0/security"
+	"github.com/Azure/azure-sdk-for-go/services/preview/security/mgmt/v3.0/security" //nolint:staticcheck
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -20,7 +20,7 @@ import (
 
 const SecurityAlertResource = "SecurityAlert"
 
-const SecurityAlertLocation = "/Microsoft.Security/locations/(?P<location>.*)/alerts/"
+const SecurityAlertLocation = "/Microsoft.Security/locations/(?P<region>.*)/alerts/"
 
 func init() {
 	registry.Register(&registry.Registration{
@@ -79,13 +79,13 @@ func (l SecurityAlertsLister) List(ctx context.Context, o interface{}) ([]resour
 
 	log := logrus.
 		WithField("r", SecurityAlertResource).
-		WithField("s", opts.SubscriptionId)
+		WithField("s", opts.SubscriptionID)
 
 	log.Trace("creating client")
 
 	locationRe := regexp.MustCompile(SecurityAlertLocation)
 
-	client := security.NewAlertsClient(opts.SubscriptionId)
+	client := security.NewAlertsClient(opts.SubscriptionID)
 	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
@@ -102,7 +102,6 @@ func (l SecurityAlertsLister) List(ctx context.Context, o interface{}) ([]resour
 	for list.NotDone() {
 		log.Trace("listing not done")
 		for _, g := range list.Values() {
-
 			matches := locationRe.FindStringSubmatch(ptr.ToString(g.ID))
 			resources = append(resources, &SecurityAlert{
 				client:      client,

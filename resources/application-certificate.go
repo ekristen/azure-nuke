@@ -29,7 +29,7 @@ type ApplicationCertificate struct {
 	client *msgraph.ApplicationsClient
 	id     *string
 	name   *string
-	appId  *string
+	appID  *string
 }
 
 func (r *ApplicationCertificate) Filter() error {
@@ -59,7 +59,7 @@ type ApplicationCertificateLister struct {
 func (l ApplicationCertificateLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*nuke.ListerOpts)
 
-	log := logrus.WithField("r", ApplicationCertificateResource).WithField("s", opts.SubscriptionId)
+	log := logrus.WithField("r", ApplicationCertificateResource).WithField("s", opts.SubscriptionID)
 
 	client := msgraph.NewApplicationsClient()
 	client.BaseClient.Authorizer = opts.Authorizers.Graph
@@ -76,13 +76,15 @@ func (l ApplicationCertificateLister) List(ctx context.Context, o interface{}) (
 
 	log.Trace("listing application certificate")
 
-	for _, entity := range *entities {
+	for i := range *entities {
+		entity := &(*entities)[i]
+
 		for _, cred := range *entity.KeyCredentials {
 			resources = append(resources, &ApplicationCertificate{
 				client: client,
 				id:     cred.KeyId,
 				name:   cred.DisplayName,
-				appId:  entity.ID(),
+				appID:  entity.ID(),
 			})
 		}
 	}

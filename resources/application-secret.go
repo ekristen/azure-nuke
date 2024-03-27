@@ -29,7 +29,7 @@ type ApplicationSecret struct {
 	client  *msgraph.ApplicationsClient
 	id      *string
 	name    *string
-	appId   *string
+	appID   *string
 	appName *string
 }
 
@@ -61,7 +61,7 @@ type ApplicationSecretLister struct {
 func (l ApplicationSecretLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*nuke.ListerOpts)
 
-	log := logrus.WithField("r", ApplicationSecretResource).WithField("s", opts.SubscriptionId)
+	log := logrus.WithField("r", ApplicationSecretResource).WithField("s", opts.SubscriptionID)
 
 	client := msgraph.NewApplicationsClient()
 	client.BaseClient.Authorizer = opts.Authorizers.Graph
@@ -78,13 +78,15 @@ func (l ApplicationSecretLister) List(ctx context.Context, o interface{}) ([]res
 
 	log.Trace("listing application secrets")
 
-	for _, entity := range *entities {
+	for i := range *entities {
+		entity := &(*entities)[i]
+
 		for _, cred := range *entity.PasswordCredentials {
 			resources = append(resources, &ApplicationSecret{
 				client:  client,
 				id:      cred.KeyId,
 				name:    cred.DisplayName,
-				appId:   entity.ID(),
+				appID:   entity.ID(),
 				appName: entity.DisplayName,
 			})
 		}

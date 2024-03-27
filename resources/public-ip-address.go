@@ -6,7 +6,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-05-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2022-05-01/network" //nolint:staticcheck
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -20,7 +20,7 @@ const PublicIPAddressesResource = "PublicIPAddresses"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:   PublicIPAddressesResource,
-		Scope:  nuke.Subscription,
+		Scope:  nuke.ResourceGroup,
 		Lister: &PublicIPAddressesLister{},
 	})
 }
@@ -29,6 +29,8 @@ type PublicIPAddresses struct {
 	client network.PublicIPAddressesClient
 	name   *string
 	rg     *string
+	region *string
+	tags   map[string]*string
 }
 
 func (r *PublicIPAddresses) Remove(ctx context.Context) error {
@@ -41,6 +43,7 @@ func (r *PublicIPAddresses) Properties() types.Properties {
 
 	properties.Set("Name", *r.name)
 	properties.Set("ResourceGroup", *r.rg)
+	properties.Set("Region", *r.region)
 
 	return properties
 }
@@ -55,9 +58,9 @@ type PublicIPAddressesLister struct {
 func (l PublicIPAddressesLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*nuke.ListerOpts)
 
-	log := logrus.WithField("r", PublicIPAddressesResource).WithField("s", opts.SubscriptionId)
+	log := logrus.WithField("r", PublicIPAddressesResource).WithField("s", opts.SubscriptionID)
 
-	client := network.NewPublicIPAddressesClient(opts.SubscriptionId)
+	client := network.NewPublicIPAddressesClient(opts.SubscriptionID)
 	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
@@ -80,6 +83,8 @@ func (l PublicIPAddressesLister) List(ctx context.Context, o interface{}) ([]res
 				client: client,
 				name:   g.Name,
 				rg:     &opts.ResourceGroup,
+				region: g.Location,
+				tags:   g.Tags,
 			})
 		}
 

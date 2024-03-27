@@ -6,7 +6,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/preview/security/mgmt/v3.0/security"
+	"github.com/Azure/azure-sdk-for-go/services/preview/security/mgmt/v3.0/security" //nolint:staticcheck
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -27,12 +27,12 @@ func init() {
 
 type SecurityWorkspace struct {
 	client security.WorkspaceSettingsClient
-	name   string
-	scope  string
+	name   *string
+	scope  *string
 }
 
 func (r *SecurityWorkspace) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, r.name)
+	_, err := r.client.Delete(ctx, *r.name)
 	return err
 }
 
@@ -46,7 +46,7 @@ func (r *SecurityWorkspace) Properties() types.Properties {
 }
 
 func (r *SecurityWorkspace) String() string {
-	return r.name
+	return *r.name
 }
 
 // -------------------------------------------------------------
@@ -59,11 +59,11 @@ func (l SecurityWorkspaceLister) List(ctx context.Context, o interface{}) ([]res
 
 	log := logrus.
 		WithField("r", SecurityWorkspaceResource).
-		WithField("s", opts.SubscriptionId)
+		WithField("s", opts.SubscriptionID)
 
 	log.Trace("creating client")
 
-	client := security.NewWorkspaceSettingsClient(opts.SubscriptionId)
+	client := security.NewWorkspaceSettingsClient(opts.SubscriptionID)
 	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
@@ -82,8 +82,8 @@ func (l SecurityWorkspaceLister) List(ctx context.Context, o interface{}) ([]res
 		for _, g := range list.Values() {
 			resources = append(resources, &SecurityWorkspace{
 				client: client,
-				name:   *g.Name,
-				scope:  *g.Scope,
+				name:   g.Name,
+				scope:  g.Scope,
 			})
 		}
 

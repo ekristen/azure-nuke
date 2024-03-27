@@ -6,7 +6,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/web/mgmt/2021-03-01/web"
+	"github.com/Azure/azure-sdk-for-go/services/web/mgmt/2021-03-01/web" //nolint:staticcheck
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -20,7 +20,7 @@ const AppServicePlanResource = "AppServicePlan"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:   AppServicePlanResource,
-		Scope:  nuke.Subscription,
+		Scope:  nuke.ResourceGroup,
 		Lister: &AppServicePlanLister{},
 	})
 }
@@ -31,9 +31,9 @@ type AppServicePlanLister struct {
 func (l AppServicePlanLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*nuke.ListerOpts)
 
-	log := logrus.WithField("r", AppServicePlanResource).WithField("s", opts.SubscriptionId)
+	log := logrus.WithField("r", AppServicePlanResource).WithField("s", opts.SubscriptionID)
 
-	client := web.NewAppServicePlansClient(opts.SubscriptionId)
+	client := web.NewAppServicePlansClient(opts.SubscriptionID)
 	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2

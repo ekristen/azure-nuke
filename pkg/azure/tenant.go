@@ -3,14 +3,14 @@ package azure
 import (
 	"context"
 	"fmt"
-	"github.com/gotidy/ptr"
 	"slices"
 	"time"
 
+	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"
-	"github.com/Azure/azure-sdk-for-go/services/subscription/mgmt/2020-09-01/subscription"
+	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"       //nolint:staticcheck
+	"github.com/Azure/azure-sdk-for-go/services/subscription/mgmt/2020-09-01/subscription" //nolint:staticcheck
 )
 
 type Tenant struct {
@@ -24,7 +24,10 @@ type Tenant struct {
 	ResourceGroups map[string][]string
 }
 
-func NewTenant(pctx context.Context, authorizers *Authorizers, tenantId string, subscriptionIds []string, locations []string) (*Tenant, error) {
+func NewTenant( //nolint:gocyclo
+	pctx context.Context, authorizers *Authorizers,
+	tenantID string, subscriptionIDs, regions []string,
+) (*Tenant, error) {
 	ctx, cancel := context.WithTimeout(pctx, time.Second*15)
 	defer cancel()
 
@@ -33,7 +36,7 @@ func NewTenant(pctx context.Context, authorizers *Authorizers, tenantId string, 
 
 	tenant := &Tenant{
 		Authorizers:     authorizers,
-		ID:              tenantId,
+		ID:              tenantID,
 		TenantIds:       make([]string, 0),
 		SubscriptionIds: make([]string, 0),
 		Locations:       make(map[string][]string),
@@ -62,7 +65,7 @@ func NewTenant(pctx context.Context, authorizers *Authorizers, tenantId string, 
 			return nil, err
 		}
 		for _, s := range list.Values() {
-			if len(subscriptionIds) > 0 && !slices.Contains(subscriptionIds, *s.SubscriptionID) {
+			if len(subscriptionIDs) > 0 && !slices.Contains(subscriptionIDs, *s.SubscriptionID) {
 				logrus.Warnf("skipping subscription id: %s (reason: not requested)", *s.SubscriptionID)
 				continue
 			}
@@ -74,15 +77,15 @@ func NewTenant(pctx context.Context, authorizers *Authorizers, tenantId string, 
 			groupsClient := resources.NewGroupsClient(*s.SubscriptionID)
 			groupsClient.Authorizer = authorizers.Management
 
-			logrus.Info("configured locations", locations)
+			logrus.Debugf("configured regions: %v", regions)
 			for list, err := groupsClient.List(ctx, "", nil); list.NotDone(); err = list.NextWithContext(ctx) {
 				if err != nil {
 					return nil, err
 				}
 
 				for _, g := range list.Values() {
-					// If the location isn't in the list of locations we want to include, skip it
-					if !slices.Contains(locations, ptr.ToString(g.Location)) {
+					// If the region isn't in the list of regions we want to include, skip it
+					if !slices.Contains(regions, ptr.ToString(g.Location)) && !slices.Contains(regions, "all") {
 						continue
 					}
 
@@ -90,7 +93,6 @@ func NewTenant(pctx context.Context, authorizers *Authorizers, tenantId string, 
 					tenant.ResourceGroups[*s.SubscriptionID] = append(tenant.ResourceGroups[*s.SubscriptionID], *g.Name)
 				}
 			}
-
 		}
 	}
 

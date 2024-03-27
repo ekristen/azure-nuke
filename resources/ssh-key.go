@@ -6,7 +6,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute" //nolint:staticcheck
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -26,11 +26,12 @@ func init() {
 }
 
 type SSHPublicKey struct {
-	client   compute.SSHPublicKeysClient
-	name     *string
-	rg       *string
-	location *string
-	tags     map[string]*string
+	client         compute.SSHPublicKeysClient
+	rg             *string
+	location       *string
+	name           *string
+	subscriptionID *string
+	tags           map[string]*string
 }
 
 func (r *SSHPublicKey) Remove(ctx context.Context) error {
@@ -44,6 +45,7 @@ func (r *SSHPublicKey) Properties() types.Properties {
 	properties.Set("Name", r.name)
 	properties.Set("Location", r.location)
 	properties.Set("ResourceGroup", r.rg)
+	properties.Set("SubscriptionID", r.subscriptionID)
 
 	for tag, value := range r.tags {
 		properties.SetTag(&tag, value)
@@ -64,9 +66,9 @@ type SSHPublicKeyLister struct {
 func (l SSHPublicKeyLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*nuke.ListerOpts)
 
-	log := logrus.WithField("r", SSHPublicKeyResource).WithField("s", opts.SubscriptionId)
+	log := logrus.WithField("r", SSHPublicKeyResource).WithField("s", opts.SubscriptionID)
 
-	client := compute.NewSSHPublicKeysClient(opts.SubscriptionId)
+	client := compute.NewSSHPublicKeysClient(opts.SubscriptionID)
 	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
@@ -88,7 +90,7 @@ func (l SSHPublicKeyLister) List(ctx context.Context, o interface{}) ([]resource
 			resources = append(resources, &SSHPublicKey{
 				client:   client,
 				name:     g.Name,
-				rg:       &opts.ResourceGroup,
+				rg:       nuke.GetResourceGroupFromID(*g.ID),
 				location: g.Location,
 				tags:     g.Tags,
 			})
