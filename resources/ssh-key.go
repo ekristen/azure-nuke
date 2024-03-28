@@ -28,7 +28,7 @@ func init() {
 type SSHPublicKey struct {
 	client         compute.SSHPublicKeysClient
 	rg             *string
-	location       *string
+	region         *string
 	name           *string
 	subscriptionID *string
 	tags           map[string]*string
@@ -43,7 +43,7 @@ func (r *SSHPublicKey) Properties() types.Properties {
 	properties := types.NewProperties()
 
 	properties.Set("Name", r.name)
-	properties.Set("Location", r.location)
+	properties.Set("Region", r.region)
 	properties.Set("ResourceGroup", r.rg)
 	properties.Set("SubscriptionID", r.subscriptionID)
 
@@ -88,11 +88,11 @@ func (l SSHPublicKeyLister) List(ctx context.Context, o interface{}) ([]resource
 		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &SSHPublicKey{
-				client:   client,
-				name:     g.Name,
-				rg:       nuke.GetResourceGroupFromID(*g.ID),
-				location: g.Location,
-				tags:     g.Tags,
+				client: client,
+				name:   g.Name,
+				rg:     nuke.GetResourceGroupFromID(*g.ID),
+				region: g.Location,
+				tags:   g.Tags,
 			})
 		}
 

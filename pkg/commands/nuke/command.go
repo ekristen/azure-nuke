@@ -94,11 +94,13 @@ func execute(c *cli.Context) error { //nolint:funlen
 	}
 	if !slices.Contains(parsedConfig.Regions, "all") {
 		filters[filter.Global] = append(filters[filter.Global], filter.Filter{
-			Property: "Location",
+			Property: "Region",
 			Type:     filter.NotIn,
 			Values:   parsedConfig.Regions,
 		})
 	}
+
+	fmt.Println(filters[filter.Global])
 
 	n := libnuke.New(params, filters, parsedConfig.Settings)
 

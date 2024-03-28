@@ -35,7 +35,7 @@ type SecurityAlert struct {
 	id          string
 	name        string
 	displayName string
-	location    string
+	region      string
 	status      string
 }
 
@@ -50,7 +50,7 @@ func (r *SecurityAlert) Filter() error {
 func (r *SecurityAlert) Remove(ctx context.Context) error {
 	// Note: we cannot actually remove alerts :(
 	// So we just have to dismiss them instead
-	_, err := r.client.UpdateSubscriptionLevelStateToDismiss(ctx, r.location, r.name)
+	_, err := r.client.UpdateSubscriptionLevelStateToDismiss(ctx, r.region, r.name)
 	return err
 }
 
@@ -59,7 +59,7 @@ func (r *SecurityAlert) Properties() types.Properties {
 
 	properties.Set("Name", r.name)
 	properties.Set("DisplayName", r.displayName)
-	properties.Set("Location", r.location)
+	properties.Set("Region", r.region)
 	properties.Set("Status", r.status)
 
 	return properties
@@ -108,7 +108,7 @@ func (l SecurityAlertsLister) List(ctx context.Context, o interface{}) ([]resour
 				id:          *g.ID,
 				name:        *g.Name,
 				displayName: ptr.ToString(g.AlertDisplayName),
-				location:    matches[1],
+				region:      matches[1],
 				status:      string(g.AlertProperties.Status),
 			})
 		}
