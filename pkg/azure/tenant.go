@@ -59,25 +59,25 @@ func NewTenant( //nolint:gocyclo
 	client := subscription.NewSubscriptionsClient()
 	client.Authorizer = authorizers.Management
 
-	logrus.Trace("listing subscriptions")
+	log.Trace("listing subscriptions")
 	for list, err := client.List(ctx); list.NotDone(); err = list.NextWithContext(ctx) {
 		if err != nil {
 			return nil, err
 		}
 		for _, s := range list.Values() {
 			if len(subscriptionIDs) > 0 && !slices.Contains(subscriptionIDs, *s.SubscriptionID) {
-				logrus.Warnf("skipping subscription id: %s (reason: not requested)", *s.SubscriptionID)
+				log.Warnf("skipping subscription id: %s (reason: not requested)", *s.SubscriptionID)
 				continue
 			}
 
-			logrus.Tracef("adding subscriptions id: %s", *s.SubscriptionID)
+			log.Tracef("adding subscriptions id: %s", *s.SubscriptionID)
 			tenant.SubscriptionIds = append(tenant.SubscriptionIds, *s.SubscriptionID)
 
-			logrus.Trace("listing resource groups")
+			log.Trace("listing resource groups")
 			groupsClient := resources.NewGroupsClient(*s.SubscriptionID)
 			groupsClient.Authorizer = authorizers.Management
 
-			logrus.Debugf("configured regions: %v", regions)
+			log.Debugf("configured regions: %v", regions)
 			for list, err := groupsClient.List(ctx, "", nil); list.NotDone(); err = list.NextWithContext(ctx) {
 				if err != nil {
 					return nil, err
@@ -89,7 +89,7 @@ func NewTenant( //nolint:gocyclo
 						continue
 					}
 
-					logrus.Debugf("resource group name: %s", *g.Name)
+					log.Debugf("resource group name: %s", *g.Name)
 					tenant.ResourceGroups[*s.SubscriptionID] = append(tenant.ResourceGroups[*s.SubscriptionID], *g.Name)
 				}
 			}
