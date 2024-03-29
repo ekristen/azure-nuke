@@ -11,7 +11,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/security/armsecurity v0.11.0
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/aws/aws-sdk-go v1.42.51
-	github.com/aws/smithy-go v1.13.5
+	github.com/aws/smithy-go v1.20.2
 	github.com/fatih/color v1.13.0
 	github.com/hashicorp/go-azure-helpers v0.55.0
 	github.com/hashicorp/go-azure-sdk v0.20230508.1171356
