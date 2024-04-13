@@ -28,11 +28,12 @@ func init() {
 }
 
 type SecurityAssessment struct {
-	client     *armsecurity.AssessmentsClient
-	id         *string
-	resourceID *string
-	name       *string
-	status     *string
+	client *armsecurity.AssessmentsClient
+
+	ID         *string
+	ResourceID *string
+	Name       *string
+	Status     *string
 }
 
 func (r *SecurityAssessment) Filter() error {
@@ -40,23 +41,16 @@ func (r *SecurityAssessment) Filter() error {
 }
 
 func (r *SecurityAssessment) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, strings.TrimLeft(to.String(r.resourceID), "/"), to.String(r.name), nil)
+	_, err := r.client.Delete(ctx, strings.TrimLeft(to.String(r.ResourceID), "/"), to.String(r.Name), nil)
 	return err
 }
 
 func (r *SecurityAssessment) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("ID", r.id)
-	properties.Set("ResourceID", r.resourceID)
-	properties.Set("Name", r.name)
-	properties.Set("StatusCode", r.status)
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *SecurityAssessment) String() string {
-	return to.String(r.name)
+	return *r.Name
 }
 
 // -------------------------------------------------------------
@@ -101,9 +95,9 @@ func (l SecurityAssessmentLister) List(ctx context.Context, o interface{}) ([]re
 			parts := strings.Split(to.String(v.ID), "/providers/Microsoft.Security")
 			resources = append(resources, &SecurityAssessment{
 				client:     client,
-				resourceID: to.StringPtr(parts[0]),
-				id:         v.ID,
-				name:       v.Name,
+				ResourceID: to.StringPtr(parts[0]),
+				ID:         v.ID,
+				Name:       v.Name,
 			})
 		}
 	}

@@ -31,14 +31,15 @@ func init() {
 }
 
 type RecoveryServicesBackupProtectedItem struct {
-	client        *armrecoveryservicesbackup.BackupProtectedItemsClient
-	itemClient    *armrecoveryservicesbackup.ProtectedItemsClient
-	vaultName     *string
-	id            *string
-	name          *string
-	region        *string
-	resourceGroup *string
-	containerName *string
+	client     *armrecoveryservicesbackup.BackupProtectedItemsClient
+	itemClient *armrecoveryservicesbackup.ProtectedItemsClient
+
+	Region        *string
+	ResourceGroup *string
+	ID            *string
+	Name          *string
+	VaultName     *string
+	ContainerName *string
 	backupFabric  *string
 }
 
@@ -48,26 +49,17 @@ func (r *RecoveryServicesBackupProtectedItem) Filter() error {
 
 func (r *RecoveryServicesBackupProtectedItem) Remove(ctx context.Context) error {
 	_, err := r.itemClient.Delete(
-		ctx, to.String(r.vaultName), to.String(r.resourceGroup),
-		to.String(r.backupFabric), to.String(r.containerName), to.String(r.name), nil)
+		ctx, to.String(r.VaultName), to.String(r.ResourceGroup),
+		to.String(r.backupFabric), to.String(r.ContainerName), to.String(r.Name), nil)
 	return err
 }
 
 func (r *RecoveryServicesBackupProtectedItem) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("ID", r.id)
-	properties.Set("Name", r.name)
-	properties.Set("Region", r.region)
-	properties.Set("ResourceGroup", r.resourceGroup)
-	properties.Set("VaultName", r.vaultName)
-	properties.Set("ContainerName", r.containerName)
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *RecoveryServicesBackupProtectedItem) String() string {
-	return ptr.ToString(r.name)
+	return ptr.ToString(r.Name)
 }
 
 type RecoveryServicesBackupProtectedItemLister struct {
@@ -131,12 +123,12 @@ func (l RecoveryServicesBackupProtectedItemLister) List(ctx context.Context, o i
 					resources = append(resources, &RecoveryServicesBackupProtectedItem{
 						client:        client,
 						itemClient:    protectedItems,
-						vaultName:     v.Name,
-						id:            i.ID,
-						name:          i.Name,
-						region:        i.Location,
-						resourceGroup: to.StringPtr(opts.ResourceGroup),
-						containerName: to.StringPtr(containerName),
+						VaultName:     v.Name,
+						ID:            i.ID,
+						Name:          i.Name,
+						Region:        i.Location,
+						ResourceGroup: to.StringPtr(opts.ResourceGroup),
+						ContainerName: to.StringPtr(containerName),
 						backupFabric:  to.StringPtr("Azure"), // TODO: this should be calculated
 					})
 				}

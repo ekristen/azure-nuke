@@ -27,10 +27,10 @@ func init() {
 
 type ApplicationSecret struct {
 	client  *msgraph.ApplicationsClient
-	id      *string
-	name    *string
-	appID   *string
-	appName *string
+	ID      *string
+	Name    *string
+	AppID   *string
+	AppName *string
 }
 
 func (r *ApplicationSecret) Filter() error {
@@ -38,21 +38,16 @@ func (r *ApplicationSecret) Filter() error {
 }
 
 func (r *ApplicationSecret) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, *r.id)
+	_, err := r.client.Delete(ctx, *r.ID)
 	return err
 }
 
 func (r *ApplicationSecret) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", r.name)
-	properties.Set("AppName", r.appName)
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *ApplicationSecret) String() string {
-	return *r.id
+	return *r.Name
 }
 
 type ApplicationSecretLister struct {
@@ -84,10 +79,10 @@ func (l ApplicationSecretLister) List(ctx context.Context, o interface{}) ([]res
 		for _, cred := range *entity.PasswordCredentials {
 			resources = append(resources, &ApplicationSecret{
 				client:  client,
-				id:      cred.KeyId,
-				name:    cred.DisplayName,
-				appID:   entity.ID(),
-				appName: entity.DisplayName,
+				ID:      cred.KeyId,
+				Name:    cred.DisplayName,
+				AppID:   entity.ID(),
+				AppName: entity.DisplayName,
 			})
 		}
 	}

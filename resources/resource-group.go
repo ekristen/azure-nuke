@@ -27,34 +27,30 @@ func init() {
 	})
 }
 
+// ResourceGroup represents an Azure Resource Group.
 type ResourceGroup struct {
 	client         *resourcegroups.ResourceGroupsClient
-	name           *string
-	region         string
-	subscriptionID string
 	listerOpts     *nuke.ListerOpts
+	Name           *string            `description:"The Name of the resource group."`
+	Region         string             `description:"The region that the resource group belongs to."`
+	SubscriptionID string             `description:"The subscription ID that the resource group belongs to."`
+	Tags           *map[string]string `description:"The tags assigned to the resource group."`
 }
 
 func (r *ResourceGroup) Remove(ctx context.Context) error {
 	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(30*time.Second))
 	defer cancel()
 
-	_, err := r.client.Delete(ctx, commonids.NewResourceGroupID(r.subscriptionID, *r.name), resourcegroups.DefaultDeleteOperationOptions())
+	_, err := r.client.Delete(ctx, commonids.NewResourceGroupID(r.SubscriptionID, *r.Name), resourcegroups.DefaultDeleteOperationOptions())
 	return err
 }
 
 func (r *ResourceGroup) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", r.name)
-	properties.Set("Region", r.region)
-	properties.Set("SubscriptionID", r.subscriptionID)
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *ResourceGroup) String() string {
-	return *r.name
+	return *r.Name
 }
 
 // -------------------
@@ -90,10 +86,11 @@ func (l ResourceGroupLister) List(ctx context.Context, o interface{}) ([]resourc
 	for _, entity := range *list.Model {
 		resources = append(resources, &ResourceGroup{
 			client:         client,
-			name:           entity.Name,
-			region:         entity.Location,
-			subscriptionID: opts.SubscriptionID,
 			listerOpts:     opts,
+			Name:           entity.Name,
+			Region:         entity.Location,
+			SubscriptionID: opts.SubscriptionID,
+			Tags:           entity.Tags,
 		})
 	}
 

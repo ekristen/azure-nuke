@@ -27,28 +27,22 @@ func init() {
 
 type PolicyAssignment struct {
 	client          policy.AssignmentsClient
-	name            string
-	scope           string
-	enforcementMode string
+	Name            string
+	Scope           string
+	EnforcementMode string
 }
 
 func (r *PolicyAssignment) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, r.scope, r.name)
+	_, err := r.client.Delete(ctx, r.Scope, r.Name)
 	return err
 }
 
 func (r *PolicyAssignment) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", r.name)
-	properties.Set("Scope", r.scope)
-	properties.Set("EnforcementMode", r.enforcementMode)
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *PolicyAssignment) String() string {
-	return r.name
+	return r.Name
 }
 
 type PolicyAssignmentLister struct {
@@ -80,9 +74,9 @@ func (l PolicyAssignmentLister) List(ctx context.Context, o interface{}) ([]reso
 		for _, g := range list.Values() {
 			resources = append(resources, &PolicyAssignment{
 				client:          client,
-				name:            *g.Name,
-				scope:           *g.Scope,
-				enforcementMode: string(g.EnforcementMode),
+				Name:            *g.Name,
+				Scope:           *g.Scope,
+				EnforcementMode: string(g.EnforcementMode),
 			})
 		}
 

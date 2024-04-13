@@ -56,9 +56,9 @@ func (l AzureADUserLister) List(ctx context.Context, o interface{}) ([]resource.
 
 		resources = append(resources, &AzureADUser{
 			client: client,
-			id:     entity.ID(),
-			name:   entity.DisplayName,
-			upn:    entity.UserPrincipalName,
+			ID:     entity.ID(),
+			Name:   entity.DisplayName,
+			UPN:    entity.UserPrincipalName,
 		})
 	}
 
@@ -67,26 +67,20 @@ func (l AzureADUserLister) List(ctx context.Context, o interface{}) ([]resource.
 
 type AzureADUser struct {
 	client *msgraph.UsersClient
-	id     *string
-	name   *string
-	upn    *string
+	ID     *string
+	Name   *string
+	UPN    *string
 }
 
 func (r *AzureADUser) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, *r.id)
+	_, err := r.client.Delete(ctx, *r.ID)
 	return err
 }
 
 func (r *AzureADUser) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("ID", r.id)
-	properties.Set("Name", r.name)
-	properties.Set("UserPrincipalName", r.upn)
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *AzureADUser) String() string {
-	return *r.name
+	return *r.Name
 }

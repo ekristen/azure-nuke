@@ -29,29 +29,24 @@ func init() {
 }
 
 type Disk struct {
-	client compute.DisksClient
-	name   *string
-	rg     *string
-	region *string
-	tags   map[string]*string
+	client        compute.DisksClient
+	Region        *string
+	ResourceGroup *string
+	Name          *string
+	Tags          map[string]*string
 }
 
 func (r *Disk) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, *r.rg, *r.name)
+	_, err := r.client.Delete(ctx, *r.ResourceGroup, *r.Name)
 	return err
 }
 
 func (r *Disk) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", r.name)
-	properties.Set("ResourceGroup", r.rg)
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *Disk) String() string {
-	return *r.name
+	return *r.Name
 }
 
 type DiskLister struct {
@@ -82,11 +77,11 @@ func (l DiskLister) List(ctx context.Context, o interface{}) ([]resource.Resourc
 		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &Disk{
-				client: client,
-				name:   g.Name,
-				rg:     &opts.ResourceGroup,
-				region: g.Location,
-				tags:   g.Tags,
+				client:        client,
+				Region:        g.Location,
+				ResourceGroup: &opts.ResourceGroup,
+				Name:          g.Name,
+				Tags:          g.Tags,
 			})
 		}
 

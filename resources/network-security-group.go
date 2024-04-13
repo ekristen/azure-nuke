@@ -26,33 +26,24 @@ func init() {
 }
 
 type NetworkSecurityGroup struct {
-	client network.SecurityGroupsClient
-	name   *string
-	region *string
-	rg     *string
-	tags   map[string]*string
+	client        network.SecurityGroupsClient
+	Region        *string
+	ResourceGroup *string
+	Name          *string
+	Tags          map[string]*string
 }
 
 func (r *NetworkSecurityGroup) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, *r.rg, *r.name)
+	_, err := r.client.Delete(ctx, *r.ResourceGroup, *r.Name)
 	return err
 }
 
 func (r *NetworkSecurityGroup) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", r.name)
-	properties.Set("Region", r.region)
-
-	for k, v := range r.tags {
-		properties.SetTag(&k, v)
-	}
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *NetworkSecurityGroup) String() string {
-	return *r.name
+	return *r.Name
 }
 
 type NetworkSecurityGroupLister struct {
@@ -83,11 +74,11 @@ func (l NetworkSecurityGroupLister) List(ctx context.Context, o interface{}) ([]
 		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &NetworkSecurityGroup{
-				client: client,
-				name:   g.Name,
-				region: g.Location,
-				rg:     &opts.ResourceGroup,
-				tags:   g.Tags,
+				client:        client,
+				Region:        g.Location,
+				ResourceGroup: &opts.ResourceGroup,
+				Name:          g.Name,
+				Tags:          g.Tags,
 			})
 		}
 

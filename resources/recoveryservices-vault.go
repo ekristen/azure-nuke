@@ -32,12 +32,12 @@ func init() {
 }
 
 type RecoveryServicesVault struct {
-	client  *vaults.VaultsClient
-	vaultID vaults.VaultId
-	id      *string
-	name    *string
-	region  string
-	rg      string
+	client        *vaults.VaultsClient
+	vaultID       vaults.VaultId
+	Region        string
+	ResourceGroup string
+	ID            *string
+	Name          *string
 }
 
 func (r *RecoveryServicesVault) Filter() error {
@@ -50,17 +50,11 @@ func (r *RecoveryServicesVault) Remove(ctx context.Context) error {
 }
 
 func (r *RecoveryServicesVault) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", r.name)
-	properties.Set("Region", r.region)
-	properties.Set("ResourceGroup", r.rg)
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *RecoveryServicesVault) String() string {
-	return ptr.ToString(r.name)
+	return ptr.ToString(r.Name)
 }
 
 type RecoveryServicesVaultLister struct {
@@ -96,12 +90,12 @@ func (l RecoveryServicesVaultLister) List(ctx context.Context, o interface{}) ([
 
 	for _, item := range items.Items {
 		resources = append(resources, &RecoveryServicesVault{
-			client:  client,
-			id:      item.Id,
-			name:    item.Name,
-			region:  item.Location,
-			vaultID: vaults.NewVaultID(opts.SubscriptionID, opts.ResourceGroup, ptr.ToString(item.Id)),
-			rg:      opts.ResourceGroup,
+			client:        client,
+			vaultID:       vaults.NewVaultID(opts.SubscriptionID, opts.ResourceGroup, ptr.ToString(item.Id)),
+			Region:        item.Location,
+			ResourceGroup: opts.ResourceGroup,
+			ID:            item.Id,
+			Name:          item.Name,
 		})
 	}
 

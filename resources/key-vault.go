@@ -54,11 +54,11 @@ func (l KeyVaultLister) List(ctx context.Context, o interface{}) ([]resource.Res
 		for _, g := range list.Values() {
 			resources = append(resources, &KeyVault{
 				client:         client,
-				name:           g.Name,
-				region:         g.Location,
-				rg:             opts.ResourceGroup,
-				subscriptionID: opts.SubscriptionID,
-				tags:           g.Tags,
+				Region:         g.Location,
+				ResourceGroup:  opts.ResourceGroup,
+				SubscriptionID: opts.SubscriptionID,
+				Name:           g.Name,
+				Tags:           g.Tags,
 			})
 		}
 
@@ -74,34 +74,23 @@ func (l KeyVaultLister) List(ctx context.Context, o interface{}) ([]resource.Res
 
 type KeyVault struct {
 	client         keyvault.VaultsClient
-	name           *string
-	region         *string
-	rg             string
-	subscriptionID string
-	tags           map[string]*string
+	Region         *string
+	ResourceGroup  string
+	SubscriptionID string
+	Name           *string
+	Tags           map[string]*string
 }
 
 func (r *KeyVault) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, r.rg, *r.name)
+	_, err := r.client.Delete(ctx, r.ResourceGroup, *r.Name)
 
 	return err
 }
 
 func (r *KeyVault) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", r.name)
-	properties.Set("Region", r.region)
-	properties.Set("ResourceGroup", r.rg)
-	properties.Set("SubscriptionID", r.subscriptionID)
-
-	for k, v := range r.tags {
-		properties.SetTag(&k, v)
-	}
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *KeyVault) String() string {
-	return *r.name
+	return *r.Name
 }

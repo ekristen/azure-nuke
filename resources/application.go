@@ -3,7 +3,6 @@ package resources
 import (
 	"context"
 
-	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
 	"github.com/hashicorp/go-azure-sdk/sdk/odata"
@@ -54,8 +53,8 @@ func (l ApplicationLister) List(ctx context.Context, o interface{}) ([]resource.
 
 		resources = append(resources, &Application{
 			client: client,
-			id:     entity.ID(),
-			name:   entity.DisplayName,
+			ID:     entity.ID(),
+			Name:   entity.DisplayName,
 		})
 	}
 
@@ -66,8 +65,8 @@ func (l ApplicationLister) List(ctx context.Context, o interface{}) ([]resource.
 
 type Application struct {
 	client *msgraph.ApplicationsClient
-	id     *string
-	name   *string
+	ID     *string
+	Name   *string
 }
 
 func (r *Application) Filter() error {
@@ -75,11 +74,11 @@ func (r *Application) Filter() error {
 }
 
 func (r *Application) Remove(ctx context.Context) error {
-	if _, err := r.client.Delete(ctx, *r.id); err != nil {
+	if _, err := r.client.Delete(ctx, *r.ID); err != nil {
 		return err
 	}
 
-	if _, err := r.client.DeletePermanently(context.TODO(), *r.id); err != nil {
+	if _, err := r.client.DeletePermanently(context.TODO(), *r.ID); err != nil {
 		return err
 	}
 
@@ -87,14 +86,9 @@ func (r *Application) Remove(ctx context.Context) error {
 }
 
 func (r *Application) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("ClientID", *r.id)
-	properties.Set("Name", *r.name)
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *Application) String() string {
-	return ptr.ToString(r.name)
+	return *r.Name
 }

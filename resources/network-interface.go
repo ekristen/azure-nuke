@@ -58,11 +58,11 @@ func (l NetworkInterfaceLister) List(ctx context.Context, o interface{}) ([]reso
 	for _, g := range list.Items {
 		resources = append(resources, &NetworkInterface{
 			client:         client,
-			name:           g.Name,
-			region:         g.Location,
-			tags:           g.Tags,
-			rg:             &opts.ResourceGroup,
-			subscriptionID: &opts.SubscriptionID,
+			Region:         g.Location,
+			ResourceGroup:  &opts.ResourceGroup,
+			SubscriptionID: &opts.SubscriptionID,
+			Name:           g.Name,
+			Tags:           g.Tags,
 		})
 	}
 
@@ -73,35 +73,25 @@ func (l NetworkInterfaceLister) List(ctx context.Context, o interface{}) ([]reso
 
 type NetworkInterface struct {
 	client         *networkinterfaces.NetworkInterfacesClient
-	name           *string
-	rg             *string
-	region         *string
-	subscriptionID *string
-	tags           *map[string]string
+	Region         *string
+	ResourceGroup  *string
+	SubscriptionID *string
+	Name           *string
+	Tags           *map[string]string
 }
 
 func (r *NetworkInterface) Remove(ctx context.Context) error {
 	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(30*time.Second))
 	defer cancel()
 
-	_, err := r.client.Delete(ctx, commonids.NewNetworkInterfaceID(*r.subscriptionID, *r.rg, *r.name))
+	_, err := r.client.Delete(ctx, commonids.NewNetworkInterfaceID(*r.SubscriptionID, *r.ResourceGroup, *r.Name))
 	return err
 }
 
 func (r *NetworkInterface) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", r.name)
-	properties.Set("ResourceGroup", r.rg)
-	properties.Set("Region", r.region)
-
-	for k, v := range *r.tags {
-		properties.SetTag(&k, v)
-	}
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *NetworkInterface) String() string {
-	return *r.name
+	return *r.Name
 }

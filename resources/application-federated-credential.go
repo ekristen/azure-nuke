@@ -26,11 +26,11 @@ func init() {
 }
 
 type ApplicationFederatedCredential struct {
-	client     *msgraph.ApplicationsClient
-	id         *string
-	name       *string
-	appID      *string
-	uniqueName *string
+	client        *msgraph.ApplicationsClient
+	ID            *string
+	Name          *string
+	AppID         *string
+	AppUniqueName *string
 }
 
 func (r *ApplicationFederatedCredential) Filter() error {
@@ -38,28 +38,22 @@ func (r *ApplicationFederatedCredential) Filter() error {
 }
 
 func (r *ApplicationFederatedCredential) Remove(ctx context.Context) error {
-	_, err := r.client.DeleteFederatedIdentityCredential(context.TODO(), *r.appID, *r.id)
+	_, err := r.client.DeleteFederatedIdentityCredential(ctx, *r.AppID, *r.ID)
 	return err
 }
 
 func (r *ApplicationFederatedCredential) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", *r.name)
-	properties.Set("AppID", *r.appID)
-	properties.Set("AppUniqueName", r.uniqueName)
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *ApplicationFederatedCredential) String() string {
-	return *r.name
+	return *r.Name
 }
 
 type ApplicationFederatedCredentialLister struct {
 }
 
-func (l ApplicationFederatedCredentialLister) List(_ context.Context, o interface{}) ([]resource.Resource, error) {
+func (l ApplicationFederatedCredentialLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*nuke.ListerOpts)
 
 	log := logrus.WithField("r", ApplicationFederatedCredentialResource).WithField("s", opts.SubscriptionID)
@@ -71,8 +65,6 @@ func (l ApplicationFederatedCredentialLister) List(_ context.Context, o interfac
 	resources := make([]resource.Resource, 0)
 
 	log.Trace("attempting to list application federated creds")
-
-	ctx := context.TODO()
 
 	entities, _, err := client.List(ctx, odata.Query{})
 	if err != nil {
@@ -88,13 +80,14 @@ func (l ApplicationFederatedCredentialLister) List(_ context.Context, o interfac
 		if err != nil {
 			return nil, err
 		}
+
 		for _, cred := range *creds {
 			resources = append(resources, &ApplicationFederatedCredential{
-				client:     client,
-				id:         cred.ID,
-				name:       cred.Name,
-				appID:      entity.ID(),
-				uniqueName: entity.UniqueName,
+				client:        client,
+				ID:            cred.ID,
+				Name:          cred.Name,
+				AppID:         entity.ID(),
+				AppUniqueName: entity.UniqueName,
 			})
 		}
 	}

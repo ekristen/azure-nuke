@@ -28,28 +28,22 @@ func init() {
 
 type PolicyDefinition struct {
 	client      policy.DefinitionsClient
-	name        string
-	displayName string
-	policyType  string
+	Name        *string
+	DisplayName string
+	PolicyType  string `property:"name=Type"`
 }
 
 func (r *PolicyDefinition) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, r.name)
+	_, err := r.client.Delete(ctx, *r.Name)
 	return err
 }
 
 func (r *PolicyDefinition) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", r.name)
-	properties.Set("DisplayName", r.displayName)
-	properties.Set("Type", r.policyType)
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *PolicyDefinition) String() string {
-	return r.name
+	return *r.Name
 }
 
 type PolicyDefinitionLister struct {
@@ -88,9 +82,9 @@ func (l PolicyDefinitionLister) List(ctx context.Context, o interface{}) ([]reso
 
 			resources = append(resources, &PolicyDefinition{
 				client:      client,
-				name:        *g.Name,
-				displayName: ptr.ToString(g.DisplayName),
-				policyType:  string(g.PolicyType),
+				Name:        g.Name,
+				DisplayName: ptr.ToString(g.DisplayName),
+				PolicyType:  string(g.PolicyType),
 			})
 		}
 

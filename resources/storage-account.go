@@ -30,33 +30,24 @@ func init() {
 
 type StorageAccount struct {
 	client storage.AccountsClient
-	name   *string
-	rg     string
-	region *string
-	tags   map[string]*string
+
+	Name          *string
+	ResourceGroup string
+	Region        *string
+	Tags          map[string]*string
 }
 
 func (r *StorageAccount) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, r.rg, *r.name)
+	_, err := r.client.Delete(ctx, r.ResourceGroup, *r.Name)
 	return err
 }
 
 func (r *StorageAccount) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", r.name)
-	properties.Set("ResourceGroup", r.rg)
-	properties.Set("Region", r.region)
-
-	for k, v := range r.tags {
-		properties.SetTag(&k, v)
-	}
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *StorageAccount) String() string {
-	return *r.name
+	return *r.Name
 }
 
 // --------------------------------------
@@ -89,10 +80,11 @@ func (l StorageAccountLister) List(ctx context.Context, o interface{}) ([]resour
 		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &StorageAccount{
-				client: client,
-				name:   g.Name,
-				rg:     opts.ResourceGroup,
-				region: g.Location,
+				client:        client,
+				Name:          g.Name,
+				ResourceGroup: opts.ResourceGroup,
+				Region:        g.Location,
+				Tags:          g.Tags,
 			})
 		}
 

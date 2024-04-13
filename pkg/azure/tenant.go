@@ -52,6 +52,7 @@ func NewTenant( //nolint:gocyclo
 			return nil, err
 		}
 		for _, t := range list.Values() {
+			log.Tracef("adding tenant: %s", *t.TenantID)
 			tenant.TenantIds = append(tenant.TenantIds, *t.TenantID)
 		}
 	}

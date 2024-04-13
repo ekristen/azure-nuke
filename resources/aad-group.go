@@ -55,8 +55,8 @@ func (l AzureAdGroupLister) List(_ context.Context, o interface{}) ([]resource.R
 
 		resources = append(resources, &AzureAdGroup{
 			client: client,
-			id:     entity.ID(),
-			name:   entity.DisplayName,
+			ID:     entity.ID(),
+			Name:   entity.DisplayName,
 		})
 	}
 
@@ -65,24 +65,19 @@ func (l AzureAdGroupLister) List(_ context.Context, o interface{}) ([]resource.R
 
 type AzureAdGroup struct {
 	client *msgraph.GroupsClient
-	id     *string
-	name   *string
+	ID     *string
+	Name   *string
 }
 
 func (r *AzureAdGroup) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, *r.id)
+	_, err := r.client.Delete(ctx, *r.ID)
 	return err
 }
 
 func (r *AzureAdGroup) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("ID", r.id)
-	properties.Set("Name", r.name)
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *AzureAdGroup) String() string {
-	return *r.name
+	return *r.Name
 }

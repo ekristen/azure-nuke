@@ -36,11 +36,13 @@ func init() {
 type RecoveryServicesBackupPolicy struct {
 	client            backuppolicies.BackupPoliciesClient
 	protectionsClient protectionpolicies.ProtectionPoliciesClient
-	id                *string
-	name              *string
-	region            *string
-	rg                string
-	backupPolicyID    protectionpolicies.BackupPolicyId
+
+	Region        *string
+	ResourceGroup string
+	ID            *string
+	Name          *string
+
+	backupPolicyID protectionpolicies.BackupPolicyId
 }
 
 func (r *RecoveryServicesBackupPolicy) Filter() error {
@@ -53,17 +55,11 @@ func (r *RecoveryServicesBackupPolicy) Remove(ctx context.Context) error {
 }
 
 func (r *RecoveryServicesBackupPolicy) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", r.name)
-	properties.Set("Region", r.region)
-	properties.Set("ResourceGroup", r.rg)
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *RecoveryServicesBackupPolicy) String() string {
-	return ptr.ToString(r.name)
+	return ptr.ToString(r.Name)
 }
 
 type RecoveryServicesBackupPolicyLister struct {
@@ -124,10 +120,10 @@ func (l RecoveryServicesBackupPolicyLister) List(ctx context.Context, o interfac
 			resources = append(resources, &RecoveryServicesBackupPolicy{
 				client:            client,
 				protectionsClient: protectionsClient,
-				id:                item.Id,
-				name:              item.Name,
-				region:            item.Location,
-				rg:                opts.ResourceGroup,
+				ID:                item.Id,
+				Name:              item.Name,
+				Region:            item.Location,
+				ResourceGroup:     opts.ResourceGroup,
 				backupPolicyID: protectionpolicies.NewBackupPolicyID(
 					opts.SubscriptionID, opts.ResourceGroup, ptr.ToString(v.Name), ptr.ToString(item.Name)),
 			})

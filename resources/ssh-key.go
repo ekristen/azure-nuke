@@ -26,36 +26,26 @@ func init() {
 }
 
 type SSHPublicKey struct {
-	client         compute.SSHPublicKeysClient
-	rg             *string
-	region         *string
-	name           *string
-	subscriptionID *string
-	tags           map[string]*string
+	client compute.SSHPublicKeysClient
+
+	Region         *string
+	SubscriptionID *string
+	ResourceGroup  *string
+	Name           *string
+	Tags           map[string]*string
 }
 
 func (r *SSHPublicKey) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, *r.rg, *r.name)
+	_, err := r.client.Delete(ctx, *r.ResourceGroup, *r.Name)
 	return err
 }
 
 func (r *SSHPublicKey) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", r.name)
-	properties.Set("Region", r.region)
-	properties.Set("ResourceGroup", r.rg)
-	properties.Set("SubscriptionID", r.subscriptionID)
-
-	for tag, value := range r.tags {
-		properties.SetTag(&tag, value)
-	}
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *SSHPublicKey) String() string {
-	return *r.name
+	return *r.Name
 }
 
 // --------------------------------------
@@ -88,11 +78,11 @@ func (l SSHPublicKeyLister) List(ctx context.Context, o interface{}) ([]resource
 		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &SSHPublicKey{
-				client: client,
-				name:   g.Name,
-				rg:     nuke.GetResourceGroupFromID(*g.ID),
-				region: g.Location,
-				tags:   g.Tags,
+				client:        client,
+				Name:          g.Name,
+				ResourceGroup: nuke.GetResourceGroupFromID(*g.ID),
+				Region:        g.Location,
+				Tags:          g.Tags,
 			})
 		}
 

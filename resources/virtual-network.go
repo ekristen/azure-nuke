@@ -52,11 +52,11 @@ func (l VirtualNetworkLister) List(ctx context.Context, o interface{}) ([]resour
 	for list.NotDone() {
 		for _, g := range list.Values() {
 			resources = append(resources, &VirtualNetwork{
-				client: client,
-				name:   g.Name,
-				rg:     &opts.ResourceGroup,
-				region: g.Location,
-				tags:   g.Tags,
+				client:        client,
+				Name:          g.Name,
+				ResourceGroup: &opts.ResourceGroup,
+				Region:        g.Location,
+				Tags:          g.Tags,
 			})
 		}
 
@@ -74,31 +74,22 @@ func (l VirtualNetworkLister) List(ctx context.Context, o interface{}) ([]resour
 
 type VirtualNetwork struct {
 	client network.VirtualNetworksClient
-	name   *string
-	rg     *string
-	region *string
-	tags   map[string]*string
+
+	Region        *string
+	ResourceGroup *string
+	Name          *string
+	Tags          map[string]*string
 }
 
 func (r *VirtualNetwork) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, *r.rg, *r.name)
+	_, err := r.client.Delete(ctx, *r.ResourceGroup, *r.Name)
 	return err
 }
 
 func (r *VirtualNetwork) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", *r.name)
-	properties.Set("ResourceGroup", *r.rg)
-	properties.Set("Region", *r.region)
-
-	for k, v := range r.tags {
-		properties.SetTag(&k, v)
-	}
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *VirtualNetwork) String() string {
-	return *r.name
+	return *r.Name
 }

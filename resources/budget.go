@@ -30,10 +30,11 @@ func init() {
 }
 
 type Budget struct {
-	client         *budgets.BudgetsClient
-	name           *string
-	id             *string
-	subscriptionID *string
+	client *budgets.BudgetsClient
+
+	ID             *string
+	Name           *string
+	SubscriptionID *string
 }
 
 type BudgetLister struct{}
@@ -68,9 +69,9 @@ func (l BudgetLister) List(pctx context.Context, o interface{}) ([]resource.Reso
 	for _, entry := range *list.Model {
 		resources = append(resources, &Budget{
 			client:         client,
-			name:           entry.Name,
-			id:             entry.Id,
-			subscriptionID: ptr.String(opts.SubscriptionID), // note: this is just the guid
+			ID:             entry.Id,
+			Name:           entry.Name,
+			SubscriptionID: ptr.String(opts.SubscriptionID), // note: this is just the guid
 		})
 	}
 
@@ -84,20 +85,16 @@ func (r *Budget) Remove(ctx context.Context) error {
 	defer cancel()
 
 	_, err := r.client.Delete(ctx, budgets.ScopedBudgetId{
-		Scope:      fmt.Sprintf("/subscriptions/%s", ptr.ToString(r.subscriptionID)),
-		BudgetName: ptr.ToString(r.name),
+		Scope:      fmt.Sprintf("/subscriptions/%s", ptr.ToString(r.SubscriptionID)),
+		BudgetName: *r.Name,
 	})
 	return err
 }
 
 func (r *Budget) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", r.name)
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *Budget) String() string {
-	return ptr.ToString(r.name)
+	return *r.Name
 }

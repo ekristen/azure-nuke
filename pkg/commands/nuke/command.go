@@ -88,7 +88,7 @@ func execute(c *cli.Context) error { //nolint:funlen
 		return err
 	}
 
-	// Region Filters
+	// Setup Region Filters as Global Filters
 	if len(filters[filter.Global]) == 0 {
 		filters[filter.Global] = []filter.Filter{}
 	}
@@ -100,8 +100,7 @@ func execute(c *cli.Context) error { //nolint:funlen
 		})
 	}
 
-	fmt.Println(filters[filter.Global])
-
+	// Initialize the underlying nuke process
 	n := libnuke.New(params, filters, parsedConfig.Settings)
 
 	n.SetRunSleep(5 * time.Second)
@@ -157,7 +156,8 @@ func execute(c *cli.Context) error { //nolint:funlen
 	)
 
 	if slices.Contains(parsedConfig.Regions, "global") || slices.Contains(parsedConfig.Regions, "all") {
-		if err := n.RegisterScanner(nuke.Tenant, libscanner.New("tenant", tenantResourceTypes, &nuke.ListerOpts{
+		parts := strings.Split(c.String("tenant-id"), "-")
+		if err := n.RegisterScanner(nuke.Tenant, libscanner.New(fmt.Sprintf("ten/%s", parts[:1][0]), tenantResourceTypes, &nuke.ListerOpts{
 			Authorizers: authorizers,
 			TenantID:    tenant.ID,
 		})); err != nil {

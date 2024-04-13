@@ -27,9 +27,9 @@ func init() {
 
 type ApplicationCertificate struct {
 	client *msgraph.ApplicationsClient
-	id     *string
-	name   *string
-	appID  *string
+	ID     *string
+	Name   *string
+	AppID  *string
 }
 
 func (r *ApplicationCertificate) Filter() error {
@@ -37,20 +37,16 @@ func (r *ApplicationCertificate) Filter() error {
 }
 
 func (r *ApplicationCertificate) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, *r.id)
+	_, err := r.client.Delete(ctx, *r.ID)
 	return err
 }
 
 func (r *ApplicationCertificate) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", *r.name)
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *ApplicationCertificate) String() string {
-	return *r.id
+	return *r.ID
 }
 
 type ApplicationCertificateLister struct {
@@ -82,9 +78,9 @@ func (l ApplicationCertificateLister) List(ctx context.Context, o interface{}) (
 		for _, cred := range *entity.KeyCredentials {
 			resources = append(resources, &ApplicationCertificate{
 				client: client,
-				id:     cred.KeyId,
-				name:   cred.DisplayName,
-				appID:  entity.ID(),
+				ID:     cred.KeyId,
+				Name:   cred.DisplayName,
+				AppID:  entity.ID(),
 			})
 		}
 	}

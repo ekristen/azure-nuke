@@ -30,20 +30,20 @@ func init() {
 }
 
 type SecurityPricing struct {
-	client security.PricingsClient
-	name   *string
-	tier   string
+	client      security.PricingsClient
+	Name        *string
+	PricingTier string
 }
 
 func (r *SecurityPricing) Filter() error {
-	if r.tier == "Free" {
+	if r.PricingTier == "Free" {
 		return fmt.Errorf("already set to free tier")
 	}
 	return nil
 }
 
 func (r *SecurityPricing) Remove(ctx context.Context) error {
-	_, err := r.client.Update(ctx, *r.name, security.Pricing{
+	_, err := r.client.Update(ctx, *r.Name, security.Pricing{
 		PricingProperties: &security.PricingProperties{
 			PricingTier: "Free",
 		},
@@ -52,16 +52,11 @@ func (r *SecurityPricing) Remove(ctx context.Context) error {
 }
 
 func (r *SecurityPricing) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", r.name)
-	properties.Set("PricingTier", r.tier)
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *SecurityPricing) String() string {
-	return *r.name
+	return *r.Name
 }
 
 // -------------------------------------------------------------------
@@ -94,9 +89,9 @@ func (l SecurityPricingLister) List(ctx context.Context, o interface{}) ([]resou
 
 	for _, price := range *list.Value {
 		resources = append(resources, &SecurityPricing{
-			client: client,
-			name:   price.Name,
-			tier:   string(price.PricingTier),
+			client:      client,
+			Name:        price.Name,
+			PricingTier: string(price.PricingTier),
 		})
 	}
 

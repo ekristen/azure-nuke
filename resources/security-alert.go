@@ -32,15 +32,15 @@ func init() {
 
 type SecurityAlert struct {
 	client      security.AlertsClient
-	id          string
-	name        string
-	displayName string
-	region      string
-	status      string
+	ID          string
+	Name        string
+	DisplayName string
+	Region      string
+	Status      string
 }
 
 func (r *SecurityAlert) Filter() error {
-	if r.status == "Dismissed" {
+	if r.Status == "Dismissed" {
 		return fmt.Errorf("alert already dismissed")
 	}
 
@@ -50,23 +50,16 @@ func (r *SecurityAlert) Filter() error {
 func (r *SecurityAlert) Remove(ctx context.Context) error {
 	// Note: we cannot actually remove alerts :(
 	// So we just have to dismiss them instead
-	_, err := r.client.UpdateSubscriptionLevelStateToDismiss(ctx, r.region, r.name)
+	_, err := r.client.UpdateSubscriptionLevelStateToDismiss(ctx, r.Region, r.Name)
 	return err
 }
 
 func (r *SecurityAlert) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", r.name)
-	properties.Set("DisplayName", r.displayName)
-	properties.Set("Region", r.region)
-	properties.Set("Status", r.status)
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *SecurityAlert) String() string {
-	return r.name
+	return r.Name
 }
 
 // ------------------------------------
@@ -105,11 +98,11 @@ func (l SecurityAlertsLister) List(ctx context.Context, o interface{}) ([]resour
 			matches := locationRe.FindStringSubmatch(ptr.ToString(g.ID))
 			resources = append(resources, &SecurityAlert{
 				client:      client,
-				id:          *g.ID,
-				name:        *g.Name,
-				displayName: ptr.ToString(g.AlertDisplayName),
-				region:      matches[1],
-				status:      string(g.AlertProperties.Status),
+				ID:          *g.ID,
+				Name:        *g.Name,
+				DisplayName: ptr.ToString(g.AlertDisplayName),
+				Region:      matches[1],
+				Status:      string(g.AlertProperties.Status),
 			})
 		}
 

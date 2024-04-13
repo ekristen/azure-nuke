@@ -27,26 +27,22 @@ func init() {
 
 type SecurityWorkspace struct {
 	client security.WorkspaceSettingsClient
-	name   *string
-	scope  *string
+
+	Name  *string `description:"The name of the workspace"`
+	Scope *string `description:"The scope of the workspace"`
 }
 
 func (r *SecurityWorkspace) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, *r.name)
+	_, err := r.client.Delete(ctx, *r.Name)
 	return err
 }
 
 func (r *SecurityWorkspace) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", r.name)
-	properties.Set("Scope", r.scope)
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *SecurityWorkspace) String() string {
-	return *r.name
+	return *r.Name
 }
 
 // -------------------------------------------------------------
@@ -82,8 +78,8 @@ func (l SecurityWorkspaceLister) List(ctx context.Context, o interface{}) ([]res
 		for _, g := range list.Values() {
 			resources = append(resources, &SecurityWorkspace{
 				client: client,
-				name:   g.Name,
-				scope:  g.Scope,
+				Name:   g.Name,
+				Scope:  g.Scope,
 			})
 		}
 

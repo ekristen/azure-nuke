@@ -58,12 +58,12 @@ func (l DNSZoneLister) List(ctx context.Context, o interface{}) ([]resource.Reso
 		for _, g := range list.Values() {
 			log.Trace("adding entity to list")
 			resources = append(resources, &DNSZone{
-				rg: &opts.ResourceGroup,
-
 				client: client,
-				name:   g.Name,
-				region: g.Location,
-				tags:   g.Tags,
+
+				Region:        g.Location,
+				ResourceGroup: &opts.ResourceGroup,
+				Name:          g.Name,
+				Tags:          g.Tags,
 			})
 		}
 
@@ -79,31 +79,22 @@ func (l DNSZoneLister) List(ctx context.Context, o interface{}) ([]resource.Reso
 
 type DNSZone struct {
 	client dns.ZonesClient
-	name   *string
-	region *string
-	rg     *string
-	tags   map[string]*string
+
+	Region        *string
+	ResourceGroup *string
+	Name          *string
+	Tags          map[string]*string
 }
 
 func (r *DNSZone) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, *r.rg, *r.name, "")
+	_, err := r.client.Delete(ctx, *r.ResourceGroup, *r.Name, "")
 	return err
 }
 
 func (r *DNSZone) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", r.name)
-	properties.Set("ResourceGroup", r.rg)
-	properties.Set("Region", r.region)
-
-	for k, v := range r.tags {
-		properties.SetTag(&k, v)
-	}
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *DNSZone) String() string {
-	return *r.name
+	return *r.Name
 }

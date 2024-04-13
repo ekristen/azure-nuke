@@ -53,9 +53,9 @@ func (l AppServicePlanLister) List(ctx context.Context, o interface{}) ([]resour
 		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &AppServicePlan{
-				client: client,
-				name:   *g.Name,
-				rg:     opts.ResourceGroup,
+				client:        client,
+				Name:          *g.Name,
+				ResourceGroup: opts.ResourceGroup,
 			})
 		}
 
@@ -70,24 +70,20 @@ func (l AppServicePlanLister) List(ctx context.Context, o interface{}) ([]resour
 }
 
 type AppServicePlan struct {
-	client web.AppServicePlansClient
-	name   string
-	rg     string
+	client        web.AppServicePlansClient
+	Name          string
+	ResourceGroup string
 }
 
 func (r *AppServicePlan) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, r.rg, r.name)
+	_, err := r.client.Delete(ctx, r.ResourceGroup, r.Name)
 	return err
 }
 
 func (r *AppServicePlan) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", r.name)
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *AppServicePlan) String() string {
-	return r.name
+	return r.Name
 }

@@ -26,34 +26,24 @@ func init() {
 }
 
 type PrivateDNSZone struct {
-	client privatedns.PrivateZonesClient
-	name   *string
-	region *string
-	rg     *string
-	tags   map[string]*string
+	client        privatedns.PrivateZonesClient
+	Region        *string
+	ResourceGroup *string
+	Name          *string
+	Tags          map[string]*string
 }
 
 func (r *PrivateDNSZone) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, *r.rg, *r.name, "")
+	_, err := r.client.Delete(ctx, *r.ResourceGroup, *r.Name, "")
 	return err
 }
 
 func (r *PrivateDNSZone) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", r.name)
-	properties.Set("ResourceGroup", r.rg)
-	properties.Set("Region", r.region)
-
-	for k, v := range r.tags {
-		properties.SetTag(&k, v)
-	}
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *PrivateDNSZone) String() string {
-	return *r.name
+	return *r.Name
 }
 
 type PrivateDNSZoneLister struct {
@@ -89,11 +79,11 @@ func (l PrivateDNSZoneLister) List(ctx context.Context, o interface{}) ([]resour
 		for _, g := range list.Values() {
 			log.Trace("adding entity to list")
 			resources = append(resources, &PrivateDNSZone{
-				client: client,
-				name:   g.Name,
-				region: g.Location,
-				rg:     &opts.ResourceGroup,
-				tags:   g.Tags,
+				client:        client,
+				Region:        g.Location,
+				ResourceGroup: &opts.ResourceGroup,
+				Name:          g.Name,
+				Tags:          g.Tags,
 			})
 		}
 

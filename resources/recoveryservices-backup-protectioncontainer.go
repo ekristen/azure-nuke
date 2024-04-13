@@ -31,11 +31,11 @@ func init() {
 type RecoveryServicesBackupProtectionContainers struct {
 	client        *armrecoveryservicesbackup.BackupProtectionContainersClient
 	pClient       *armrecoveryservicesbackup.ProtectionContainersClient
-	id            *string
-	name          *string
-	region        *string
-	resourceGroup *string
-	vaultName     *string
+	ID            *string
+	Name          *string
+	Region        *string
+	ResourceGroup *string
+	VaultName     *string
 	backupFabric  *string
 }
 
@@ -44,23 +44,16 @@ func (r *RecoveryServicesBackupProtectionContainers) Filter() error {
 }
 
 func (r *RecoveryServicesBackupProtectionContainers) Remove(ctx context.Context) error {
-	_, err := r.pClient.Unregister(ctx, to.String(r.vaultName), to.String(r.resourceGroup), to.String(r.backupFabric), to.String(r.name), nil)
+	_, err := r.pClient.Unregister(ctx, to.String(r.VaultName), to.String(r.ResourceGroup), to.String(r.backupFabric), to.String(r.Name), nil)
 	return err
 }
 
 func (r *RecoveryServicesBackupProtectionContainers) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", r.name)
-	properties.Set("Region", r.region)
-	properties.Set("ResourceGroup", r.resourceGroup)
-	properties.Set("VaultName", r.vaultName)
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *RecoveryServicesBackupProtectionContainers) String() string {
-	return ptr.ToString(r.name)
+	return ptr.ToString(r.Name)
 }
 
 type RecoveryServicesBackupProtectionContainersLister struct {
@@ -123,11 +116,11 @@ func (l RecoveryServicesBackupProtectionContainersLister) List(ctx context.Conte
 					resources = append(resources, &RecoveryServicesBackupProtectionContainers{
 						client:        client,
 						pClient:       protectedContainers,
-						vaultName:     v.Name,
-						id:            i.ID,
-						name:          i.Name,
-						region:        i.Location,
-						resourceGroup: to.StringPtr(opts.ResourceGroup),
+						VaultName:     v.Name,
+						ID:            i.ID,
+						Name:          i.Name,
+						Region:        i.Location,
+						ResourceGroup: to.StringPtr(opts.ResourceGroup),
 						backupFabric:  to.StringPtr("Azure"), // TODO: this should be calculated
 					})
 				}

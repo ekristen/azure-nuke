@@ -27,33 +27,24 @@ func init() {
 
 type VirtualMachine struct {
 	client compute.VirtualMachinesClient
-	name   *string
-	rg     *string
-	region *string
-	tags   map[string]*string
+
+	Region        *string
+	ResourceGroup *string
+	Name          *string
+	Tags          map[string]*string
 }
 
 func (r *VirtualMachine) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, *r.rg, *r.name, &[]bool{true}[0])
+	_, err := r.client.Delete(ctx, *r.ResourceGroup, *r.Name, &[]bool{true}[0])
 	return err
 }
 
 func (r *VirtualMachine) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", *r.name)
-	properties.Set("ResourceGroup", *r.rg)
-	properties.Set("Region", *r.region)
-
-	for k, v := range r.tags {
-		properties.SetTag(&k, v)
-	}
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *VirtualMachine) String() string {
-	return *r.name
+	return *r.Name
 }
 
 // -----------------------------------------
@@ -86,11 +77,11 @@ func (l VirtualMachineLister) List(ctx context.Context, o interface{}) ([]resour
 		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &VirtualMachine{
-				client: client,
-				name:   g.Name,
-				rg:     &opts.ResourceGroup,
-				region: g.Location,
-				tags:   g.Tags,
+				client:        client,
+				Name:          g.Name,
+				ResourceGroup: &opts.ResourceGroup,
+				Region:        g.Location,
+				Tags:          g.Tags,
 			})
 		}
 

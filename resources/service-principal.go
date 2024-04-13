@@ -31,26 +31,26 @@ func init() {
 
 type ServicePrincipal struct {
 	client   *msgraph.ServicePrincipalsClient
-	id       *string
-	name     *string
-	appOwner *string
-	spType   *string
+	ID       *string
+	Name     *string
+	AppOwner *string `property:"name=AppOwnerId"`
+	SPType   *string `property:"name=ServicePrincipalType"`
 }
 
 func (r *ServicePrincipal) Filter() error {
-	if ptr.ToString(r.spType) == "ManagedIdentity" {
+	if ptr.ToString(r.SPType) == "ManagedIdentity" {
 		return fmt.Errorf("cannot delete managed service principals")
 	}
 
-	if ptr.ToString(r.appOwner) == "f8cdef31-a31e-4b4a-93e4-5f571e91255a" {
+	if ptr.ToString(r.AppOwner) == "f8cdef31-a31e-4b4a-93e4-5f571e91255a" {
 		return fmt.Errorf("cannot delete built-in service principals")
 	}
 
-	if ptr.ToString(r.name) == "O365 LinkedIn Connection" {
+	if ptr.ToString(r.Name) == "O365 LinkedIn Connection" {
 		return fmt.Errorf("cannot delete built-in service principals")
 	}
 
-	if strings.Contains(ptr.ToString(r.name), "securityOperators/Defender") {
+	if strings.Contains(ptr.ToString(r.Name), "securityOperators/Defender") {
 		return fmt.Errorf("cannot delete defender linked service principals")
 	}
 
@@ -58,23 +58,16 @@ func (r *ServicePrincipal) Filter() error {
 }
 
 func (r *ServicePrincipal) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, *r.id)
+	_, err := r.client.Delete(ctx, *r.ID)
 	return err
 }
 
 func (r *ServicePrincipal) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("ID", r.id)
-	properties.Set("Name", r.name)
-	properties.Set("AppOwnerId", r.appOwner)
-	properties.Set("ServicePrincipalType", r.spType)
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *ServicePrincipal) String() string {
-	return ptr.ToString(r.name)
+	return ptr.ToString(r.Name)
 }
 
 // -------------------------------------------------------------
@@ -114,10 +107,10 @@ func (l ServicePrincipalsLister) List(ctx context.Context, o interface{}) ([]res
 
 		resources = append(resources, &ServicePrincipal{
 			client:   client,
-			id:       entity.ID(),
-			name:     entity.DisplayName,
-			appOwner: entity.AppOwnerOrganizationId,
-			spType:   entity.ServicePrincipalType,
+			ID:       entity.ID(),
+			Name:     entity.DisplayName,
+			AppOwner: entity.AppOwnerOrganizationId,
+			SPType:   entity.ServicePrincipalType,
 		})
 	}
 

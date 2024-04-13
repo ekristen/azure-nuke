@@ -26,34 +26,25 @@ func init() {
 }
 
 type ContainerRegistry struct {
-	client        containerregistry.RegistriesClient
-	name          *string
-	resourceGroup *string
-	region        *string
-	tags          map[string]*string
+	client containerregistry.RegistriesClient
+
+	Region        *string
+	ResourceGroup *string
+	Name          *string
+	Tags          map[string]*string
 }
 
 func (r *ContainerRegistry) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, *r.resourceGroup, *r.name)
+	_, err := r.client.Delete(ctx, *r.ResourceGroup, *r.Name)
 	return err
 }
 
 func (r *ContainerRegistry) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", *r.name)
-	properties.Set("ResourceGroup", *r.resourceGroup)
-	properties.Set("Region", *r.region)
-
-	for k, v := range r.tags {
-		properties.SetTag(&k, v)
-	}
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *ContainerRegistry) String() string {
-	return *r.name
+	return *r.Name
 }
 
 type ContainerRegistryLister struct {
@@ -85,10 +76,10 @@ func (l ContainerRegistryLister) List(ctx context.Context, o interface{}) ([]res
 		for _, entity := range list.Values() {
 			resources = append(resources, &ContainerRegistry{
 				client:        client,
-				name:          entity.Name,
-				resourceGroup: &opts.ResourceGroup,
-				region:        entity.Location,
-				tags:          entity.Tags,
+				Region:        entity.Location,
+				ResourceGroup: &opts.ResourceGroup,
+				Name:          entity.Name,
+				Tags:          entity.Tags,
 			})
 		}
 
