@@ -106,6 +106,11 @@ func execute(c *cli.Context) error { //nolint:funlen
 	n.SetRunSleep(5 * time.Second)
 	n.SetLogger(logrus.WithField("component", "nuke"))
 
+	n.RegisterVersion(fmt.Sprintf("> %s", common.AppVersion.String()))
+
+	p := &nuke.Prompt{Parameters: params, Tenant: tenant}
+	n.RegisterPrompt(p.Prompt)
+
 	tenantConfig := parsedConfig.Accounts[c.String("tenant-id")]
 	tenantResourceTypes := types.ResolveResourceTypes(
 		registry.GetNamesForScope(nuke.Tenant),
