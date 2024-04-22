@@ -4,8 +4,8 @@ Remove all resources from an Azure Tenant and it's Subscriptions.
 resources and create a Pull Request or to create an [Issue](https://github.com/ekristen/aws-nuke/issues/new).
 
 !!! danger "Destructive Tool"
-Be aware that this is a very destructive tool, hence you have to be very careful while using it. Otherwise,
-you might delete production data.
+    Be aware that this is a very destructive tool, hence you have to be very careful while using it. Otherwise, 
+    you might delete production data.
 
 ## What's New in Version 1
 
@@ -13,10 +13,12 @@ This is not a comprehensive list, but here are some of the highlights:
 
 * New Feature: [Global Filters](features/global-filters.md)
 * New Feature: [Run Against All Enabled Regions](features/enabled-regions.md)
+* [Behavior of Filter for Regions](features/regions.md)
 * Upcoming Feature: Filter Groups (**in progress**)
 * Completely rewrote the core of the tool as a dedicated library [libnuke](https://github.com/ekristen/libnuke)
     * This library has over 95% test coverage which makes iteration and new features easier to implement.
 * Semantic Releases with notifications on issues / pull requests
+* Documentation for [all resources](resources/overview.md)
 * New Resources
 
 ## Introducing libnuke

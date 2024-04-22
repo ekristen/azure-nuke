@@ -1,4 +1,4 @@
-# Authentication
+# Authenticationg
 
 ## CLI Flags (or environment variables)
 
