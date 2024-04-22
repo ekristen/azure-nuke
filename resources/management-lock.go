@@ -31,16 +31,22 @@ func init() {
 type ManagementLock struct {
 	client         *managementlocks.ManagementLocksClient
 	ID             *string `property:"-"`
+	Scope          string  `property:"-"`
 	Name           *string
 	LockLevel      string
 	Region         *string
 	ResourceGroup  *string
 	SubscriptionID *string
+
+	scopedLockID *managementlocks.ScopedLockId
 }
 
 func (r *ManagementLock) Remove(ctx context.Context) error {
-	_, err := r.client.DeleteAtResourceGroupLevel(ctx,
-		managementlocks.NewProviderLockID(*r.SubscriptionID, *r.ResourceGroup, *r.Name))
+	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(30*time.Second))
+	defer cancel()
+
+	_, err := r.client.DeleteByScope(ctx, *r.scopedLockID)
+
 	return err
 }
 
@@ -80,6 +86,12 @@ func (l ManagementLockLister) List(ctx context.Context, o interface{}) ([]resour
 	}
 
 	for _, lock := range list.Items {
+		scopedLockID, err := managementlocks.ParseScopedLockID(*lock.Id)
+		if err != nil {
+			logrus.WithError(err).Error("failed to parse lock id")
+			continue
+		}
+
 		resources = append(resources, &ManagementLock{
 			client:         client,
 			ID:             lock.Id,
@@ -87,6 +99,7 @@ func (l ManagementLockLister) List(ctx context.Context, o interface{}) ([]resour
 			LockLevel:      string(lock.Properties.Level),
 			ResourceGroup:  &opts.ResourceGroup,
 			SubscriptionID: &opts.SubscriptionID,
+			scopedLockID:   scopedLockID,
 		})
 	}
 
