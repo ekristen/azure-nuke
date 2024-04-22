@@ -6,54 +6,83 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute" //nolint:staticcheck
 
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/ekristen/libnuke/pkg/registry"
+	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/types"
+
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
-type Disk struct {
-	client compute.DisksClient
-	name   string
-	rg     string
-}
+const DiskResource = "Disk"
 
 func init() {
-	resource.RegisterV2(resource.Registration{
-		Name:      "Disk",
-		Scope:     resource.ResourceGroup,
-		Lister:    ListDisk,
-		DependsOn: []string{"VirtualMachine"},
+	registry.Register(&registry.Registration{
+		Name:     DiskResource,
+		Scope:    nuke.ResourceGroup,
+		Lister:   &DiskLister{},
+		Resource: &Disk{},
+		DependsOn: []string{
+			VirtualMachineResource,
+		},
 	})
 }
 
-func ListDisk(opts resource.ListerOpts) ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+type Disk struct {
+	client        compute.DisksClient
+	Region        *string
+	ResourceGroup *string
+	Name          *string
+	Tags          map[string]*string
+}
 
-	client := compute.NewDisksClient(opts.SubscriptionId)
+func (r *Disk) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, *r.ResourceGroup, *r.Name)
+	return err
+}
+
+func (r *Disk) Properties() types.Properties {
+	return types.NewPropertiesFromStruct(r)
+}
+
+func (r *Disk) String() string {
+	return *r.Name
+}
+
+type DiskLister struct {
+}
+
+func (l DiskLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
+
+	log := logrus.WithField("r", DiskResource).WithField("s", opts.SubscriptionID)
+
+	client := compute.NewDisksClient(opts.SubscriptionID)
 	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 
 	resources := make([]resource.Resource, 0)
 
-	logrus.Trace("attempting to list ssh key")
+	log.Trace("attempting to list disks")
 
-	ctx := context.Background()
 	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup)
 	if err != nil {
 		return nil, err
 	}
 
-	logrus.Trace("listing ....")
+	log.Trace("listing ....")
 
 	for list.NotDone() {
-		logrus.Trace("list not done")
+		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &Disk{
-				client: client,
-				name:   *g.Name,
-				rg:     opts.ResourceGroup,
+				client:        client,
+				Region:        g.Location,
+				ResourceGroup: &opts.ResourceGroup,
+				Name:          g.Name,
+				Tags:          g.Tags,
 			})
 		}
 
@@ -62,22 +91,7 @@ func ListDisk(opts resource.ListerOpts) ([]resource.Resource, error) {
 		}
 	}
 
+	log.Trace("done")
+
 	return resources, nil
-}
-
-func (r *Disk) Remove() error {
-	_, err := r.client.Delete(context.TODO(), r.rg, r.name)
-	return err
-}
-
-func (r *Disk) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", r.name)
-
-	return properties
-}
-
-func (r *Disk) String() string {
-	return r.name
 }

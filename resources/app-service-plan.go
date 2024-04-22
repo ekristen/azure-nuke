@@ -6,53 +6,57 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/web/mgmt/2021-03-01/web"
+	"github.com/Azure/azure-sdk-for-go/services/web/mgmt/2021-03-01/web" //nolint:staticcheck
 
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/ekristen/libnuke/pkg/registry"
+	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/types"
+
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
-type AppServicePlan struct {
-	client web.AppServicePlansClient
-	name   string
-	rg     string
-}
+const AppServicePlanResource = "AppServicePlan"
 
 func init() {
-	resource.RegisterV2(resource.Registration{
-		Name:   "AppServicePlan",
-		Scope:  resource.ResourceGroup,
-		Lister: ListAppServicePlan,
+	registry.Register(&registry.Registration{
+		Name:     AppServicePlanResource,
+		Scope:    nuke.ResourceGroup,
+		Resource: &AppServicePlan{},
+		Lister:   &AppServicePlanLister{},
 	})
 }
 
-func ListAppServicePlan(opts resource.ListerOpts) ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+type AppServicePlanLister struct {
+}
 
-	client := web.NewAppServicePlansClient(opts.SubscriptionId)
+func (l AppServicePlanLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
+
+	log := logrus.WithField("r", AppServicePlanResource).WithField("s", opts.SubscriptionID)
+
+	client := web.NewAppServicePlansClient(opts.SubscriptionID)
 	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 
 	resources := make([]resource.Resource, 0)
 
-	logrus.Trace("attempting to list ssh key")
+	log.Trace("attempting to list ssh key")
 
-	ctx := context.Background()
 	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup)
 	if err != nil {
 		return nil, err
 	}
 
-	logrus.Trace("listing ....")
+	log.Trace("listing resources")
 
 	for list.NotDone() {
-		logrus.Trace("list not done")
+		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &AppServicePlan{
-				client: client,
-				name:   *g.Name,
-				rg:     opts.ResourceGroup,
+				client:        client,
+				Name:          *g.Name,
+				ResourceGroup: opts.ResourceGroup,
 			})
 		}
 
@@ -61,22 +65,26 @@ func ListAppServicePlan(opts resource.ListerOpts) ([]resource.Resource, error) {
 		}
 	}
 
+	log.Trace("done")
+
 	return resources, nil
 }
 
-func (r *AppServicePlan) Remove() error {
-	_, err := r.client.Delete(context.TODO(), r.rg, r.name)
+type AppServicePlan struct {
+	client        web.AppServicePlansClient
+	Name          string
+	ResourceGroup string
+}
+
+func (r *AppServicePlan) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, r.ResourceGroup, r.Name)
 	return err
 }
 
 func (r *AppServicePlan) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", r.name)
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *AppServicePlan) String() string {
-	return r.name
+	return r.Name
 }

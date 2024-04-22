@@ -6,54 +6,86 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/storage/mgmt/2021-09-01/storage"
+	"github.com/Azure/azure-sdk-for-go/services/storage/mgmt/2021-09-01/storage" //nolint:staticcheck
 
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/ekristen/libnuke/pkg/registry"
+	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/types"
+
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
-type StorageAccount struct {
-	client storage.AccountsClient
-	name   string
-	rg     string
-}
+const StorageAccountResource = "StorageAccount"
 
 func init() {
-	resource.RegisterV2(resource.Registration{
-		Name:      "StorageAccount",
-		Scope:     resource.ResourceGroup,
-		Lister:    ListStorageAccount,
-		DependsOn: []string{"VirtualMachine"},
+	registry.Register(&registry.Registration{
+		Name:     StorageAccountResource,
+		Scope:    nuke.ResourceGroup,
+		Resource: &StorageAccount{},
+		Lister:   &StorageAccountLister{},
+		DependsOn: []string{
+			VirtualMachineResource,
+		},
 	})
 }
 
-func ListStorageAccount(opts resource.ListerOpts) ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+type StorageAccount struct {
+	client storage.AccountsClient
 
-	client := storage.NewAccountsClient(opts.SubscriptionId)
+	Name          *string
+	ResourceGroup string
+	Region        *string
+	Tags          map[string]*string
+}
+
+func (r *StorageAccount) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, r.ResourceGroup, *r.Name)
+	return err
+}
+
+func (r *StorageAccount) Properties() types.Properties {
+	return types.NewPropertiesFromStruct(r)
+}
+
+func (r *StorageAccount) String() string {
+	return *r.Name
+}
+
+// --------------------------------------
+
+type StorageAccountLister struct {
+}
+
+func (l StorageAccountLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
+
+	log := logrus.WithField("r", StorageAccountResource).WithField("s", opts.SubscriptionID)
+
+	client := storage.NewAccountsClient(opts.SubscriptionID)
 	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 
 	resources := make([]resource.Resource, 0)
 
-	logrus.Trace("attempting to list ssh key")
+	log.Trace("attempting to list ssh key")
 
-	ctx := context.Background()
 	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup)
 	if err != nil {
 		return nil, err
 	}
 
-	logrus.Trace("listing ....")
+	log.Trace("listing storage accounts")
 
 	for list.NotDone() {
-		logrus.Trace("list not done")
+		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &StorageAccount{
-				client: client,
-				name:   *g.Name,
-				rg:     opts.ResourceGroup,
+				client:        client,
+				Name:          g.Name,
+				ResourceGroup: opts.ResourceGroup,
+				Region:        g.Location,
+				Tags:          g.Tags,
 			})
 		}
 
@@ -62,22 +94,7 @@ func ListStorageAccount(opts resource.ListerOpts) ([]resource.Resource, error) {
 		}
 	}
 
+	log.Trace("done")
+
 	return resources, nil
-}
-
-func (r *StorageAccount) Remove() error {
-	_, err := r.client.Delete(context.TODO(), r.rg, r.name)
-	return err
-}
-
-func (r *StorageAccount) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", r.name)
-
-	return properties
-}
-
-func (r *StorageAccount) String() string {
-	return r.name
 }

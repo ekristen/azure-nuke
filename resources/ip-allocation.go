@@ -6,54 +6,59 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-05-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-05-01/network" //nolint:staticcheck
 
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/ekristen/libnuke/pkg/registry"
+	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/types"
+
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
-type IPAllocation struct {
-	client network.IPAllocationsClient
-	name   *string
-	rg     *string
-}
+const IPAllocationResource = "IPAllocation"
 
 func init() {
-	resource.RegisterV2(resource.Registration{
-		Name:   "IPAllocation",
-		Scope:  resource.ResourceGroup,
-		Lister: ListIPAllocation,
+	registry.Register(&registry.Registration{
+		Name:     IPAllocationResource,
+		Scope:    nuke.ResourceGroup,
+		Resource: &IPAllocation{},
+		Lister:   &IPAllocationLister{},
 	})
 }
 
-func ListIPAllocation(opts resource.ListerOpts) ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+type IPAllocationLister struct {
+}
 
-	client := network.NewIPAllocationsClient(opts.SubscriptionId)
+func (l IPAllocationLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
+
+	log := logrus.WithField("r", IPAllocationResource).WithField("s", opts.SubscriptionID)
+
+	client := network.NewIPAllocationsClient(opts.SubscriptionID)
 	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 
 	resources := make([]resource.Resource, 0)
 
-	logrus.Trace("attempting to list virtual networks")
-
-	ctx := context.Background()
+	log.Trace("attempting to list virtual networks")
 
 	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup)
 	if err != nil {
 		return nil, err
 	}
 
-	logrus.Trace("listing ....")
+	log.Trace("listing resources")
 
 	for list.NotDone() {
-		logrus.Trace("list not done")
+		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &IPAllocation{
-				client: client,
-				name:   g.Name,
-				rg:     &opts.ResourceGroup,
+				client:        client,
+				Region:        g.Location,
+				ResourceGroup: &opts.ResourceGroup,
+				Name:          g.Name,
+				Tags:          g.Tags,
 			})
 		}
 
@@ -62,23 +67,29 @@ func ListIPAllocation(opts resource.ListerOpts) ([]resource.Resource, error) {
 		}
 	}
 
+	log.Trace("done")
+
 	return resources, nil
 }
 
-func (r *IPAllocation) Remove() error {
-	_, err := r.client.Delete(context.TODO(), *r.rg, *r.name)
+type IPAllocation struct {
+	client network.IPAllocationsClient
+
+	Region        *string
+	ResourceGroup *string
+	Name          *string
+	Tags          map[string]*string
+}
+
+func (r *IPAllocation) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, *r.ResourceGroup, *r.Name)
 	return err
 }
 
 func (r *IPAllocation) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", *r.name)
-	properties.Set("ResourceGroup", *r.rg)
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *IPAllocation) String() string {
-	return *r.name
+	return *r.Name
 }

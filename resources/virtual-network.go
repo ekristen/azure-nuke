@@ -6,30 +6,35 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-05-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-05-01/network" //nolint:staticcheck
 
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/ekristen/libnuke/pkg/registry"
+	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/types"
+
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
-type VirtualNetwork struct {
-	client network.VirtualNetworksClient
-	name   *string
-	rg     *string
-}
+const VirtualNetworkResource = "VirtualNetwork"
 
 func init() {
-	resource.RegisterV2(resource.Registration{
-		Name:   "VirtualNetwork",
-		Lister: ListVirtualNetwork,
-		Scope:  resource.ResourceGroup,
+	registry.Register(&registry.Registration{
+		Name:     VirtualNetworkResource,
+		Scope:    nuke.ResourceGroup,
+		Resource: &VirtualNetwork{},
+		Lister:   &VirtualNetworkLister{},
 	})
 }
 
-func ListVirtualNetwork(opts resource.ListerOpts) ([]resource.Resource, error) {
-	log := logrus.WithField("handler", "ListVirtualNetwork").WithField("subscription", opts.SubscriptionId)
+type VirtualNetworkLister struct {
+}
 
-	client := network.NewVirtualNetworksClient(opts.SubscriptionId)
+func (l VirtualNetworkLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
+
+	log := logrus.WithField("r", VirtualNetworkResource).WithField("s", opts.SubscriptionID)
+
+	client := network.NewVirtualNetworksClient(opts.SubscriptionID)
 	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
@@ -37,8 +42,6 @@ func ListVirtualNetwork(opts resource.ListerOpts) ([]resource.Resource, error) {
 	resources := make([]resource.Resource, 0)
 
 	log.Trace("attempting to list virtual networks")
-
-	ctx := context.Background()
 
 	list, err := client.List(ctx, opts.ResourceGroup)
 	if err != nil {
@@ -50,9 +53,11 @@ func ListVirtualNetwork(opts resource.ListerOpts) ([]resource.Resource, error) {
 	for list.NotDone() {
 		for _, g := range list.Values() {
 			resources = append(resources, &VirtualNetwork{
-				client: client,
-				name:   g.Name,
-				rg:     &opts.ResourceGroup,
+				client:        client,
+				Name:          g.Name,
+				ResourceGroup: &opts.ResourceGroup,
+				Region:        g.Location,
+				Tags:          g.Tags,
 			})
 		}
 
@@ -61,23 +66,31 @@ func ListVirtualNetwork(opts resource.ListerOpts) ([]resource.Resource, error) {
 		}
 	}
 
+	log.Trace("debug")
+
 	return resources, nil
 }
 
-func (r *VirtualNetwork) Remove() error {
-	_, err := r.client.Delete(context.TODO(), *r.rg, *r.name)
+// ---------------------------------------------
+
+type VirtualNetwork struct {
+	client network.VirtualNetworksClient
+
+	Region        *string
+	ResourceGroup *string
+	Name          *string
+	Tags          map[string]*string
+}
+
+func (r *VirtualNetwork) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, *r.ResourceGroup, *r.Name)
 	return err
 }
 
 func (r *VirtualNetwork) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", *r.name)
-	properties.Set("ResourceGroup", *r.rg)
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *VirtualNetwork) String() string {
-	return *r.name
+	return *r.Name
 }

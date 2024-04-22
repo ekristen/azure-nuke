@@ -6,54 +6,84 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute" //nolint:staticcheck
 
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/ekristen/libnuke/pkg/registry"
+	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/types"
+
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
-type SSHPublicKey struct {
-	client compute.SSHPublicKeysClient
-	name   *string
-	rg     *string
-}
+const SSHPublicKeyResource = "SSHPublicKey"
 
 func init() {
-	resource.RegisterV2(resource.Registration{
-		Name:   "SSHPublicKey",
-		Lister: ListSSHPublicKey,
-		Scope:  resource.ResourceGroup,
+	registry.Register(&registry.Registration{
+		Name:     SSHPublicKeyResource,
+		Scope:    nuke.Subscription,
+		Resource: &SSHPublicKey{},
+		Lister:   &SSHPublicKeyLister{},
 	})
 }
 
-func ListSSHPublicKey(opts resource.ListerOpts) ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+type SSHPublicKey struct {
+	client compute.SSHPublicKeysClient
 
-	client := compute.NewSSHPublicKeysClient(opts.SubscriptionId)
+	Region         *string
+	SubscriptionID *string
+	ResourceGroup  *string
+	Name           *string
+	Tags           map[string]*string
+}
+
+func (r *SSHPublicKey) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, *r.ResourceGroup, *r.Name)
+	return err
+}
+
+func (r *SSHPublicKey) Properties() types.Properties {
+	return types.NewPropertiesFromStruct(r)
+}
+
+func (r *SSHPublicKey) String() string {
+	return *r.Name
+}
+
+// --------------------------------------
+
+type SSHPublicKeyLister struct {
+}
+
+func (l SSHPublicKeyLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
+
+	log := logrus.WithField("r", SSHPublicKeyResource).WithField("s", opts.SubscriptionID)
+
+	client := compute.NewSSHPublicKeysClient(opts.SubscriptionID)
 	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 
 	resources := make([]resource.Resource, 0)
 
-	logrus.Trace("attempting to list ssh key")
+	log.Trace("attempting to list ssh key")
 
-	ctx := context.Background()
-
-	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup)
+	list, err := client.ListBySubscription(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	logrus.Trace("listing ....")
+	log.Trace("listing ....")
 
 	for list.NotDone() {
-		logrus.Trace("list not done")
+		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &SSHPublicKey{
-				client: client,
-				name:   g.Name,
-				rg:     &opts.ResourceGroup,
+				client:        client,
+				Name:          g.Name,
+				ResourceGroup: nuke.GetResourceGroupFromID(*g.ID),
+				Region:        g.Location,
+				Tags:          g.Tags,
 			})
 		}
 
@@ -62,22 +92,7 @@ func ListSSHPublicKey(opts resource.ListerOpts) ([]resource.Resource, error) {
 		}
 	}
 
+	log.Trace("done")
+
 	return resources, nil
-}
-
-func (r *SSHPublicKey) Remove() error {
-	_, err := r.client.Delete(context.TODO(), *r.rg, *r.name)
-	return err
-}
-
-func (r *SSHPublicKey) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", *r.name)
-
-	return properties
-}
-
-func (r *SSHPublicKey) String() string {
-	return *r.name
 }

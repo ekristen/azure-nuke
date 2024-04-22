@@ -2,133 +2,206 @@ package nuke
 
 import (
 	"context"
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"fmt"
+	"log"
+	"slices"
+	"strings"
+	"time"
+
+	"github.com/sirupsen/logrus"
+	"github.com/urfave/cli/v2"
+
+	libconfig "github.com/ekristen/libnuke/pkg/config"
+	"github.com/ekristen/libnuke/pkg/filter"
+	libnuke "github.com/ekristen/libnuke/pkg/nuke"
+	"github.com/ekristen/libnuke/pkg/registry"
+	libscanner "github.com/ekristen/libnuke/pkg/scanner"
+	"github.com/ekristen/libnuke/pkg/types"
+
 	"github.com/ekristen/azure-nuke/pkg/azure"
-	"github.com/ekristen/azure-nuke/pkg/commands"
+	"github.com/ekristen/azure-nuke/pkg/commands/global"
 	"github.com/ekristen/azure-nuke/pkg/common"
 	"github.com/ekristen/azure-nuke/pkg/config"
 	"github.com/ekristen/azure-nuke/pkg/nuke"
-	"github.com/hashicorp/go-azure-sdk/sdk/auth"
-	"github.com/hashicorp/go-azure-sdk/sdk/auth/autorest"
-	"github.com/hashicorp/go-azure-sdk/sdk/environments"
-	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli/v2"
-	"io/ioutil"
-	"os"
 )
 
-func execute(c *cli.Context) error {
+type log2LogrusWriter struct {
+	entry *logrus.Entry
+}
+
+func (w *log2LogrusWriter) Write(b []byte) (int, error) {
+	n := len(b)
+	if n > 0 && b[n-1] == '\n' {
+		b = b[:n-1]
+	}
+	w.entry.Trace(string(b))
+	return n, nil
+}
+
+func execute(c *cli.Context) error { //nolint:funlen
 	ctx, cancel := context.WithCancel(c.Context)
 	defer cancel()
 
+	// This is to purposefully capture the output from the standard logger that is written to by several
+	// of the azure sdk golang libraries by hashicorp
+	log.SetOutput(&log2LogrusWriter{
+		entry: logrus.WithField("source", "standard-logger"),
+	})
+
 	logrus.Tracef("tenant id: %s", c.String("tenant-id"))
 
-	env, err := environments.FromName(c.String("environment"))
+	authorizers, err := azure.ConfigureAuth(ctx,
+		c.String("environment"), c.String("tenant-id"), c.String("client-id"),
+		c.String("client-secret"), c.String("client-certificate-file"),
+		c.String("client-federated-token-file"))
 	if err != nil {
 		return err
 	}
-
-	var authorizers azure.Authorizers
-
-	credentials := auth.Credentials{
-		Environment: *env,
-		TenantID:    c.String("tenant-id"),
-		ClientID:    c.String("client-id"),
-
-		EnableAuthenticatingUsingClientSecret: true,
-	}
-
-	if c.String("client-secret") != "" {
-		logrus.Debug("authentication type: client secret")
-		credentials.EnableAuthenticatingUsingClientSecret = true
-		credentials.ClientSecret = c.String("client-secret")
-
-		creds, err := azidentity.NewClientSecretCredential(c.String("tenant-id"), c.String("client-id"), c.String("client-secret"), &azidentity.ClientSecretCredentialOptions{})
-		if err != nil {
-			return err
-		}
-		authorizers.IdentityCreds = creds
-	} else if c.String("client-certificate-file") != "" {
-		logrus.Debug("authentication type: client certificate")
-		credentials.EnableAuthenticatingUsingClientCertificate = true
-		credentials.ClientCertificatePath = c.String("client-certificate-file")
-
-		certData, err := os.ReadFile(c.String("client-certificate-file"))
-		if err != nil {
-			return err
-		}
-
-		certs, pkey, err := azidentity.ParseCertificates(certData, nil)
-		if err != nil {
-			return err
-		}
-
-		creds, err := azidentity.NewClientCertificateCredential(c.String("tenant-id"), c.String("client-id"), certs, pkey, &azidentity.ClientCertificateCredentialOptions{})
-		if err != nil {
-			return err
-		}
-		authorizers.IdentityCreds = creds
-	} else if c.String("client-federated-token-file") != "" {
-		logrus.Debug("authentication type: federated token")
-		token, err := ioutil.ReadFile(c.String("client-federated-token-file"))
-		if err != nil {
-			return err
-		}
-		credentials.EnableAuthenticationUsingOIDC = true
-		credentials.OIDCAssertionToken = string(token)
-
-		creds, err := azidentity.NewWorkloadIdentityCredential(&azidentity.WorkloadIdentityCredentialOptions{
-			ClientID:      c.String("client-id"),
-			TenantID:      c.String("tenant-id"),
-			TokenFilePath: c.String("client-federated-token-file"),
-		})
-		if err != nil {
-			return err
-		}
-		authorizers.IdentityCreds = creds
-	}
-
-	graphAuthorizer, err := auth.NewAuthorizerFromCredentials(ctx, credentials, env.MicrosoftGraph)
-	if err != nil {
-		return err
-	}
-
-	mgmtAuthorizer, err := auth.NewAuthorizerFromCredentials(ctx, credentials, env.ResourceManager)
-	if err != nil {
-		return err
-	}
-
-	authorizers.Management = autorest.AutorestAuthorizer(mgmtAuthorizer)
-	authorizers.Graph = autorest.AutorestAuthorizer(graphAuthorizer)
-
-	authorizers.MicrosoftGraph = graphAuthorizer
-	authorizers.ResourceManager = mgmtAuthorizer
 
 	logrus.Trace("preparing to run nuke")
 
-	params := nuke.NukeParameters{
-		ConfigPath: c.Path("config"),
+	params := &libnuke.Parameters{
+		Force:      c.Bool("force"),
 		ForceSleep: c.Int("force-sleep"),
 		Quiet:      c.Bool("quiet"),
 		NoDryRun:   c.Bool("no-dry-run"),
-		Targets:    c.StringSlice("only-resource"),
+		Includes:   c.StringSlice("include"),
+		Excludes:   c.StringSlice("exclude"),
 	}
 
-	tenant, err := azure.NewTenant(ctx, authorizers, c.String("tenant-id"), c.StringSlice("subscription-id"))
+	parsedConfig, err := config.New(libconfig.Options{
+		Path:         c.Path("config"),
+		Deprecations: registry.GetDeprecatedResourceTypeMapping(),
+	})
 	if err != nil {
 		return err
 	}
 
-	n := nuke.New(params, tenant)
-
-	config, err := config.Load(params.ConfigPath)
+	tenant, err := azure.NewTenant(ctx,
+		authorizers, c.String("tenant-id"), c.StringSlice("subscription-id"), parsedConfig.Regions)
 	if err != nil {
 		return err
 	}
 
-	n.Config = config
+	filters, err := parsedConfig.Filters(c.String("tenant-id"))
+	if err != nil {
+		return err
+	}
 
-	return n.Run()
+	// Setup Region Filters as Global Filters
+	if len(filters[filter.Global]) == 0 {
+		filters[filter.Global] = []filter.Filter{}
+	}
+	if !slices.Contains(parsedConfig.Regions, "all") {
+		filters[filter.Global] = append(filters[filter.Global], filter.Filter{
+			Property: "Region",
+			Type:     filter.NotIn,
+			Values:   parsedConfig.Regions,
+		})
+	}
+
+	// Initialize the underlying nuke process
+	n := libnuke.New(params, filters, parsedConfig.Settings)
+
+	n.SetRunSleep(5 * time.Second)
+	n.SetLogger(logrus.WithField("component", "nuke"))
+
+	n.RegisterVersion(fmt.Sprintf("> %s", common.AppVersion.String()))
+
+	p := &nuke.Prompt{Parameters: params, Tenant: tenant}
+	n.RegisterPrompt(p.Prompt)
+
+	tenantConfig := parsedConfig.Accounts[c.String("tenant-id")]
+	tenantResourceTypes := types.ResolveResourceTypes(
+		registry.GetNamesForScope(nuke.Tenant),
+		[]types.Collection{
+			n.Parameters.Includes,
+			parsedConfig.ResourceTypes.GetIncludes(),
+			tenantConfig.ResourceTypes.GetIncludes(),
+		},
+		[]types.Collection{
+			n.Parameters.Excludes,
+			parsedConfig.ResourceTypes.Excludes,
+			tenantConfig.ResourceTypes.Excludes,
+		},
+		nil,
+		nil,
+	)
+
+	subResourceTypes := types.ResolveResourceTypes(
+		registry.GetNamesForScope(nuke.Subscription),
+		[]types.Collection{
+			n.Parameters.Includes,
+			parsedConfig.ResourceTypes.GetIncludes(),
+			tenantConfig.ResourceTypes.GetIncludes(),
+		},
+		[]types.Collection{
+			n.Parameters.Excludes,
+			parsedConfig.ResourceTypes.Excludes,
+			tenantConfig.ResourceTypes.Excludes,
+		},
+		nil,
+		nil,
+	)
+
+	rgResourceTypes := types.ResolveResourceTypes(
+		registry.GetNamesForScope(nuke.ResourceGroup),
+		[]types.Collection{
+			n.Parameters.Includes,
+			parsedConfig.ResourceTypes.GetIncludes(),
+			tenantConfig.ResourceTypes.GetIncludes(),
+		},
+		[]types.Collection{
+			n.Parameters.Excludes,
+			parsedConfig.ResourceTypes.Excludes,
+			tenantConfig.ResourceTypes.Excludes,
+		},
+		nil,
+		nil,
+	)
+
+	if slices.Contains(parsedConfig.Regions, "global") || slices.Contains(parsedConfig.Regions, "all") {
+		parts := strings.Split(c.String("tenant-id"), "-")
+		if err := n.RegisterScanner(nuke.Tenant, libscanner.New(fmt.Sprintf("ten/%s", parts[:1][0]), tenantResourceTypes, &nuke.ListerOpts{
+			Authorizers: authorizers,
+			TenantID:    tenant.ID,
+		})); err != nil {
+			return err
+		}
+	}
+
+	logrus.Debug("registering scanner for tenant subscription resources")
+	for _, subscriptionID := range tenant.SubscriptionIds {
+		logrus.Debug("registering scanner for subscription resources")
+		parts := strings.Split(subscriptionID, "-")
+		if err := n.RegisterScanner(nuke.Subscription, libscanner.New(fmt.Sprintf("sub/%s", parts[:1][0]), subResourceTypes, &nuke.ListerOpts{
+			Authorizers:    tenant.Authorizers,
+			TenantID:       tenant.ID,
+			SubscriptionID: subscriptionID,
+			Regions:        parsedConfig.Regions,
+		})); err != nil {
+			return err
+		}
+	}
+
+	for subscriptionID, resourceGroups := range tenant.ResourceGroups {
+		for _, rg := range resourceGroups {
+			logrus.Debug("registering scanner for resource group")
+			if err := n.RegisterScanner(nuke.ResourceGroup, libscanner.New(fmt.Sprintf("rg/%s", rg), rgResourceTypes, &nuke.ListerOpts{
+				Authorizers:    tenant.Authorizers,
+				TenantID:       tenant.ID,
+				SubscriptionID: subscriptionID,
+				ResourceGroup:  rg,
+				Regions:        parsedConfig.Regions,
+			})); err != nil {
+				return err
+			}
+		}
+	}
+
+	logrus.Debug("running ...")
+
+	return n.Run(c.Context)
 }
 
 func init() {
@@ -137,6 +210,38 @@ func init() {
 			Name:  "config",
 			Usage: "path to config file",
 			Value: "config.yaml",
+		},
+		&cli.StringSliceFlag{
+			Name:  "include",
+			Usage: "only include this specific resource",
+		},
+		&cli.StringSliceFlag{
+			Name:  "exclude",
+			Usage: "exclude this specific resource (this overrides everything)",
+		},
+		&cli.BoolFlag{
+			Name:    "quiet",
+			Aliases: []string{"q"},
+			Usage:   "hide filtered messages",
+		},
+		&cli.BoolFlag{
+			Name:  "no-dry-run",
+			Usage: "actually run the removal of the resources after discovery",
+		},
+		&cli.BoolFlag{
+			Name:    "no-prompt",
+			Usage:   "disable prompting for verification to run",
+			Aliases: []string{"force"},
+		},
+		&cli.IntFlag{
+			Name:    "prompt-delay",
+			Usage:   "seconds to delay after prompt before running (minimum: 3 seconds)",
+			Value:   10,
+			Aliases: []string{"force-sleep"},
+		},
+		&cli.StringSliceFlag{
+			Name:  "feature-flag",
+			Usage: "enable experimental behaviors that may not be fully tested or supported",
 		},
 		&cli.StringFlag{
 			Name:    "environment",
@@ -158,46 +263,34 @@ func init() {
 		},
 		&cli.StringFlag{
 			Name:     "client-id",
+			Usage:    "the client-id to use for authentication",
 			EnvVars:  []string{"AZURE_CLIENT_ID"},
 			Required: true,
 		},
 		&cli.StringFlag{
 			Name:    "client-secret",
+			Usage:   "the client-secret to use for authentication",
 			EnvVars: []string{"AZURE_CLIENT_SECRET"},
 		},
 		&cli.StringFlag{
 			Name:    "client-certificate-file",
+			Usage:   "the client-certificate-file to use for authentication",
 			EnvVars: []string{"AZURE_CLIENT_CERTIFICATE_FILE"},
 		},
 		&cli.StringFlag{
 			Name:    "client-federated-token-file",
+			Usage:   "the client-federated-token-file to use for authentication",
 			EnvVars: []string{"AZURE_FEDERATED_TOKEN_FILE"},
-		},
-		&cli.IntFlag{
-			Name:  "force-sleep",
-			Usage: "seconds to sleep",
-			Value: 10,
-		},
-		&cli.BoolFlag{
-			Name:  "quiet",
-			Usage: "hide filtered messages",
-		},
-		&cli.BoolFlag{
-			Name:  "no-dry-run",
-			Usage: "no dry run",
-		},
-		&cli.StringSliceFlag{
-			Name:  "only-resource",
-			Usage: "only resource",
 		},
 	}
 
 	cmd := &cli.Command{
-		Name:   "nuke",
-		Usage:  "nuke an azure tenant",
-		Flags:  append(flags, commands.GlobalFlags()...),
-		Before: commands.GlobalBefore,
-		Action: execute,
+		Name:    "run",
+		Aliases: []string{"nuke"},
+		Usage:   "run nuke against an azure tenant to remove all configured resources",
+		Flags:   append(flags, global.Flags()...),
+		Before:  global.Before,
+		Action:  execute,
 	}
 
 	common.RegisterCommand(cmd)

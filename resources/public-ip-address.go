@@ -6,54 +6,80 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-05-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2022-05-01/network" //nolint:staticcheck
 
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/ekristen/libnuke/pkg/registry"
+	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/types"
+
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
-type PublicIPAddresses struct {
-	client network.PublicIPAddressesClient
-	name   *string
-	rg     *string
-}
+const PublicIPAddressesResource = "PublicIPAddresses"
 
 func init() {
-	resource.RegisterV2(resource.Registration{
-		Name:   "PublicIPAddresses",
-		Lister: ListPublicIPAddresses,
-		Scope:  resource.ResourceGroup,
+	registry.Register(&registry.Registration{
+		Name:     PublicIPAddressesResource,
+		Scope:    nuke.ResourceGroup,
+		Resource: &PublicIPAddresses{},
+		Lister:   &PublicIPAddressesLister{},
 	})
 }
 
-func ListPublicIPAddresses(opts resource.ListerOpts) ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+type PublicIPAddresses struct {
+	client        network.PublicIPAddressesClient
+	Region        *string
+	ResourceGroup *string
+	Name          *string
+	Tags          map[string]*string
+}
 
-	client := network.NewPublicIPAddressesClient(opts.SubscriptionId)
+func (r *PublicIPAddresses) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, *r.ResourceGroup, *r.Name)
+	return err
+}
+
+func (r *PublicIPAddresses) Properties() types.Properties {
+	return types.NewPropertiesFromStruct(r)
+}
+
+func (r *PublicIPAddresses) String() string {
+	return *r.Name
+}
+
+type PublicIPAddressesLister struct {
+}
+
+func (l PublicIPAddressesLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
+
+	log := logrus.WithField("r", PublicIPAddressesResource).WithField("s", opts.SubscriptionID)
+
+	client := network.NewPublicIPAddressesClient(opts.SubscriptionID)
 	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 
 	resources := make([]resource.Resource, 0)
 
-	logrus.Trace("attempting to list virtual networks")
-
-	ctx := context.Background()
+	log.Trace("attempting to list public ip addresses")
 
 	list, err := client.List(ctx, opts.ResourceGroup)
 	if err != nil {
 		return nil, err
 	}
 
-	logrus.Trace("listing ....")
+	log.Trace("listing public ip addresses")
 
 	for list.NotDone() {
-		logrus.Trace("list not done")
+		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &PublicIPAddresses{
-				client: client,
-				name:   g.Name,
-				rg:     &opts.ResourceGroup,
+				client:        client,
+				Region:        g.Location,
+				ResourceGroup: &opts.ResourceGroup,
+				Name:          g.Name,
+				Tags:          g.Tags,
 			})
 		}
 
@@ -62,23 +88,7 @@ func ListPublicIPAddresses(opts resource.ListerOpts) ([]resource.Resource, error
 		}
 	}
 
+	log.Trace("done")
+
 	return resources, nil
-}
-
-func (r *PublicIPAddresses) Remove() error {
-	_, err := r.client.Delete(context.TODO(), *r.rg, *r.name)
-	return err
-}
-
-func (r *PublicIPAddresses) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", *r.name)
-	properties.Set("ResourceGroup", *r.rg)
-
-	return properties
-}
-
-func (r *PublicIPAddresses) String() string {
-	return *r.name
 }

@@ -3,54 +3,61 @@ package resources
 import (
 	"context"
 
-	"github.com/hashicorp/go-azure-sdk/sdk/odata"
-	"github.com/manicminer/hamilton/msgraph"
 	"github.com/sirupsen/logrus"
 
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/hashicorp/go-azure-sdk/sdk/odata"
+	"github.com/manicminer/hamilton/msgraph"
+
+	"github.com/ekristen/libnuke/pkg/registry"
+	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/types"
+
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
+const ApplicationSecretResource = "ApplicationSecret"
+
 func init() {
-	resource.RegisterV2(resource.Registration{
-		Name:   "ApplicationSecret",
-		Scope:  resource.Tenant,
-		Lister: ListApplicationSecret,
+	registry.Register(&registry.Registration{
+		Name:     ApplicationSecretResource,
+		Scope:    nuke.Tenant,
+		Resource: &ApplicationSecret{},
+		Lister:   &ApplicationSecretLister{},
 	})
 }
 
 type ApplicationSecret struct {
 	client  *msgraph.ApplicationsClient
-	id      *string
-	name    *string
-	appId   *string
-	appName *string
+	ID      *string
+	Name    *string
+	AppID   *string
+	AppName *string
 }
 
 func (r *ApplicationSecret) Filter() error {
 	return nil
 }
 
-func (r *ApplicationSecret) Remove() error {
-	_, err := r.client.Delete(context.TODO(), *r.id)
+func (r *ApplicationSecret) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, *r.ID)
 	return err
 }
 
 func (r *ApplicationSecret) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", r.name)
-	properties.Set("AppName", r.appName)
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *ApplicationSecret) String() string {
-	return *r.id
+	return *r.Name
 }
 
-func ListApplicationSecret(opts resource.ListerOpts) ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+type ApplicationSecretLister struct {
+}
+
+func (l ApplicationSecretLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
+
+	log := logrus.WithField("r", ApplicationSecretResource).WithField("s", opts.SubscriptionID)
 
 	client := msgraph.NewApplicationsClient()
 	client.BaseClient.Authorizer = opts.Authorizers.Graph
@@ -58,28 +65,30 @@ func ListApplicationSecret(opts resource.ListerOpts) ([]resource.Resource, error
 
 	resources := make([]resource.Resource, 0)
 
-	logrus.Trace("attempting to list service principals")
+	log.Trace("attempting to list application secrets")
 
-	ctx := context.Background()
-
-	entites, _, err := client.List(ctx, odata.Query{})
+	entities, _, err := client.List(ctx, odata.Query{})
 	if err != nil {
 		return nil, err
 	}
 
-	logrus.Trace("listing ....")
+	log.Trace("listing application secrets")
 
-	for _, entity := range *entites {
+	for i := range *entities {
+		entity := &(*entities)[i]
+
 		for _, cred := range *entity.PasswordCredentials {
 			resources = append(resources, &ApplicationSecret{
 				client:  client,
-				id:      cred.KeyId,
-				name:    cred.DisplayName,
-				appId:   entity.ID(),
-				appName: entity.DisplayName,
+				ID:      cred.KeyId,
+				Name:    cred.DisplayName,
+				AppID:   entity.ID(),
+				AppName: entity.DisplayName,
 			})
 		}
 	}
+
+	log.Trace("done")
 
 	return resources, nil
 }

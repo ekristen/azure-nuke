@@ -6,43 +6,45 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/dns/mgmt/2018-05-01/dns"
+	"github.com/Azure/azure-sdk-for-go/services/dns/mgmt/2018-05-01/dns" //nolint:staticcheck
 
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/ekristen/libnuke/pkg/registry"
+	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/types"
+
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
-type DNSZone struct {
-	client   dns.ZonesClient
-	name     *string
-	location *string
-	rg       *string
-}
+const DNSZoneResource = "DNSZone"
 
 func init() {
-	resource.RegisterV2(resource.Registration{
-		Name:   "DNSZone",
-		Scope:  resource.ResourceGroup,
-		Lister: ListDNSZone,
+	registry.Register(&registry.Registration{
+		Name:     DNSZoneResource,
+		Scope:    nuke.ResourceGroup,
+		Resource: &DNSZone{},
+		Lister:   &DNSZoneLister{},
 	})
 }
 
-func ListDNSZone(opts resource.ListerOpts) ([]resource.Resource, error) {
+type DNSZoneLister struct {
+}
+
+func (l DNSZoneLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
+
 	log := logrus.WithFields(logrus.Fields{
-		"subscription": opts.SubscriptionId,
-		"handler":      "ListDNSZone",
+		"r": DNSZoneResource,
+		"s": opts.SubscriptionID,
 	})
 
 	log.Trace("start")
 
-	client := dns.NewZonesClient(opts.SubscriptionId)
+	client := dns.NewZonesClient(opts.SubscriptionID)
 	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 
 	resources := make([]resource.Resource, 0)
-
-	ctx := context.Background()
 
 	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup, nil)
 	if err != nil {
@@ -57,10 +59,12 @@ func ListDNSZone(opts resource.ListerOpts) ([]resource.Resource, error) {
 		for _, g := range list.Values() {
 			log.Trace("adding entity to list")
 			resources = append(resources, &DNSZone{
-				client:   client,
-				name:     g.Name,
-				location: g.Location,
-				rg:       &opts.ResourceGroup,
+				client: client,
+
+				Region:        g.Location,
+				ResourceGroup: &opts.ResourceGroup,
+				Name:          g.Name,
+				Tags:          g.Tags,
 			})
 		}
 
@@ -69,22 +73,29 @@ func ListDNSZone(opts resource.ListerOpts) ([]resource.Resource, error) {
 		}
 	}
 
+	log.Trace("done")
+
 	return resources, nil
 }
 
-func (r *DNSZone) Remove() error {
-	_, err := r.client.Delete(context.TODO(), *r.rg, *r.name, "")
+type DNSZone struct {
+	client dns.ZonesClient
+
+	Region        *string
+	ResourceGroup *string
+	Name          *string
+	Tags          map[string]*string
+}
+
+func (r *DNSZone) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, *r.ResourceGroup, *r.Name, "")
 	return err
 }
 
 func (r *DNSZone) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", *r.name)
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *DNSZone) String() string {
-	return *r.name
+	return *r.Name
 }

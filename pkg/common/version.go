@@ -1,5 +1,7 @@
 package common
 
+import "fmt"
+
 // NAME of the App
 var NAME = "azure-nuke"
 
@@ -20,6 +22,10 @@ type AppVersionInfo struct {
 	Branch  string
 	Summary string
 	Commit  string
+}
+
+func (a *AppVersionInfo) String() string {
+	return fmt.Sprintf("%s - %s - %s", a.Name, a.Summary, a.Commit)
 }
 
 func init() {

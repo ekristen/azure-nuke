@@ -1,31 +1,26 @@
----
-tenant-blocklist:
-  - 1234567890
+regions:
+  - global
+  - eastus
+
+blocklist:
+  - 382ee010-63bb-428b-b0f4-3c9081e32ddb
 
 resource-types:
-  targets:
-    - DynamoDBTable
-    - S3Bucket
-    - S3Object
+  includes:
+    - ResourceGroup
+    - ServicePrincipal
   excludes:
-    - IAMRole
+    - AzureADGroup
 
-tenants:
-  555133742:
+accounts:
+  efda01a1-e2e4-4024-89f0-eb29793c605b:
     presets:
-      - "terraform"
-    resource-types:
-      targets:
-        - S3Bucket
-    filters:
-      IAMRole:
-        - "uber.admin"
-      IAMRolePolicyAttachment:
-        - "uber.admin -> AdministratorAccess"
+      - common
 
 presets:
-  terraform:
+  common:
     filters:
-      S3Bucket:
-        - type: glob
-          value: "my-statebucket-*"
+      ResourceGroup:
+        - Default
+      ServicePrincipal:
+        - some-management-account

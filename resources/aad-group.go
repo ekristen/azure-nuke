@@ -3,30 +3,36 @@ package resources
 import (
 	"context"
 
-	"github.com/hashicorp/go-azure-sdk/sdk/odata"
-	"github.com/manicminer/hamilton/msgraph"
 	"github.com/sirupsen/logrus"
 
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/hashicorp/go-azure-sdk/sdk/odata"
+	"github.com/manicminer/hamilton/msgraph"
+
+	"github.com/ekristen/libnuke/pkg/registry"
+	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/types"
+
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
-type AzureAdGroup struct {
-	client *msgraph.GroupsClient
-	id     *string
-	name   *string
-}
+const AzureAdGroupResource = "AzureADGroup"
 
 func init() {
-	resource.RegisterV2(resource.Registration{
-		Name:   "AzureADGroup",
-		Scope:  resource.Tenant,
-		Lister: ListAzureADGroup,
+	registry.Register(&registry.Registration{
+		Name:     AzureAdGroupResource,
+		Scope:    nuke.Tenant,
+		Resource: AzureAdGroup{},
+		Lister:   &AzureAdGroupLister{},
 	})
 }
 
-func ListAzureADGroup(opts resource.ListerOpts) ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+type AzureAdGroupLister struct {
+}
+
+func (l AzureAdGroupLister) List(_ context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
+
+	log := logrus.WithField("r", AzureAdGroupResource).WithField("s", opts.SubscriptionID)
 
 	client := msgraph.NewGroupsClient()
 	client.BaseClient.Authorizer = opts.Authorizers.MicrosoftGraph
@@ -34,41 +40,45 @@ func ListAzureADGroup(opts resource.ListerOpts) ([]resource.Resource, error) {
 
 	resources := make([]resource.Resource, 0)
 
-	logrus.Trace("attempting to list ssh key")
+	log.Trace("attempting to list azure ad groups")
 
 	ctx := context.Background()
 
-	groups, _, err := client.List(ctx, odata.Query{})
+	entities, _, err := client.List(ctx, odata.Query{})
 	if err != nil {
 		return nil, err
 	}
 
-	logrus.Trace("listing ....")
+	log.Trace("listing resources")
 
-	for _, group := range *groups {
+	for i := range *entities {
+		entity := &(*entities)[i]
+
 		resources = append(resources, &AzureAdGroup{
 			client: client,
-			id:     group.ID(),
-			name:   group.DisplayName,
+			ID:     entity.ID(),
+			Name:   entity.DisplayName,
 		})
 	}
 
 	return resources, nil
 }
 
-func (r *AzureAdGroup) Remove() error {
-	_, err := r.client.Delete(context.TODO(), *r.id)
+type AzureAdGroup struct {
+	client *msgraph.GroupsClient
+	ID     *string `description:"The ID of the Entra ID Group"`
+	Name   *string `description:"The name of the Entra ID Group"`
+}
+
+func (r *AzureAdGroup) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, *r.ID)
 	return err
 }
 
 func (r *AzureAdGroup) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", *r.name)
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *AzureAdGroup) String() string {
-	return *r.id
+	return *r.Name
 }

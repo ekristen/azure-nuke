@@ -3,30 +3,36 @@ package resources
 import (
 	"context"
 
-	"github.com/hashicorp/go-azure-sdk/sdk/odata"
-	"github.com/manicminer/hamilton/msgraph"
 	"github.com/sirupsen/logrus"
 
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/hashicorp/go-azure-sdk/sdk/odata"
+	"github.com/manicminer/hamilton/msgraph"
+
+	"github.com/ekristen/libnuke/pkg/registry"
+	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/types"
+
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
-type Application struct {
-	client *msgraph.ApplicationsClient
-	id     *string
-	name   *string
-}
+const ApplicationResource = "Application"
 
 func init() {
-	resource.RegisterV2(resource.Registration{
-		Name:   "Application",
-		Scope:  resource.Tenant,
-		Lister: ListApplication,
+	registry.Register(&registry.Registration{
+		Name:     ApplicationResource,
+		Scope:    nuke.Tenant,
+		Resource: &Application{},
+		Lister:   &ApplicationLister{},
 	})
 }
 
-func ListApplication(opts resource.ListerOpts) ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+type ApplicationLister struct {
+}
+
+func (l ApplicationLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
+
+	log := logrus.WithField("r", ApplicationResource).WithField("s", opts.SubscriptionID)
 
 	client := msgraph.NewApplicationsClient()
 	client.BaseClient.Authorizer = opts.Authorizers.Graph
@@ -34,38 +40,46 @@ func ListApplication(opts resource.ListerOpts) ([]resource.Resource, error) {
 
 	resources := make([]resource.Resource, 0)
 
-	logrus.Trace("attempting to list service principals")
-
-	ctx := context.Background()
+	log.Trace("attempting to list applications")
 
 	entities, _, err := client.List(ctx, odata.Query{})
 	if err != nil {
 		return nil, err
 	}
 
-	logrus.Trace("listing ....")
+	log.Trace("listing applications")
 
-	for _, entity := range *entities {
+	for i := range *entities {
+		entity := &(*entities)[i]
+
 		resources = append(resources, &Application{
 			client: client,
-			id:     entity.ID(),
-			name:   entity.DisplayName,
+			ID:     entity.ID(),
+			Name:   entity.DisplayName,
 		})
 	}
 
+	log.Trace("done")
+
 	return resources, nil
+}
+
+type Application struct {
+	client *msgraph.ApplicationsClient
+	ID     *string
+	Name   *string
 }
 
 func (r *Application) Filter() error {
 	return nil
 }
 
-func (r *Application) Remove() error {
-	if _, err := r.client.Delete(context.TODO(), *r.id); err != nil {
+func (r *Application) Remove(ctx context.Context) error {
+	if _, err := r.client.Delete(ctx, *r.ID); err != nil {
 		return err
 	}
 
-	if _, err := r.client.DeletePermanently(context.TODO(), *r.id); err != nil {
+	if _, err := r.client.DeletePermanently(context.TODO(), *r.ID); err != nil {
 		return err
 	}
 
@@ -73,13 +87,9 @@ func (r *Application) Remove() error {
 }
 
 func (r *Application) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", *r.name)
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *Application) String() string {
-	return *r.id
+	return *r.Name
 }

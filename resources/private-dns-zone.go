@@ -6,43 +6,66 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
+	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns" //nolint:staticcheck
 
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/ekristen/libnuke/pkg/registry"
+	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/types"
+
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
-type PrivateDNSZone struct {
-	client   privatedns.PrivateZonesClient
-	name     *string
-	location *string
-	rg       *string
-}
+const PrivateDNSZoneResource = "PrivateDNSZone"
 
 func init() {
-	resource.RegisterV2(resource.Registration{
-		Name:   "PrivateDNSZone",
-		Scope:  resource.Subscription,
-		Lister: ListPrivateDNSZone,
+	registry.Register(&registry.Registration{
+		Name:     PrivateDNSZoneResource,
+		Scope:    nuke.Subscription,
+		Resource: &PrivateDNSZone{},
+		Lister:   &PrivateDNSZoneLister{},
 	})
 }
 
-func ListPrivateDNSZone(opts resource.ListerOpts) ([]resource.Resource, error) {
+type PrivateDNSZone struct {
+	client        privatedns.PrivateZonesClient
+	Region        *string
+	ResourceGroup *string
+	Name          *string
+	Tags          map[string]*string
+}
+
+func (r *PrivateDNSZone) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, *r.ResourceGroup, *r.Name, "")
+	return err
+}
+
+func (r *PrivateDNSZone) Properties() types.Properties {
+	return types.NewPropertiesFromStruct(r)
+}
+
+func (r *PrivateDNSZone) String() string {
+	return *r.Name
+}
+
+type PrivateDNSZoneLister struct {
+}
+
+func (l PrivateDNSZoneLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
+
 	log := logrus.WithFields(logrus.Fields{
-		"subscription": opts.SubscriptionId,
-		"handler":      "ListPrivateDNSZone",
+		"r": PrivateDNSZoneResource,
+		"s": opts.SubscriptionID,
 	})
 
 	log.Trace("start")
 
-	client := privatedns.NewPrivateZonesClient(opts.SubscriptionId)
+	client := privatedns.NewPrivateZonesClient(opts.SubscriptionID)
 	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 
 	resources := make([]resource.Resource, 0)
-
-	ctx := context.Background()
 
 	list, err := client.List(ctx, nil)
 	if err != nil {
@@ -57,10 +80,11 @@ func ListPrivateDNSZone(opts resource.ListerOpts) ([]resource.Resource, error) {
 		for _, g := range list.Values() {
 			log.Trace("adding entity to list")
 			resources = append(resources, &PrivateDNSZone{
-				client:   client,
-				name:     g.Name,
-				location: g.Location,
-				rg:       &opts.ResourceGroup,
+				client:        client,
+				Region:        g.Location,
+				ResourceGroup: &opts.ResourceGroup,
+				Name:          g.Name,
+				Tags:          g.Tags,
 			})
 		}
 
@@ -69,23 +93,7 @@ func ListPrivateDNSZone(opts resource.ListerOpts) ([]resource.Resource, error) {
 		}
 	}
 
+	log.Trace("done")
+
 	return resources, nil
-}
-
-func (r *PrivateDNSZone) Remove() error {
-	_, err := r.client.Delete(context.TODO(), *r.rg, *r.name, "")
-	return err
-}
-
-func (r *PrivateDNSZone) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", *r.name)
-	properties.Set("ResourceGroup", *r.rg)
-
-	return properties
-}
-
-func (r *PrivateDNSZone) String() string {
-	return *r.name
 }

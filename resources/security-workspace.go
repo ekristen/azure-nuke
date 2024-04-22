@@ -2,37 +2,65 @@ package resources
 
 import (
 	"context"
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
-	"github.com/sirupsen/logrus"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/preview/security/mgmt/v3.0/security"
+	"github.com/sirupsen/logrus"
+
+	"github.com/Azure/azure-sdk-for-go/services/preview/security/mgmt/v3.0/security" //nolint:staticcheck
+
+	"github.com/ekristen/libnuke/pkg/registry"
+	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/types"
+
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
-type SecurityWorkspace struct {
-	client security.WorkspaceSettingsClient
-	name   string
-	scope  string
-}
+const SecurityWorkspaceResource = "SecurityWorkspace"
 
 func init() {
-	resource.RegisterV2(resource.Registration{
-		Name:   "SecurityWorkspace",
-		Scope:  resource.Subscription,
-		Lister: ListSecurityWorkspace,
+	registry.Register(&registry.Registration{
+		Name:     SecurityWorkspaceResource,
+		Scope:    nuke.Subscription,
+		Resource: &SecurityWorkspace{},
+		Lister:   &SecurityWorkspaceLister{},
 	})
 }
 
-func ListSecurityWorkspace(opts resource.ListerOpts) ([]resource.Resource, error) {
+type SecurityWorkspace struct {
+	client security.WorkspaceSettingsClient
+
+	Name  *string `description:"The name of the workspace"`
+	Scope *string `description:"The scope of the workspace"`
+}
+
+func (r *SecurityWorkspace) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, *r.Name)
+	return err
+}
+
+func (r *SecurityWorkspace) Properties() types.Properties {
+	return types.NewPropertiesFromStruct(r)
+}
+
+func (r *SecurityWorkspace) String() string {
+	return *r.Name
+}
+
+// -------------------------------------------------------------
+
+type SecurityWorkspaceLister struct {
+}
+
+func (l SecurityWorkspaceLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
+
 	log := logrus.
-		WithField("resource", "SecurityWorkspace").
-		WithField("scope", resource.Subscription).
-		WithField("subscription", opts.SubscriptionId)
+		WithField("r", SecurityWorkspaceResource).
+		WithField("s", opts.SubscriptionID)
 
 	log.Trace("creating client")
 
-	client := security.NewWorkspaceSettingsClient(opts.SubscriptionId)
+	client := security.NewWorkspaceSettingsClient(opts.SubscriptionID)
 	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
@@ -41,7 +69,6 @@ func ListSecurityWorkspace(opts resource.ListerOpts) ([]resource.Resource, error
 
 	log.Trace("listing resources")
 
-	ctx := context.TODO()
 	list, err := client.List(ctx)
 	if err != nil {
 		return nil, err
@@ -52,8 +79,8 @@ func ListSecurityWorkspace(opts resource.ListerOpts) ([]resource.Resource, error
 		for _, g := range list.Values() {
 			resources = append(resources, &SecurityWorkspace{
 				client: client,
-				name:   *g.Name,
-				scope:  *g.Scope,
+				Name:   g.Name,
+				Scope:  g.Scope,
 			})
 		}
 
@@ -62,23 +89,7 @@ func ListSecurityWorkspace(opts resource.ListerOpts) ([]resource.Resource, error
 		}
 	}
 
+	log.Trace("done")
+
 	return resources, nil
-}
-
-func (r *SecurityWorkspace) Remove() error {
-	_, err := r.client.Delete(context.TODO(), r.name)
-	return err
-}
-
-func (r *SecurityWorkspace) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", r.name)
-	properties.Set("Scope", r.scope)
-
-	return properties
-}
-
-func (r *SecurityWorkspace) String() string {
-	return r.name
 }

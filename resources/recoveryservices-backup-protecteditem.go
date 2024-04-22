@@ -3,73 +3,109 @@ package resources
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
+
+	"github.com/gotidy/ptr"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/recoveryservices/armrecoveryservices"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/recoveryservices/armrecoveryservicesbackup"
 	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/aws/smithy-go/ptr"
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
-	"github.com/sirupsen/logrus"
-	"strings"
+
+	"github.com/ekristen/libnuke/pkg/registry"
+	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/types"
+
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
-type RecoveryServicesBackupProtectedItem struct {
-	client        *armrecoveryservicesbackup.BackupProtectedItemsClient
-	itemClient    *armrecoveryservicesbackup.ProtectedItemsClient
-	vaultName     *string
-	id            *string
-	name          *string
-	location      *string
-	resourceGroup *string
-	containerName *string
-	backupFabric  *string
-}
+const RecoveryServicesBackupProtectedItemResource = "RecoveryServicesBackupProtectedItem"
 
 func init() {
-	resource.RegisterV2(resource.Registration{
-		Name:   "RecoveryServicesBackupProtectedItem",
-		Scope:  resource.ResourceGroup,
-		Lister: ListRecoveryServicesBackupProtectedItem,
+	registry.Register(&registry.Registration{
+		Name:     RecoveryServicesBackupProtectedItemResource,
+		Scope:    nuke.ResourceGroup,
+		Resource: &RecoveryServicesBackupProtectedItem{},
+		Lister:   &RecoveryServicesBackupProtectedItemLister{},
 	})
 }
 
-func ListRecoveryServicesBackupProtectedItem(opts resource.ListerOpts) ([]resource.Resource, error) {
+type RecoveryServicesBackupProtectedItem struct {
+	client     *armrecoveryservicesbackup.BackupProtectedItemsClient
+	itemClient *armrecoveryservicesbackup.ProtectedItemsClient
+
+	Region        *string
+	ResourceGroup *string
+	ID            *string
+	Name          *string
+	VaultName     *string
+	ContainerName *string
+	backupFabric  *string
+}
+
+func (r *RecoveryServicesBackupProtectedItem) Filter() error {
+	return nil
+}
+
+func (r *RecoveryServicesBackupProtectedItem) Remove(ctx context.Context) error {
+	_, err := r.itemClient.Delete(
+		ctx, to.String(r.VaultName), to.String(r.ResourceGroup),
+		to.String(r.backupFabric), to.String(r.ContainerName), to.String(r.Name), nil)
+	return err
+}
+
+func (r *RecoveryServicesBackupProtectedItem) Properties() types.Properties {
+	return types.NewPropertiesFromStruct(r)
+}
+
+func (r *RecoveryServicesBackupProtectedItem) String() string {
+	return ptr.ToString(r.Name)
+}
+
+type RecoveryServicesBackupProtectedItemLister struct {
+}
+
+func (l RecoveryServicesBackupProtectedItemLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
+
+	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(30*time.Second))
+	defer cancel()
+
 	resources := make([]resource.Resource, 0)
 
 	log := logrus.
-		WithField("resource", "RecoveryServicesBackupProtectedItem").
-		WithField("scope", resource.ResourceGroup).
-		WithField("subscription", opts.SubscriptionId).
+		WithField("r", RecoveryServicesBackupProtectedItemResource).
+		WithField("s", opts.SubscriptionID).
 		WithField("rg", opts.ResourceGroup)
 
 	log.Trace("creating client")
-	vaultsClient, err := armrecoveryservices.NewVaultsClient(opts.SubscriptionId, opts.Authorizers.IdentityCreds, nil)
+	vaultsClient, err := armrecoveryservices.NewVaultsClient(opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
 	if err != nil {
 		return resources, err
 	}
 
-	client, err := armrecoveryservicesbackup.NewBackupProtectedItemsClient(opts.SubscriptionId, opts.Authorizers.IdentityCreds, nil)
+	client, err := armrecoveryservicesbackup.NewBackupProtectedItemsClient(opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
 	if err != nil {
 		return resources, err
 	}
 
-	protectedItems, err := armrecoveryservicesbackup.NewProtectedItemsClient(opts.SubscriptionId, opts.Authorizers.IdentityCreds, nil)
+	protectedItems, err := armrecoveryservicesbackup.NewProtectedItemsClient(opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
 	if err != nil {
 		return resources, err
 	}
 
 	log.Trace("listing resources")
 
-	ctx := context.TODO()
 	vaultsPager := vaultsClient.NewListByResourceGroupPager(opts.ResourceGroup, nil)
 	for vaultsPager.More() {
+		log.Trace("not done")
 		page, err := vaultsPager.NextPage(ctx)
 		if err != nil {
 			return resources, err
 		}
 
 		for _, v := range page.Value {
-
 			itemPager := client.NewListPager(to.String(v.Name), opts.ResourceGroup, nil)
 			for itemPager.More() {
 				page, err := itemPager.NextPage(ctx)
@@ -88,45 +124,20 @@ func ListRecoveryServicesBackupProtectedItem(opts resource.ListerOpts) ([]resour
 					resources = append(resources, &RecoveryServicesBackupProtectedItem{
 						client:        client,
 						itemClient:    protectedItems,
-						vaultName:     v.Name,
-						id:            i.ID,
-						name:          i.Name,
-						location:      i.Location,
-						resourceGroup: to.StringPtr(opts.ResourceGroup),
-						containerName: to.StringPtr(containerName),
+						VaultName:     v.Name,
+						ID:            i.ID,
+						Name:          i.Name,
+						Region:        i.Location,
+						ResourceGroup: to.StringPtr(opts.ResourceGroup),
+						ContainerName: to.StringPtr(containerName),
 						backupFabric:  to.StringPtr("Azure"), // TODO: this should be calculated
 					})
 				}
 			}
-
 		}
 	}
 
+	log.Trace("done")
+
 	return resources, nil
-}
-
-func (r *RecoveryServicesBackupProtectedItem) Filter() error {
-	return nil
-}
-
-func (r *RecoveryServicesBackupProtectedItem) Remove() error {
-	_, err := r.itemClient.Delete(context.TODO(), to.String(r.vaultName), to.String(r.resourceGroup), to.String(r.backupFabric), to.String(r.containerName), to.String(r.name), nil)
-	return err
-}
-
-func (r *RecoveryServicesBackupProtectedItem) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("ID", r.id)
-	properties.Set("Name", r.name)
-	properties.Set("Location", r.location)
-	properties.Set("ResourceGroup", r.resourceGroup)
-	properties.Set("VaultName", r.vaultName)
-	properties.Set("ContainerName", r.containerName)
-
-	return properties
-}
-
-func (r *RecoveryServicesBackupProtectedItem) String() string {
-	return ptr.ToString(r.name)
 }

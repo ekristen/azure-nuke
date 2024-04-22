@@ -1,0 +1,129 @@
+site_name: Azure Nuke
+site_url: https://ekristen.github.io/azure-nuke
+repo_name: ekristen/azure-nuke
+repo_url: https://github.com/ekristen/azure-nuke
+edit_uri: ""
+
+copyright: Copyright &copy; 2024 - Erik Kristensen
+
+site_dir: public
+
+# Configuration
+theme:
+  name: material
+  language: en
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/link
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: indigo
+      toggle:
+        icon: material/toggle-switch-off
+        name: Switch to system preference
+  features:
+    - navigation.footer
+    - navigation.indexes
+    - navigation.path
+    - navigation.sections
+    - navigation.tabs
+    - toc.follow
+    - toc.integrate
+    - content.code.annotate
+    - content.code.copy
+    - content.tooltips
+    - search.highlight
+    - search.share
+    - search.suggest
+
+# Plugins
+plugins:
+  - search
+
+# Extensions
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true
+
+# Page tree
+nav:
+  - Getting Started:
+      - Overview: index.md
+      - Warning: warning.md
+      - Install: installation.md
+      - Authentication: auth.md
+      - Quick Start: quick-start.md
+  - Features:
+      - Overview: features/overview.md
+      - Global Filters: features/global-filters.md
+      - Enabled Regions: features/enabled-regions.md
+      - Region as Global Filters: features/regions.md
+      - Signed Binaries: features/signed-binaries.md
+  - CLI:
+      - Usage: cli-usage.md
+      - Options: cli-options.md
+      - Experimental: cli-experimental.md
+      - Examples: cli-examples.md
+  - Config:
+      - Overview: config.md
+      - Filtering: config-filtering.md
+      - Presets: config-presets.md
+  - Resources:
+      - Overview: resources/overview.md
+      - App Service Plan: resources/app-service-plan.md
+      - Application: resources/application.md
+      - Application Certificate: resources/application-certificate.md
+      - Application Federated Credential: resources/application-federated-credential.md
+      - Application Secret: resources/application-secret.md
+      - Azure AD Group: resources/azure-ad-group.md
+      - Azure AD User: resources/azure-ad-user.md
+      - Budget: resources/budget.md
+      - Container Registry: resources/container-registry.md
+      - DNS Zone: resources/dns-zone.md
+      - Disk: resources/disk.md
+      - IP Allocation: resources/ip-allocation.md
+      - Key Vault: resources/key-vault.md
+      - Network Interface: resources/network-interface.md
+      - Network Security Group: resources/network-security-group.md
+      - Policy Assignment: resources/policy-assignment.md
+      - Policy Definition: resources/policy-definition.md
+      - Private DNS Zone: resources/private-dns-zone.md
+      - Public IP Addresses: resources/public-ip-addresses.md
+      - Recovery Services Backup Policy: resources/recovery-services-backup-policy.md
+      - Recovery Services Backup Protected Item: resources/recovery-services-backup-protected-item.md
+      - Recovery Services Backup Protection Container: resources/recovery-services-backup-protection-container.md
+      - Recovery Services Backup Protection Intent: resources/recovery-services-backup-protection-intent.md
+      - Recovery Services Vault: resources/recovery-services-vault.md
+      - Resource Group: resources/resource-group.md
+      - SSH Public Key: resources/ssh-public-key.md
+      - Security Alert: resources/security-alert.md
+      - Security Assessment: resources/security-assessment.md
+      - Security Pricing: resources/security-pricing.md
+      - Security Workspace: resources/security-workspace.md
+      - Service Principal: resources/service-principal.md
+      - Storage Account: resources/storage-account.md
+      - Virtual Machine: resources/virtual-machine.md
+      - Virtual Network: resources/virtual-network.md
+  - Development:
+      - Overview: development.md
+      - Contributing: contributing.md
+      - Standards: standards.md
+      - Resources: resources.md
+      - Releases: releases.md
+      - Testing: testing.md

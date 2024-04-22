@@ -3,55 +3,61 @@ package resources
 import (
 	"context"
 
-	"github.com/hashicorp/go-azure-sdk/sdk/odata"
-	"github.com/manicminer/hamilton/msgraph"
 	"github.com/sirupsen/logrus"
 
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/hashicorp/go-azure-sdk/sdk/odata"
+	"github.com/manicminer/hamilton/msgraph"
+
+	"github.com/ekristen/libnuke/pkg/registry"
+	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/types"
+
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
+const ApplicationFederatedCredentialResource = "ApplicationFederatedCredential"
+
 func init() {
-	resource.RegisterV2(resource.Registration{
-		Name:   "ApplicationFederatedCredential",
-		Scope:  resource.Tenant,
-		Lister: ListApplicationFederatedCredential,
+	registry.Register(&registry.Registration{
+		Name:     ApplicationFederatedCredentialResource,
+		Scope:    nuke.Tenant,
+		Resource: &ApplicationFederatedCredential{},
+		Lister:   &ApplicationFederatedCredentialLister{},
 	})
 }
 
 type ApplicationFederatedCredential struct {
-	client     *msgraph.ApplicationsClient
-	id         *string
-	name       *string
-	appId      *string
-	uniqueName *string
+	client        *msgraph.ApplicationsClient
+	ID            *string
+	Name          *string
+	AppID         *string
+	AppUniqueName *string
 }
 
 func (r *ApplicationFederatedCredential) Filter() error {
 	return nil
 }
 
-func (r *ApplicationFederatedCredential) Remove() error {
-	_, err := r.client.DeleteFederatedIdentityCredential(context.TODO(), *r.appId, *r.id)
+func (r *ApplicationFederatedCredential) Remove(ctx context.Context) error {
+	_, err := r.client.DeleteFederatedIdentityCredential(ctx, *r.AppID, *r.ID)
 	return err
 }
 
 func (r *ApplicationFederatedCredential) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", *r.name)
-	properties.Set("AppID", *r.appId)
-	properties.Set("AppUniqueName", r.uniqueName)
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *ApplicationFederatedCredential) String() string {
-	return *r.id
+	return *r.Name
 }
 
-func ListApplicationFederatedCredential(opts resource.ListerOpts) ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+type ApplicationFederatedCredentialLister struct {
+}
+
+func (l ApplicationFederatedCredentialLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
+
+	log := logrus.WithField("r", ApplicationFederatedCredentialResource).WithField("s", opts.SubscriptionID)
 
 	client := msgraph.NewApplicationsClient()
 	client.BaseClient.Authorizer = opts.Authorizers.Graph
@@ -59,32 +65,35 @@ func ListApplicationFederatedCredential(opts resource.ListerOpts) ([]resource.Re
 
 	resources := make([]resource.Resource, 0)
 
-	logrus.Trace("attempting to list service principals")
+	log.Trace("attempting to list application federated creds")
 
-	ctx := context.Background()
-
-	entites, _, err := client.List(ctx, odata.Query{})
+	entities, _, err := client.List(ctx, odata.Query{})
 	if err != nil {
 		return nil, err
 	}
 
-	logrus.Trace("listing ....")
+	log.Trace("listing application federated creds")
 
-	for _, entity := range *entites {
+	for i := range *entities {
+		entity := &(*entities)[i]
+
 		creds, _, err := client.ListFederatedIdentityCredentials(ctx, *entity.ID(), odata.Query{})
 		if err != nil {
 			return nil, err
 		}
+
 		for _, cred := range *creds {
 			resources = append(resources, &ApplicationFederatedCredential{
-				client:     client,
-				id:         cred.ID,
-				name:       cred.Name,
-				appId:      entity.ID(),
-				uniqueName: entity.UniqueName,
+				client:        client,
+				ID:            cred.ID,
+				Name:          cred.Name,
+				AppID:         entity.ID(),
+				AppUniqueName: entity.UniqueName,
 			})
 		}
 	}
+
+	log.Trace("done")
 
 	return resources, nil
 }

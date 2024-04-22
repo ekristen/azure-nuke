@@ -3,17 +3,18 @@ package azure
 import (
 	"context"
 	"fmt"
-	"github.com/ekristen/azure-nuke/pkg/utils"
+	"slices"
 	"time"
 
+	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"
-	"github.com/Azure/azure-sdk-for-go/services/subscription/mgmt/2020-09-01/subscription"
+	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"       //nolint:staticcheck
+	"github.com/Azure/azure-sdk-for-go/services/subscription/mgmt/2020-09-01/subscription" //nolint:staticcheck
 )
 
 type Tenant struct {
-	Authorizers Authorizers
+	Authorizers *Authorizers
 
 	ID              string
 	SubscriptionIds []string
@@ -23,7 +24,10 @@ type Tenant struct {
 	ResourceGroups map[string][]string
 }
 
-func NewTenant(pctx context.Context, authorizers Authorizers, tenantId string, subscriptionIds []string) (*Tenant, error) {
+func NewTenant( //nolint:gocyclo
+	pctx context.Context, authorizers *Authorizers,
+	tenantID string, subscriptionIDs, regions []string,
+) (*Tenant, error) {
 	ctx, cancel := context.WithTimeout(pctx, time.Second*15)
 	defer cancel()
 
@@ -32,7 +36,7 @@ func NewTenant(pctx context.Context, authorizers Authorizers, tenantId string, s
 
 	tenant := &Tenant{
 		Authorizers:     authorizers,
-		ID:              tenantId,
+		ID:              tenantID,
 		TenantIds:       make([]string, 0),
 		SubscriptionIds: make([]string, 0),
 		Locations:       make(map[string][]string),
@@ -48,6 +52,7 @@ func NewTenant(pctx context.Context, authorizers Authorizers, tenantId string, s
 			return nil, err
 		}
 		for _, t := range list.Values() {
+			log.Tracef("adding tenant: %s", *t.TenantID)
 			tenant.TenantIds = append(tenant.TenantIds, *t.TenantID)
 		}
 	}
@@ -55,41 +60,37 @@ func NewTenant(pctx context.Context, authorizers Authorizers, tenantId string, s
 	client := subscription.NewSubscriptionsClient()
 	client.Authorizer = authorizers.Management
 
-	logrus.Trace("listing subscriptions")
+	log.Trace("listing subscriptions")
 	for list, err := client.List(ctx); list.NotDone(); err = list.NextWithContext(ctx) {
 		if err != nil {
 			return nil, err
 		}
 		for _, s := range list.Values() {
-			if len(subscriptionIds) > 0 && !utils.StringSliceContains(subscriptionIds, *s.SubscriptionID) {
-				logrus.Warn("skipping subscription id: %s (reason: not requested)", *s.SubscriptionID)
+			if len(subscriptionIDs) > 0 && !slices.Contains(subscriptionIDs, *s.SubscriptionID) {
+				log.Warnf("skipping subscription id: %s (reason: not requested)", *s.SubscriptionID)
 				continue
 			}
 
-			logrus.Tracef("adding subscriptions id: %s", *s.SubscriptionID)
+			log.Tracef("adding subscriptions id: %s", *s.SubscriptionID)
 			tenant.SubscriptionIds = append(tenant.SubscriptionIds, *s.SubscriptionID)
 
-			logrus.Trace("listing locations")
-			res, err := client.ListLocations(ctx, *s.SubscriptionID)
-			if err != nil {
-				return nil, err
-			}
-			for _, loc := range *res.Value {
-				logrus.Tracef("adding location: %s", *loc.Name)
-				tenant.Locations[*s.SubscriptionID] = append(tenant.Locations[*s.SubscriptionID], *loc.Name)
-			}
-
-			logrus.Trace("listing resource groups")
+			log.Trace("listing resource groups")
 			groupsClient := resources.NewGroupsClient(*s.SubscriptionID)
 			groupsClient.Authorizer = authorizers.Management
 
+			log.Debugf("configured regions: %v", regions)
 			for list, err := groupsClient.List(ctx, "", nil); list.NotDone(); err = list.NextWithContext(ctx) {
 				if err != nil {
 					return nil, err
 				}
 
 				for _, g := range list.Values() {
-					logrus.Tracef("resource group name: %s", *g.Name)
+					// If the region isn't in the list of regions we want to include, skip it
+					if !slices.Contains(regions, ptr.ToString(g.Location)) && !slices.Contains(regions, "all") {
+						continue
+					}
+
+					log.Debugf("resource group name: %s", *g.Name)
 					tenant.ResourceGroups[*s.SubscriptionID] = append(tenant.ResourceGroups[*s.SubscriptionID], *g.Name)
 				}
 			}

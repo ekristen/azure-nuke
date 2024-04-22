@@ -6,53 +6,60 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/keyvault/mgmt/2019-09-01/keyvault"
+	"github.com/Azure/azure-sdk-for-go/services/keyvault/mgmt/2019-09-01/keyvault" //nolint:staticcheck
 
-	"github.com/ekristen/azure-nuke/pkg/resource"
-	"github.com/ekristen/azure-nuke/pkg/types"
+	"github.com/ekristen/libnuke/pkg/registry"
+	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/types"
+
+	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
-type KeyVault struct {
-	client keyvault.VaultsClient
-	name   string
-	rg     string
-}
+const KeyVaultResource = "KeyVault"
 
 func init() {
-	resource.RegisterV2(resource.Registration{
-		Name:   "KeyVault",
-		Scope:  resource.ResourceGroup,
-		Lister: ListKeyVault,
+	registry.Register(&registry.Registration{
+		Name:     KeyVaultResource,
+		Scope:    nuke.ResourceGroup,
+		Resource: &KeyVault{},
+		Lister:   &KeyVaultLister{},
 	})
 }
 
-func ListKeyVault(opts resource.ListerOpts) ([]resource.Resource, error) {
-	logrus.Tracef("subscription id: %s", opts.SubscriptionId)
+type KeyVaultLister struct {
+}
 
-	client := keyvault.NewVaultsClient(opts.SubscriptionId)
+func (l KeyVaultLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+	opts := o.(*nuke.ListerOpts)
+
+	log := logrus.WithField("r", KeyVaultResource).WithField("s", opts.SubscriptionID)
+
+	client := keyvault.NewVaultsClient(opts.SubscriptionID)
 	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 
 	resources := make([]resource.Resource, 0)
 
-	logrus.Trace("attempting to list ssh key")
+	log.Trace("attempting to list key vaults")
 
-	ctx := context.Background()
 	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	logrus.Trace("listing ....")
+	log.Trace("listing key vaults")
 
 	for list.NotDone() {
-		logrus.Trace("list not done")
+		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &KeyVault{
-				client: client,
-				name:   *g.Name,
-				rg:     opts.ResourceGroup,
+				client:         client,
+				Region:         g.Location,
+				ResourceGroup:  opts.ResourceGroup,
+				SubscriptionID: opts.SubscriptionID,
+				Name:           g.Name,
+				Tags:           g.Tags,
 			})
 		}
 
@@ -61,22 +68,30 @@ func ListKeyVault(opts resource.ListerOpts) ([]resource.Resource, error) {
 		}
 	}
 
+	log.Trace("done")
+
 	return resources, nil
 }
 
-func (r *KeyVault) Remove() error {
-	_, err := r.client.Delete(context.TODO(), r.rg, r.name)
+type KeyVault struct {
+	client         keyvault.VaultsClient
+	Region         *string
+	ResourceGroup  string
+	SubscriptionID string
+	Name           *string
+	Tags           map[string]*string
+}
+
+func (r *KeyVault) Remove(ctx context.Context) error {
+	_, err := r.client.Delete(ctx, r.ResourceGroup, *r.Name)
+
 	return err
 }
 
 func (r *KeyVault) Properties() types.Properties {
-	properties := types.NewProperties()
-
-	properties.Set("Name", r.name)
-
-	return properties
+	return types.NewPropertiesFromStruct(r)
 }
 
 func (r *KeyVault) String() string {
-	return r.name
+	return *r.Name
 }

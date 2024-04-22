@@ -3,8 +3,6 @@ release:
   github:
     owner: ekristen
     name: azure-nuke
-  extra_files:
-    - glob: ./cosign.pub
 builds:
   - id: default
     env:
@@ -15,10 +13,10 @@ builds:
       - windows
     goarch:
       - amd64
-      - arm64
-      - arm
-    goarm:
-      - "7"
+    #  - arm64
+    #  - arm
+    #goarm:
+    #  - "7"
     ignore:
       - goos: windows
         goarch: arm64
@@ -29,9 +27,21 @@ builds:
     ldflags:
       - -s
       - -w
+      - -extldflags="-static"
       - -X '{{ .ModulePath }}/pkg/common.SUMMARY={{ .Version }}'
       - -X '{{ .ModulePath }}/pkg/common.BRANCH={{ .Branch }}'
+      - -X '{{ .ModulePath }}/pkg/common.VERSION={{ .Tag }}'
       - -X '{{ .ModulePath }}/pkg/common.COMMIT={{ .Commit }}'
+    hooks:
+      post:
+        - cmd: |
+            {{- if eq .Os "darwin" -}} 
+            quill sign-and-notarize "{{ .Path }}" --dry-run={{ .IsSnapshot }} --ad-hoc={{ .IsSnapshot }} -vv
+            {{- else -}}
+            true
+            {{- end -}}
+          env:
+            - QUILL_LOG_FILE=/tmp/quill-{{ .Target }}.log
 archives:
   - id: default
     builds:
@@ -44,10 +54,11 @@ dockers:
   - use: buildx
     goos: linux
     goarch: amd64
-    dockerfile: Dockerfile.goreleaser
+    dockerfile: Dockerfile
     image_templates:
       - ghcr.io/ekristen/azure-nuke:v{{ .Version }}-amd64
     build_flag_templates:
+      - "--target=goreleaser"
       - "--pull"
       - "--label=org.opencontainers.image.created={{.Date}}"
       - "--label=org.opencontainers.image.title={{.ProjectName}}"
@@ -55,58 +66,64 @@ dockers:
       - "--label=org.opencontainers.image.version={{.Version}}"
       - "--label=org.opencontainers.image.source=https://github.com/ekristen/azure-nuke"
       - "--platform=linux/amd64"
-  - use: buildx
-    goos: linux
-    goarch: arm64
-    dockerfile: Dockerfile.goreleaser
-    image_templates:
-      - ghcr.io/ekristen/azure-nuke:v{{ .Version }}-arm64
-    build_flag_templates:
-      - "--pull"
-      - "--label=org.opencontainers.image.created={{.Date}}"
-      - "--label=org.opencontainers.image.title={{.ProjectName}}"
-      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-      - "--label=org.opencontainers.image.version={{.Version}}"
-      - "--label=org.opencontainers.image.source=https://github.com/ekristen/azure-nuke"
-      - "--platform=linux/arm64"
-  - use: buildx
-    goos: linux
-    goarch: arm
-    goarm: "7"
-    dockerfile: Dockerfile.goreleaser
-    image_templates:
-      - ghcr.io/ekristen/azure-nuke:v{{ .Version }}-arm32v7
-    build_flag_templates:
-      - "--pull"
-      - "--label=org.opencontainers.image.created={{.Date}}"
-      - "--label=org.opencontainers.image.title={{.ProjectName}}"
-      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-      - "--label=org.opencontainers.image.version={{.Version}}"
-      - "--label=org.opencontainers.image.source=https://github.com/ekristen/azure-nuke"
-      - "--platform=linux/arm/v7"
+  #- use: buildx
+  #  goos: linux
+  #  goarch: arm64
+  #  dockerfile: Dockerfile
+  #  image_templates:
+  #    - ghcr.io/ekristen/azure-nuke:v{{ .Version }}-arm64
+  #  build_flag_templates:
+  #    - "--target=goreleaser"
+  #    - "--pull"
+  #    - "--label=org.opencontainers.image.created={{.Date}}"
+  #    - "--label=org.opencontainers.image.title={{.ProjectName}}"
+  #    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+  #    - "--label=org.opencontainers.image.version={{.Version}}"
+  #    - "--label=org.opencontainers.image.source=https://github.com/ekristen/azure-nuke"
+  #    - "--platform=linux/arm64"
+  #- use: buildx
+  #  goos: linux
+  #  goarch: arm
+  #  goarm: "7"
+  #  dockerfile: Dockerfile
+  #  image_templates:
+  #    - ghcr.io/ekristen/azure-nuke:v{{ .Version }}-arm32v7
+  #  build_flag_templates:
+  #    - "--target=goreleaser"
+  #    - "--pull"
+  #    - "--label=org.opencontainers.image.created={{.Date}}"
+  #    - "--label=org.opencontainers.image.title={{.ProjectName}}"
+  #    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+  #    - "--label=org.opencontainers.image.version={{.Version}}"
+  #    - "--label=org.opencontainers.image.source=https://github.com/ekristen/azure-nuke"
+  #    - "--platform=linux/arm/v7"
 docker_manifests:
   - use: docker
     name_template: ghcr.io/ekristen/azure-nuke:v{{ .Version }}
     image_templates:
       - ghcr.io/ekristen/azure-nuke:v{{ .Version }}-amd64
-      - ghcr.io/ekristen/azure-nuke:v{{ .Version }}-arm64
-      - ghcr.io/ekristen/azure-nuke:v{{ .Version }}-arm32v7
+  #    - ghcr.io/ekristen/azure-nuke:v{{ .Version }}-arm64
+  #    - ghcr.io/ekristen/azure-nuke:v{{ .Version }}-arm32v7
 signs:
-  - cmd: cosign
-    stdin: "{{ .Env.COSIGN_PASSWORD }}"
-    args:
-      ["sign-blob", "--key=cosign.key", "--output=${signature}", "${artifact}"]
+  - ids:
+      - default
+      - darwin
+    cmd: cosign
+    signature: "${artifact}.sig"
+    certificate: "${artifact}.pem"
+    args: ["sign-blob", "--yes", "--oidc-provider=github", "--oidc-issuer=https://token.actions.githubusercontent.com", "--output-certificate=${certificate}", "--output-signature=${signature}", "${artifact}"]
     artifacts: all
 docker_signs:
-  - artifacts: all
-    stdin: "{{ .Env.COSIGN_PASSWORD }}"
+  - ids:
+      - default
+    artifacts: all
+    cmd: cosign
+    args: ["sign", "--yes", "--oidc-provider=github", "--oidc-issuer=https://token.actions.githubusercontent.com", "--output-certificate=${certificate}", "--output-signature=${signature}", "${artifact}"]
 checksum:
   name_template: "checksums.txt"
 snapshot:
   name_template: '{{ trimprefix .Summary "v" }}'
+# We are skipping changelog because we are using semantic release
 changelog:
-  sort: asc
-  filters:
-    exclude:
-      - "^docs:"
-      - "^test:"
+  skip: true
+
