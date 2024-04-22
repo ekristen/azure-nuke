@@ -76,7 +76,7 @@ func main() {
 
 		filename := strcase.ToKebab(reg.Name)
 
-		os.WriteFile(fmt.Sprintf("docs/resources/%s.md", filename), []byte(markdown), 0644)
+		_ = os.WriteFile(fmt.Sprintf("docs/resources/%s.md", filename), []byte(markdown), 0644) //nolint: gosec
 	}
 
 	var regs []string
@@ -91,5 +91,4 @@ func main() {
 		filename := strcase.ToKebab(reg)
 		fmt.Printf("- %s: resources/%s.md\n", name, filename)
 	}
-
 }
