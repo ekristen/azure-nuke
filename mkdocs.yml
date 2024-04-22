@@ -99,6 +99,7 @@ nav:
       - Disk: resources/disk.md
       - IP Allocation: resources/ip-allocation.md
       - Key Vault: resources/key-vault.md
+      - Management Lock: resources/management-lock.md
       - Network Interface: resources/network-interface.md
       - Network Security Group: resources/network-security-group.md
       - Policy Assignment: resources/policy-assignment.md
