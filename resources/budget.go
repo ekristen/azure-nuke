@@ -23,9 +23,10 @@ const BudgetResource = "Budget"
 
 func init() {
 	registry.Register(&registry.Registration{
-		Name:   BudgetResource,
-		Scope:  nuke.Subscription,
-		Lister: &BudgetLister{},
+		Name:     BudgetResource,
+		Scope:    nuke.Subscription,
+		Resource: &Budget{},
+		Lister:   &BudgetLister{},
 	})
 }
 

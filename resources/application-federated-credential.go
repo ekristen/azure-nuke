@@ -19,9 +19,10 @@ const ApplicationFederatedCredentialResource = "ApplicationFederatedCredential"
 
 func init() {
 	registry.Register(&registry.Registration{
-		Name:   ApplicationFederatedCredentialResource,
-		Scope:  nuke.Tenant,
-		Lister: &ApplicationFederatedCredentialLister{},
+		Name:     ApplicationFederatedCredentialResource,
+		Scope:    nuke.Tenant,
+		Resource: &ApplicationFederatedCredential{},
+		Lister:   &ApplicationFederatedCredentialLister{},
 	})
 }
 

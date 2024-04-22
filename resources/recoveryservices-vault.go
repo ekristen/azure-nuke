@@ -22,9 +22,10 @@ const RecoveryServicesVaultResource = "RecoveryServicesVault"
 
 func init() {
 	registry.Register(&registry.Registration{
-		Name:   RecoveryServicesVaultResource,
-		Scope:  nuke.ResourceGroup,
-		Lister: &RecoveryServicesVaultLister{},
+		Name:     RecoveryServicesVaultResource,
+		Scope:    nuke.ResourceGroup,
+		Resource: &RecoveryServicesVault{},
+		Lister:   &RecoveryServicesVaultLister{},
 		DependsOn: []string{
 			RecoveryServicesBackupProtectedItemResource,
 		},

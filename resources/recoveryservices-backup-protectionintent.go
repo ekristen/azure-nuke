@@ -22,9 +22,10 @@ const RecoveryServicesBackupProtectionIntentResource = "RecoveryServicesBackupPr
 
 func init() {
 	registry.Register(&registry.Registration{
-		Name:   RecoveryServicesBackupProtectionIntentResource,
-		Scope:  nuke.ResourceGroup,
-		Lister: &RecoveryServicesBackupProtectionIntentLister{},
+		Name:     RecoveryServicesBackupProtectionIntentResource,
+		Scope:    nuke.ResourceGroup,
+		Resource: &RecoveryServicesBackupProtectionIntent{},
+		Lister:   &RecoveryServicesBackupProtectionIntentLister{},
 	})
 }
 

@@ -19,9 +19,10 @@ const PolicyAssignmentResource = "PolicyAssignment"
 
 func init() {
 	registry.Register(&registry.Registration{
-		Name:   PolicyAssignmentResource,
-		Scope:  nuke.Subscription,
-		Lister: &PolicyAssignmentLister{},
+		Name:     PolicyAssignmentResource,
+		Scope:    nuke.Subscription,
+		Resource: &PolicyAssignment{},
+		Lister:   &PolicyAssignmentLister{},
 	})
 }
 

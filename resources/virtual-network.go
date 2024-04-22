@@ -19,9 +19,10 @@ const VirtualNetworkResource = "VirtualNetwork"
 
 func init() {
 	registry.Register(&registry.Registration{
-		Name:   VirtualNetworkResource,
-		Scope:  nuke.ResourceGroup,
-		Lister: &VirtualNetworkLister{},
+		Name:     VirtualNetworkResource,
+		Scope:    nuke.ResourceGroup,
+		Resource: &VirtualNetwork{},
+		Lister:   &VirtualNetworkLister{},
 	})
 }
 

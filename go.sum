@@ -94,6 +94,10 @@ github.com/ekristen/libnuke v0.13.2-0.20240328224301-1917e0d74022 h1:cpie5RCN5TX
 github.com/ekristen/libnuke v0.13.2-0.20240328224301-1917e0d74022/go.mod h1:sBdA04l9IMMejQw5gO9k6o/a0GffSYhgZYaUSdRjIac=
 github.com/ekristen/libnuke v0.13.2-0.20240328234105-265e844b443d h1:2GGpKQCUwSYM2LOeXZtRSRHyEYUmmBOQyenixBhE91k=
 github.com/ekristen/libnuke v0.13.2-0.20240328234105-265e844b443d/go.mod h1:sBdA04l9IMMejQw5gO9k6o/a0GffSYhgZYaUSdRjIac=
+github.com/ekristen/libnuke v0.13.2-0.20240414221504-c1c6effc15cf h1:e11HAwrom+MH2C65PfZwK6bdEoo+qmHtjlbRN2FtJog=
+github.com/ekristen/libnuke v0.13.2-0.20240414221504-c1c6effc15cf/go.mod h1:sBdA04l9IMMejQw5gO9k6o/a0GffSYhgZYaUSdRjIac=
+github.com/ekristen/libnuke v0.14.0 h1:utt/S/ktK0UdUmzUNqip6xyxLZf4zD1yLGYxE1OHCso=
+github.com/ekristen/libnuke v0.14.0/go.mod h1:sBdA04l9IMMejQw5gO9k6o/a0GffSYhgZYaUSdRjIac=
 github.com/emirpasic/gods v1.12.0/go.mod h1:YfzfFFoVP/catgzJb4IKIqXjX78Ha8FMSDh3ymbK86o=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
@@ -101,6 +105,8 @@ github.com/envoyproxy/go-control-plane v0.9.4/go.mod h1:6rpuAdCZL397s3pYoYcLgu1m
 github.com/envoyproxy/go-control-plane v0.9.9-0.20201210154907-fd9021fe5dad/go.mod h1:cXg6YxExXjJnVBQHBLXeUAgxn2UodCpnH306RInaBQk=
 github.com/envoyproxy/go-control-plane v0.10.2-0.20220325020618-49ff273808a1/go.mod h1:KJwIaB5Mv44NWtYuAOFCVOjcI94vtpEz2JU/D2v6IjE=
 github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
+github.com/fatih/camelcase v1.0.0 h1:hxNvNX/xYBp0ovncs8WyWZrOrpBNub/JfaMvbURyft8=
+github.com/fatih/camelcase v1.0.0/go.mod h1:yN2Sb0lFhZJUdVvtELVWefmrXpuZESvPmqwoZc+/fpc=
 github.com/fatih/color v1.7.0/go.mod h1:Zm6kSWBoL9eyXnKyktHP6abPY2pDugNf5KwzbycvMj4=
 github.com/fatih/color v1.13.0/go.mod h1:kLAiJbzzSOZDVNGyDpeOxJ47H46qBXwg5ILebYFFOfk=
 github.com/fatih/color v1.16.0 h1:zmkK9Ngbjj+K0yRhTVONQh1p/HknKYSlNT+vZCzyokM=
@@ -212,6 +218,8 @@ github.com/hashicorp/terraform-registry-address v0.0.0-20220623143253-7d51757b57
 github.com/hashicorp/terraform-svchost v0.0.0-20200729002733-f050f53b9734/go.mod h1:kNDNcF7sN4DocDLBkQYz73HGKwN1ANB1blq4lIYLYvg=
 github.com/hashicorp/yamux v0.0.0-20180604194846-3520598351bb/go.mod h1:+NfK9FKeTrX5uv1uIXGdwYDTeHna2qgaIlx54MXqjAM=
 github.com/hashicorp/yamux v0.0.0-20181012175058-2f1d1f20f75d/go.mod h1:+NfK9FKeTrX5uv1uIXGdwYDTeHna2qgaIlx54MXqjAM=
+github.com/iancoleman/strcase v0.3.0 h1:nTXanmYxhfFAMjZL34Ov6gkzEsSJZ5DbhxWjvSASxEI=
+github.com/iancoleman/strcase v0.3.0/go.mod h1:iwCmte+B7n89clKwxIoIXy/HfoL7AsD47ZCWhYzw7ho=
 github.com/imdario/mergo v0.3.12/go.mod h1:jmQim1M+e3UYxmgPu/WyfjB3N3VflVyUjjjwH0dnCYA=
 github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99/go.mod h1:1lJo3i6rXxKeerYnT8Nvf0QmHCRC1n8sfWVwXF2Frvo=
 github.com/jessevdk/go-flags v1.5.0/go.mod h1:Fw0T6WPc1dYxT4mKEZRfG5kJhaTDP9pj1c2EWnYs/m4=

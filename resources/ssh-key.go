@@ -19,9 +19,10 @@ const SSHPublicKeyResource = "SSHPublicKey"
 
 func init() {
 	registry.Register(&registry.Registration{
-		Name:   SSHPublicKeyResource,
-		Lister: &SSHPublicKeyLister{},
-		Scope:  nuke.Subscription,
+		Name:     SSHPublicKeyResource,
+		Scope:    nuke.Subscription,
+		Resource: &SSHPublicKey{},
+		Lister:   &SSHPublicKeyLister{},
 	})
 }
 

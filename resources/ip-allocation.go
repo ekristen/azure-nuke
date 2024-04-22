@@ -19,9 +19,10 @@ const IPAllocationResource = "IPAllocation"
 
 func init() {
 	registry.Register(&registry.Registration{
-		Name:   IPAllocationResource,
-		Scope:  nuke.ResourceGroup,
-		Lister: &IPAllocationLister{},
+		Name:     IPAllocationResource,
+		Scope:    nuke.ResourceGroup,
+		Resource: &IPAllocation{},
+		Lister:   &IPAllocationLister{},
 	})
 }
 

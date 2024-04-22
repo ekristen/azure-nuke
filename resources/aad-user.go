@@ -19,9 +19,10 @@ const AzureADUserResource = "AzureADUser"
 
 func init() {
 	registry.Register(&registry.Registration{
-		Name:   AzureADUserResource,
-		Scope:  nuke.Tenant,
-		Lister: &AzureADUserLister{},
+		Name:     AzureADUserResource,
+		Scope:    nuke.Tenant,
+		Resource: &AzureADUser{},
+		Lister:   &AzureADUserLister{},
 		DependsOn: []string{
 			AzureAdGroupResource,
 		},
@@ -67,9 +68,9 @@ func (l AzureADUserLister) List(ctx context.Context, o interface{}) ([]resource.
 
 type AzureADUser struct {
 	client *msgraph.UsersClient
-	ID     *string
-	Name   *string
-	UPN    *string
+	ID     *string `description:"The ID of the Entra ID User"`
+	Name   *string `description:"The DisplayName of the Entra ID User"`
+	UPN    *string `description:"This is the user principal name of the Entra ID user, usually in the format of email"`
 }
 
 func (r *AzureADUser) Remove(ctx context.Context) error {

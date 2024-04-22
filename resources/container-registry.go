@@ -19,9 +19,10 @@ const ContainerRegistryResource = "ContainerRegistry"
 
 func init() {
 	registry.Register(&registry.Registration{
-		Name:   ContainerRegistryResource,
-		Scope:  nuke.ResourceGroup,
-		Lister: &ContainerRegistryLister{},
+		Name:     ContainerRegistryResource,
+		Scope:    nuke.ResourceGroup,
+		Resource: &ContainerRegistry{},
+		Lister:   &ContainerRegistryLister{},
 	})
 }
 

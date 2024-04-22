@@ -21,9 +21,10 @@ const NetworkInterfaceResource = "NetworkInterface"
 
 func init() {
 	registry.Register(&registry.Registration{
-		Name:   NetworkInterfaceResource,
-		Scope:  nuke.ResourceGroup,
-		Lister: &NetworkInterfaceLister{},
+		Name:     NetworkInterfaceResource,
+		Scope:    nuke.ResourceGroup,
+		Resource: &NetworkInterface{},
+		Lister:   &NetworkInterfaceLister{},
 	})
 }
 

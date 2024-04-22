@@ -19,9 +19,10 @@ const PrivateDNSZoneResource = "PrivateDNSZone"
 
 func init() {
 	registry.Register(&registry.Registration{
-		Name:   PrivateDNSZoneResource,
-		Scope:  nuke.Subscription,
-		Lister: &PrivateDNSZoneLister{},
+		Name:     PrivateDNSZoneResource,
+		Scope:    nuke.Subscription,
+		Resource: &PrivateDNSZone{},
+		Lister:   &PrivateDNSZoneLister{},
 	})
 }
 

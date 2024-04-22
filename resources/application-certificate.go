@@ -19,9 +19,10 @@ const ApplicationCertificateResource = "ApplicationCertificate"
 
 func init() {
 	registry.Register(&registry.Registration{
-		Name:   ApplicationCertificateResource,
-		Scope:  nuke.Tenant,
-		Lister: &ApplicationCertificateLister{},
+		Name:     ApplicationCertificateResource,
+		Scope:    nuke.Tenant,
+		Resource: &ApplicationCertificate{},
+		Lister:   &ApplicationCertificateLister{},
 	})
 }
 

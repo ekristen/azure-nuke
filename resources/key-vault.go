@@ -19,9 +19,10 @@ const KeyVaultResource = "KeyVault"
 
 func init() {
 	registry.Register(&registry.Registration{
-		Name:   KeyVaultResource,
-		Scope:  nuke.ResourceGroup,
-		Lister: &KeyVaultLister{},
+		Name:     KeyVaultResource,
+		Scope:    nuke.ResourceGroup,
+		Resource: &KeyVault{},
+		Lister:   &KeyVaultLister{},
 	})
 }
 

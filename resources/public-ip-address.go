@@ -19,9 +19,10 @@ const PublicIPAddressesResource = "PublicIPAddresses"
 
 func init() {
 	registry.Register(&registry.Registration{
-		Name:   PublicIPAddressesResource,
-		Scope:  nuke.ResourceGroup,
-		Lister: &PublicIPAddressesLister{},
+		Name:     PublicIPAddressesResource,
+		Scope:    nuke.ResourceGroup,
+		Resource: &PublicIPAddresses{},
+		Lister:   &PublicIPAddressesLister{},
 	})
 }
 

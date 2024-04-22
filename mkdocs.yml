@@ -55,6 +55,7 @@ markdown_extensions:
   - admonition
   - pymdownx.highlight
   - pymdownx.superfences
+  - pymdownx.inlinehilite
   - pymdownx.tabbed:
       alternate_style: true
   - toc:
@@ -82,6 +83,42 @@ nav:
       - Overview: config.md
       - Filtering: config-filtering.md
       - Presets: config-presets.md
+  - Resources:
+      - Overview: resources/overview.md
+      - App Service Plan: resources/app-service-plan.md
+      - Application: resources/application.md
+      - Application Certificate: resources/application-certificate.md
+      - Application Federated Credential: resources/application-federated-credential.md
+      - Application Secret: resources/application-secret.md
+      - Azure AD Group: resources/azure-ad-group.md
+      - Azure AD User: resources/azure-ad-user.md
+      - Budget: resources/budget.md
+      - Container Registry: resources/container-registry.md
+      - DNS Zone: resources/dns-zone.md
+      - Disk: resources/disk.md
+      - IP Allocation: resources/ip-allocation.md
+      - Key Vault: resources/key-vault.md
+      - Network Interface: resources/network-interface.md
+      - Network Security Group: resources/network-security-group.md
+      - Policy Assignment: resources/policy-assignment.md
+      - Policy Definition: resources/policy-definition.md
+      - Private DNS Zone: resources/private-dns-zone.md
+      - Public IP Addresses: resources/public-ip-addresses.md
+      - Recovery Services Backup Policy: resources/recovery-services-backup-policy.md
+      - Recovery Services Backup Protected Item: resources/recovery-services-backup-protected-item.md
+      - Recovery Services Backup Protection Container: resources/recovery-services-backup-protection-container.md
+      - Recovery Services Backup Protection Intent: resources/recovery-services-backup-protection-intent.md
+      - Recovery Services Vault: resources/recovery-services-vault.md
+      - Resource Group: resources/resource-group.md
+      - SSH Public Key: resources/ssh-public-key.md
+      - Security Alert: resources/security-alert.md
+      - Security Assessment: resources/security-assessment.md
+      - Security Pricing: resources/security-pricing.md
+      - Security Workspace: resources/security-workspace.md
+      - Service Principal: resources/service-principal.md
+      - Storage Account: resources/storage-account.md
+      - Virtual Machine: resources/virtual-machine.md
+      - Virtual Network: resources/virtual-network.md
   - Development:
       - Overview: development.md
       - Contributing: contributing.md

@@ -24,9 +24,10 @@ const SecurityAlertLocation = "/Microsoft.Security/locations/(?P<region>.*)/aler
 
 func init() {
 	registry.Register(&registry.Registration{
-		Name:   SecurityAlertResource,
-		Scope:  nuke.Subscription,
-		Lister: &SecurityAlertsLister{},
+		Name:     SecurityAlertResource,
+		Scope:    nuke.Subscription,
+		Resource: &SecurityAlert{},
+		Lister:   &SecurityAlertsLister{},
 	})
 }
 

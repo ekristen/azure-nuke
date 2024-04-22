@@ -19,9 +19,10 @@ const SecurityWorkspaceResource = "SecurityWorkspace"
 
 func init() {
 	registry.Register(&registry.Registration{
-		Name:   SecurityWorkspaceResource,
-		Scope:  nuke.Subscription,
-		Lister: &SecurityWorkspaceLister{},
+		Name:     SecurityWorkspaceResource,
+		Scope:    nuke.Subscription,
+		Resource: &SecurityWorkspace{},
+		Lister:   &SecurityWorkspaceLister{},
 	})
 }
 

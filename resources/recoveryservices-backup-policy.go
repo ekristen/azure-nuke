@@ -24,9 +24,10 @@ const RecoveryServicesBackupPolicyResource = "RecoveryServicesBackupPolicy"
 
 func init() {
 	registry.Register(&registry.Registration{
-		Name:   RecoveryServicesBackupPolicyResource,
-		Scope:  nuke.ResourceGroup,
-		Lister: &RecoveryServicesBackupPolicyLister{},
+		Name:     RecoveryServicesBackupPolicyResource,
+		Scope:    nuke.ResourceGroup,
+		Resource: &RecoveryServicesBackupPolicy{},
+		Lister:   &RecoveryServicesBackupPolicyLister{},
 		DependsOn: []string{
 			RecoveryServicesBackupProtectedItemResource,
 		},

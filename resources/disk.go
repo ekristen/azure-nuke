@@ -19,9 +19,10 @@ const DiskResource = "Disk"
 
 func init() {
 	registry.Register(&registry.Registration{
-		Name:   DiskResource,
-		Scope:  nuke.ResourceGroup,
-		Lister: &DiskLister{},
+		Name:     DiskResource,
+		Scope:    nuke.ResourceGroup,
+		Lister:   &DiskLister{},
+		Resource: &Disk{},
 		DependsOn: []string{
 			VirtualMachineResource,
 		},

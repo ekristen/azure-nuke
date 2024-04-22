@@ -19,9 +19,10 @@ const AzureAdGroupResource = "AzureADGroup"
 
 func init() {
 	registry.Register(&registry.Registration{
-		Name:   AzureAdGroupResource,
-		Scope:  nuke.Tenant,
-		Lister: &AzureAdGroupLister{},
+		Name:     AzureAdGroupResource,
+		Scope:    nuke.Tenant,
+		Resource: AzureAdGroup{},
+		Lister:   &AzureAdGroupLister{},
 	})
 }
 
@@ -65,8 +66,8 @@ func (l AzureAdGroupLister) List(_ context.Context, o interface{}) ([]resource.R
 
 type AzureAdGroup struct {
 	client *msgraph.GroupsClient
-	ID     *string
-	Name   *string
+	ID     *string `description:"The ID of the Entra ID Group"`
+	Name   *string `description:"The name of the Entra ID Group"`
 }
 
 func (r *AzureAdGroup) Remove(ctx context.Context) error {

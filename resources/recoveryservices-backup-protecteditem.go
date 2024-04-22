@@ -24,9 +24,10 @@ const RecoveryServicesBackupProtectedItemResource = "RecoveryServicesBackupProte
 
 func init() {
 	registry.Register(&registry.Registration{
-		Name:   RecoveryServicesBackupProtectedItemResource,
-		Scope:  nuke.ResourceGroup,
-		Lister: &RecoveryServicesBackupProtectedItemLister{},
+		Name:     RecoveryServicesBackupProtectedItemResource,
+		Scope:    nuke.ResourceGroup,
+		Resource: &RecoveryServicesBackupProtectedItem{},
+		Lister:   &RecoveryServicesBackupProtectedItemLister{},
 	})
 }
 

@@ -19,9 +19,10 @@ const NetworkSecurityGroupResource = "NetworkSecurityGroup"
 
 func init() {
 	registry.Register(&registry.Registration{
-		Name:   NetworkSecurityGroupResource,
-		Scope:  nuke.ResourceGroup,
-		Lister: &NetworkSecurityGroupLister{},
+		Name:     NetworkSecurityGroupResource,
+		Scope:    nuke.ResourceGroup,
+		Resource: &NetworkSecurityGroup{},
+		Lister:   &NetworkSecurityGroupLister{},
 	})
 }
 

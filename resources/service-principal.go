@@ -23,9 +23,10 @@ const ServicePrincipalResource = "ServicePrincipal"
 
 func init() {
 	registry.Register(&registry.Registration{
-		Name:   ServicePrincipalResource,
-		Scope:  nuke.Tenant,
-		Lister: &ServicePrincipalsLister{},
+		Name:     ServicePrincipalResource,
+		Scope:    nuke.Tenant,
+		Resource: &ServicePrincipal{},
+		Lister:   &ServicePrincipalsLister{},
 	})
 }
 

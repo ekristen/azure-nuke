@@ -21,9 +21,10 @@ const SecurityAssessmentResource = "SecurityAssessment"
 
 func init() {
 	registry.Register(&registry.Registration{
-		Name:   SecurityAssessmentResource,
-		Scope:  nuke.Subscription,
-		Lister: &SecurityAssessmentLister{},
+		Name:     SecurityAssessmentResource,
+		Scope:    nuke.Subscription,
+		Resource: &SecurityAssessment{},
+		Lister:   &SecurityAssessmentLister{},
 	})
 }
 

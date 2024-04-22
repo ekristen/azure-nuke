@@ -19,9 +19,10 @@ const VirtualMachineResource = "VirtualMachine"
 
 func init() {
 	registry.Register(&registry.Registration{
-		Name:   VirtualMachineResource,
-		Scope:  nuke.ResourceGroup,
-		Lister: &VirtualMachineLister{},
+		Name:     VirtualMachineResource,
+		Scope:    nuke.ResourceGroup,
+		Resource: &VirtualMachine{},
+		Lister:   &VirtualMachineLister{},
 	})
 }
 

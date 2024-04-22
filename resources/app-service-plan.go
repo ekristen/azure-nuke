@@ -19,9 +19,10 @@ const AppServicePlanResource = "AppServicePlan"
 
 func init() {
 	registry.Register(&registry.Registration{
-		Name:   AppServicePlanResource,
-		Scope:  nuke.ResourceGroup,
-		Lister: &AppServicePlanLister{},
+		Name:     AppServicePlanResource,
+		Scope:    nuke.ResourceGroup,
+		Resource: &AppServicePlan{},
+		Lister:   &AppServicePlanLister{},
 	})
 }
 

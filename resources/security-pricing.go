@@ -20,9 +20,10 @@ const SecurityPricingResource = "SecurityPricing"
 
 func init() {
 	registry.Register(&registry.Registration{
-		Name:   SecurityPricingResource,
-		Scope:  nuke.Subscription,
-		Lister: &SecurityPricingLister{},
+		Name:     SecurityPricingResource,
+		Scope:    nuke.Subscription,
+		Resource: &SecurityPricing{},
+		Lister:   &SecurityPricingLister{},
 		DependsOn: []string{
 			SecurityAlertResource,
 		},

@@ -19,9 +19,10 @@ const ApplicationSecretResource = "ApplicationSecret"
 
 func init() {
 	registry.Register(&registry.Registration{
-		Name:   ApplicationSecretResource,
-		Scope:  nuke.Tenant,
-		Lister: &ApplicationSecretLister{},
+		Name:     ApplicationSecretResource,
+		Scope:    nuke.Tenant,
+		Resource: &ApplicationSecret{},
+		Lister:   &ApplicationSecretLister{},
 	})
 }
 

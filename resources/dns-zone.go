@@ -19,9 +19,10 @@ const DNSZoneResource = "DNSZone"
 
 func init() {
 	registry.Register(&registry.Registration{
-		Name:   DNSZoneResource,
-		Scope:  nuke.ResourceGroup,
-		Lister: &DNSZoneLister{},
+		Name:     DNSZoneResource,
+		Scope:    nuke.ResourceGroup,
+		Resource: &DNSZone{},
+		Lister:   &DNSZoneLister{},
 	})
 }
 

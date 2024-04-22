@@ -19,9 +19,10 @@ const StorageAccountResource = "StorageAccount"
 
 func init() {
 	registry.Register(&registry.Registration{
-		Name:   StorageAccountResource,
-		Scope:  nuke.ResourceGroup,
-		Lister: &StorageAccountLister{},
+		Name:     StorageAccountResource,
+		Scope:    nuke.ResourceGroup,
+		Resource: &StorageAccount{},
+		Lister:   &StorageAccountLister{},
 		DependsOn: []string{
 			VirtualMachineResource,
 		},
