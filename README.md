@@ -7,9 +7,6 @@
 
 **This is potentially very destructive! Use at your own risk!**
 
-**Status:** This is early beta. Expect some behaviors around safeguarding, delays, and prompts to change.
-Likely will change CLI behavior a bit as well.
-
 ## v1 (beta) is out
 
 Please test, get started right now.
@@ -18,11 +15,11 @@ Please test, get started right now.
 brew install ekristen/tap/azure-nuke@1
 ```
 
-Or grab from the [next releases](https://github.com/ekristen/azure-nuke/releases?q=next&expanded=true)
+Or grab from the [beta releases](https://github.com/ekristen/azure-nuke/releases?q=beta&expanded=true)
 
 ## Overview
 
-Remove all resources from an Azure Tenant and it's Subscriptions and Resource Groups.
+Remove all resources from an Azure Tenant and it's Subscriptions.
 
 **azure-nuke** is stable, but it is likely that not all Azure resources are covered by it. Be encouraged to add missing
 resources and create a Pull Request or to create an [Issue](https://github.com/ekristen/azure-nuke/issues/new).
@@ -58,173 +55,3 @@ on the original tool by the team and contributors over at [rebuy-de](https://git
 
 This tool is licensed under the MIT license. See the [LICENSE](LICENSE) file for more information. The bulk of this
 tool was rewritten to use [libnuke](https://github.com/ekristen/libnuke) which was in part originally sourced from [rebuy-de/aws-nuke](https://github.com/rebuy-de/aws-nuke).
-
-## Usage
-
-**Note:** all cli flags can also be expressed as environment variables.
-
-**By default, no destructive actions will be taken.**
-
-Due to how Azure Authentication works, there's no way to determine the tenant ID and must be explicitly given. This is
-done via the `--tenant-id` cli flag.
-
-### Example - Dry Run only
-
-```bash
-azure-nuke run \
-  --tenant-id=00000000-0000-0000-0000-000000000000 \
-  --config=test-config.yaml
-```
-
-### Example - No Dry Run (DESTRUCTIVE)
-
-To actually destroy you must add the `--no-dry-run` cli parameter.
-
-```bash
-azure-nuke run \
-  --tenant-id=00000000-0000-0000-0000-000000000000 \
-  --config=test-config.yaml \
-  --no-dry-run
-```
-
-## Authentication
-
-Authentication is only supported via a Service Principal and you can authenticate via a `shared secret`, `certificate`, or `federated token (kubernetes)`
-
-### Shared Secret
-
-```bash
-export AZURE_CLIENT_ID=00000000-0000-0000-0000-000000000000
-export AZURE_CLIENT_SECRET=000000000000
-```
-
-### Certificate
-
-```bash
-export AZURE_CLIENT_ID=00000000-0000-0000-0000-000000000000
-export AZURE_CLIENT_CERTIFICATE=""
-export AZURE_CLIENT_PRIVATE_KEY=""
-```
-
-### Federated Token (Kubernetes)
-
-You can also authenticate using Federated Tokens with Kubernetes and the Azure Workload Identity.
-
-To make this work you'll need to deploy azure-nuke with a Service Account that's configured to do federation with the Service Principal.
-
-## Configuring
-
-The entire configuration of the tool is done via a single YAML file.
-
-### Example Configuration
-
-**Note:** you must add at least one entry to the blocklist.
-
-```yaml
-regions:
-  - global
-  - eastus
-
-blocklist:
-  - 00001111-2222-3333-4444-555566667777
-
-accounts:
-  77776666-5555-4444-3333-222211110000:
-    presets:
-      - common
-    filters:
-      AzureADUser:
-        - property: Name
-          type: contains
-          value: ImportantUser
-      ServicePrincipal:
-        - type: contains
-          property: Name
-          value: testing-azure-nuke
-
-presets:
-  common:
-    filters:
-      ResourceGroup:
-        - Default
-        - NetworkWatcherRG
-```
-
-## Azure Locations (aka Regions in the config)
-
-- global **this is not an actual location but represents the tenant, as in global resources**
-- eastus
-- eastus2
-- southcentralus
-- westus2
-- westus3
-- australiaeast
-- southeastasia
-- northeurope
-- swedencentral
-- uksouth
-- westeurope
-- centralus
-- northcentralus
-- westus
-- southafricanorth
-- centralindia
-- eastasia
-- japaneast
-- jioindiawest
-- koreacentral
-- canadacentral
-- francecentral
-- germanywestcentral
-- norwayeast
-- switzerlandnorth
-- uaenorth
-- brazilsouth
-- centralusstage
-- eastusstage
-- eastus2stage
-- northcentralusstage
-- southcentralusstage
-- westusstage
-- westus2stage
-- asia
-- asiapacific
-- australia
-- brazil
-- canada
-- europe
-- france
-- germany
-- global
-- india
-- japan
-- korea
-- norway
-- southafrica
-- switzerland
-- uae
-- uk
-- unitedstates
-- unitedstateseuap
-- eastasiastage
-- southeastasiastage
-- centraluseuap
-- eastus2euap
-- westcentralus
-- southafricawest
-- australiacentral
-- australiacentral2
-- australiasoutheast
-- japanwest
-- jioindiacentral
-- koreasouth
-- southindia
-- westindia
-- canadaeast
-- francesouth
-- germanynorth
-- norwaywest
-- switzerlandwest
-- ukwest
-- uaecentral
-- brazilsoutheast

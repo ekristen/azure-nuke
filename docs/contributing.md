@@ -1,17 +1,17 @@
 # Contributing
 
-Thank you for wanting to contribute to *aws-nuke*.
+Thank you for wanting to contribute to *azure-nuke*.
 
 Because of the amount of AWS services and their rate of change, we rely on your participation. For the same reason we
 can only act retroactive on changes of AWS services. Otherwise, it would be a full time job to keep up with AWS.
 
 ## How Can I Contribute?
 
-### Some Resource Is Not Supported by *aws-nuke*
+### Some Resource Is Not Supported by *azure-nuke*
 
-If a resource is not yet supported by *aws-nuke*, you have two options to resolve this:
+If a resource is not yet supported by *azure-nuke*, you have two options to resolve this:
 
-* File [an issue](https://github.com/rebuy-de/aws-nuke/issues/new) and describe which resource is missing. This way someone can take care of it.
+* File [an issue](https://github.com/ekristen/azure-nuke/issues/new) and describe which resource is missing. This way someone can take care of it.
 * Add the resource yourself and open a Pull Request. Please follow the guidelines below to see how to create 
   such a resource.
 
@@ -19,35 +19,35 @@ If a resource is not yet supported by *aws-nuke*, you have two options to resolv
 
 Please check the following points before creating a bug issue:
 
-* Is the resource actually supported by *aws-nuke*? If not, please follow the guidelines above.
-* Are there permission problems? In this case *aws-nuke* will print errors that usually contain the status code `403`.
-* Did you just get scared by an error that was printed? *aws-nuke* does not know about dependencies between resources. 
+* Is the resource actually supported by *azure-nuke*? If not, please follow the guidelines above.
+* Are there permission problems? In this case *azure-nuke* will print errors that usually contain the status code `403`.
+* Did you just get scared by an error that was printed? *azure-nuke* does not know about dependencies between resources. 
   To work around this it will just retry deleting all resources in multiple iterations. Therefore, it is normal that
   there are a lot of dependency errors in the first one. The iterations are separated by lines starting with
   `Removal requested:` and only the errors in the last block indicate actual errors.
 
-File [an issue](https://github.com/rebuy-de/aws-nuke/issues/new) and describe as accurately as possible how to generate the resource on AWS that cause the
-errors in *aws-nuke*. Ideally this is provided in a reproducible way like a Terraform template or AWS CLI commands.
+File [an issue](https://github.com/ekristen/azure-nuke/issues/new) and describe as accurately as possible how to generate the resource on AWS that cause the
+errors in *azure-nuke*. Ideally this is provided in a reproducible way like a Terraform template or AWS CLI commands.
 
-### I Have Ideas to Improve *aws-nuke*
+### I Have Ideas to Improve *azure-nuke*
 
-You should take these steps if you have an idea how to improve *aws-nuke*:
+You should take these steps if you have an idea how to improve *azure-nuke*:
 
-1. Check the [issues page](https://github.com/rebuy-de/aws-nuke/issues), whether someone already had the same or a similar idea.
-2. Also check the [closed issues](https://github.com/rebuy-de/aws-nuke/issues?utf8=%E2%9C%93&q=is%3Aissue), because this might have already been implemented, but not yet released. Also,
+1. Check the [issues page](https://github.com/ekristen/azure-nuke/issues), whether someone already had the same or a similar idea.
+2. Also check the [closed issues](https://github.com/ekristen/azure-nuke/issues?utf8=%E2%9C%93&q=is%3Aissue), because this might have already been implemented, but not yet released. Also,
    the idea might not be viable for obvious reasons.
 3. Join the discussion, if there is already a related issue. If this is not the case, open a new issue and describe
    your idea. Afterward, we can discuss this idea and form a proposal.
 
 ### I Just Have a Question
 
-Please use [GitHub Discussions](https://github.com/ekristen/aws-nuke/discussions)
+Please use [GitHub Discussions](https://github.com/ekristen/azure-nuke/discussions)
 
 ## Resource Guidelines
 
 ### Tooling
 
-Checkout the documentation around [resources](https://ekristen.github.io/aws-nuke/resources/) as it provides resource
+Checkout the documentation around [resources](https://ekristen.github.io/azure-nuke/resources/) as it provides resource
 format and a tool to help generate the resource.
 
 ### Consider Pagination
@@ -57,7 +57,7 @@ Most AWS resources are paginated and all resources should handle that.
 ### Use Properties Instead of String Functions
 
 Currently, each resource can offer two functions to describe itself, that are used by the user to identify it and by
-*aws-nuke* to filter it.
+*azure-nuke* to filter it.
 
 The String function is deprecated:
 
@@ -120,7 +120,7 @@ import (
 	
 	"github.com/ekristen/libnuke/pkg/settings"
 	
-	"github.com/ekristen/aws-nuke/pkg/types"
+	"github.com/ekristen/azure-nuke/pkg/types"
 )
 ```
 
@@ -157,8 +157,8 @@ To set the email for all git commits, you can use this command:
 git config --global user.email "email@example.com"
 ```
 
-If you want to change the email only for the *aws-nuke* repository, you can skip the `--global` flag. You have to
-make sure that you are executing this in the *aws-nuke* directory:
+If you want to change the email only for the *azure-nuke* repository, you can skip the `--global` flag. You have to
+make sure that you are executing this in the *azure-nuke* directory:
 
 ```bash
 git config user.email "email@example.com"
