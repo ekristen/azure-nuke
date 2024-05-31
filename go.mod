@@ -12,7 +12,7 @@ require (
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/ekristen/libnuke v0.14.1
 	github.com/fatih/camelcase v1.0.0
-	github.com/fatih/color v1.16.0
+	github.com/fatih/color v1.17.0
 	github.com/gotidy/ptr v1.4.0
 	github.com/hashicorp/go-azure-helpers v0.66.1
 	github.com/hashicorp/go-azure-sdk v0.20240125.1100331
@@ -78,7 +78,7 @@ require (
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/oauth2 v0.4.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
-	golang.org/x/sys v0.16.0 // indirect
+	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
