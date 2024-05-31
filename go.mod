@@ -10,7 +10,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/recoveryservices/armrecoveryservicesbackup v1.0.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/security/armsecurity v0.11.0
 	github.com/Azure/go-autorest/autorest/to v0.4.0
-	github.com/ekristen/libnuke v0.14.1
+	github.com/ekristen/libnuke v0.14.2
 	github.com/fatih/camelcase v1.0.0
 	github.com/fatih/color v1.17.0
 	github.com/gotidy/ptr v1.4.0
