@@ -8,9 +8,12 @@ import (
 	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/profiles/latest/authorization/mgmt/authorization"
 	"github.com/hashicorp/go-azure-sdk/sdk/odata"
 	"github.com/manicminer/hamilton/msgraph"
+
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization"
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -34,7 +37,7 @@ func init() {
 }
 
 type SubscriptionRoleAssignment struct {
-	client authorization.RoleAssignmentsClient
+	client *armauthorization.RoleAssignmentsClient
 
 	ID             *string `property:"-"`
 	Name           *string
@@ -48,7 +51,7 @@ type SubscriptionRoleAssignment struct {
 }
 
 func (r *SubscriptionRoleAssignment) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, *r.scope, *r.Name)
+	_, err := r.client.Delete(ctx, *r.scope, *r.Name, nil)
 	return err
 }
 
@@ -79,11 +82,20 @@ func (l *SubscriptionRoleAssignmentLister) List(ctx context.Context, o interface
 
 	log := logrus.WithField("r", SubscriptionRoleAssignmentResource).WithField("s", opts.SubscriptionID)
 
-	client := authorization.NewRoleAssignmentsClient(opts.SubscriptionID)
-	client.Authorizer = opts.Authorizers.Management
+	client, err := armauthorization.NewRoleAssignmentsClient(
+		opts.SubscriptionID, opts.Authorizers.IdentityCreds, &arm.ClientOptions{
+			ClientOptions: azcore.ClientOptions{
+				APIVersion: "2022-04-01",
+			},
+		})
+	if err != nil {
+		return resources, nil
+	}
 
-	defClient := authorization.NewRoleDefinitionsClient(opts.SubscriptionID)
-	defClient.Authorizer = opts.Authorizers.Management
+	defClient, err := armauthorization.NewRoleDefinitionsClient(opts.Authorizers.IdentityCreds, nil)
+	if err != nil {
+		return resources, nil
+	}
 
 	userClient := msgraph.NewUsersClient()
 	userClient.BaseClient.Authorizer = opts.Authorizers.Graph
@@ -98,20 +110,21 @@ func (l *SubscriptionRoleAssignmentLister) List(ctx context.Context, o interface
 	spClient.BaseClient.DisableRetries = true
 
 	log.Debug("listing subscription role assignments")
-	lister, err := client.List(ctx, "atScope()")
-	if err != nil {
-		return nil, err
-	}
+	pager := client.NewListPager(&armauthorization.RoleAssignmentsClientListOptions{Filter: ptr.String("atScope()")})
 
-	for lister.NotDone() {
-		for _, t := range lister.Values() {
-			rel, defErr := defClient.GetByID(ctx, *t.Properties.RoleDefinitionID)
+	for pager.More() {
+		nextResult, err := pager.NextPage(ctx)
+		if err != nil {
+			return resources, nil
+		}
+		for _, t := range nextResult.Value {
+			rel, defErr := defClient.GetByID(ctx, *t.Properties.RoleDefinitionID, nil)
 			if defErr != nil {
 				return nil, defErr
 			}
 
 			if _, ok := l.roleNameCache[t.Properties.RoleDefinitionID]; !ok {
-				l.roleNameCache[t.Properties.RoleDefinitionID] = rel.RoleName
+				l.roleNameCache[t.Properties.RoleDefinitionID] = rel.RoleDefinition.ID
 			}
 
 			var principalName = ptr.String("unknown")
@@ -165,10 +178,6 @@ func (l *SubscriptionRoleAssignmentLister) List(ctx context.Context, o interface
 				PrincipalName:  principalName,
 				PrincipalType:  principalType,
 			})
-		}
-
-		if listErr := lister.NextWithContext(ctx); listErr != nil {
-			return nil, listErr
 		}
 	}
 
