@@ -48,7 +48,8 @@ type SubscriptionRoleAssignment struct {
 }
 
 func (r *SubscriptionRoleAssignment) Remove(ctx context.Context) error {
-	return nil
+	_, err := r.client.Delete(ctx, *r.scope, *r.ID)
+	return err
 }
 
 func (r *SubscriptionRoleAssignment) Filter() error {
