@@ -48,7 +48,7 @@ func (r *ApplicationSecret) Properties() types.Properties {
 }
 
 func (r *ApplicationSecret) String() string {
-	return *r.Name
+	return *r.AppName
 }
 
 type ApplicationSecretLister struct {
