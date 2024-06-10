@@ -39,15 +39,16 @@ func init() {
 type SubscriptionRoleAssignment struct {
 	client *armauthorization.RoleAssignmentsClient
 
-	ID             *string `property:"-"`
-	Name           *string
-	Type           *string `property:"-"`
-	RoleName       *string
-	PrincipalID    *string
-	PrincipalName  *string
-	PrincipalType  *string
-	scope          *string
-	subscriptionID *string
+	ID               *string `property:"-"`
+	Name             *string
+	Type             *string `property:"-"`
+	RoleName         *string
+	RoleDefinitionID *string
+	PrincipalID      *string
+	PrincipalName    *string
+	PrincipalType    *string
+	scope            *string
+	subscriptionID   *string
 }
 
 func (r *SubscriptionRoleAssignment) Remove(ctx context.Context) error {
@@ -124,7 +125,7 @@ func (l *SubscriptionRoleAssignmentLister) List(ctx context.Context, o interface
 			}
 
 			if _, ok := l.roleNameCache[t.Properties.RoleDefinitionID]; !ok {
-				l.roleNameCache[t.Properties.RoleDefinitionID] = rel.RoleDefinition.ID
+				l.roleNameCache[t.Properties.RoleDefinitionID] = rel.RoleDefinition.Properties.RoleName
 			}
 
 			var principalName = ptr.String("unknown")
@@ -166,17 +167,21 @@ func (l *SubscriptionRoleAssignmentLister) List(ctx context.Context, o interface
 				principalName = v
 			}
 
+			roleDefinitionIDParts := strings.Split(*t.Properties.RoleDefinitionID, "/")
+			roleDefinitionID := roleDefinitionIDParts[len(roleDefinitionIDParts)-1]
+
 			resources = append(resources, &SubscriptionRoleAssignment{
-				client:         client,
-				scope:          t.Properties.Scope,
-				subscriptionID: ptr.String(opts.SubscriptionID),
-				ID:             t.ID,
-				Name:           t.Name,
-				Type:           t.Type,
-				RoleName:       l.roleNameCache[t.Properties.RoleDefinitionID],
-				PrincipalID:    t.Properties.PrincipalID,
-				PrincipalName:  principalName,
-				PrincipalType:  principalType,
+				client:           client,
+				scope:            t.Properties.Scope,
+				subscriptionID:   ptr.String(opts.SubscriptionID),
+				ID:               t.ID,
+				Name:             t.Name,
+				Type:             t.Type,
+				RoleName:         l.roleNameCache[t.Properties.RoleDefinitionID],
+				RoleDefinitionID: ptr.String(roleDefinitionID),
+				PrincipalID:      t.Properties.PrincipalID,
+				PrincipalName:    principalName,
+				PrincipalType:    principalType,
 			})
 		}
 	}
