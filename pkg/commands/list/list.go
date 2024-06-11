@@ -2,7 +2,6 @@ package list
 
 import (
 	"fmt"
-	"github.com/ekristen/azure-nuke/pkg/azure"
 	"sort"
 
 	"github.com/fatih/color"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/ekristen/libnuke/pkg/registry"
 
+	"github.com/ekristen/azure-nuke/pkg/azure"
 	"github.com/ekristen/azure-nuke/pkg/commands/global"
 	"github.com/ekristen/azure-nuke/pkg/common"
 	_ "github.com/ekristen/azure-nuke/resources"

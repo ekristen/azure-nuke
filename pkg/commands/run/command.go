@@ -160,10 +160,11 @@ func execute(c *cli.Context) error { //nolint:funlen
 	)
 
 	if slices.Contains(parsedConfig.Regions, "global") || slices.Contains(parsedConfig.Regions, "all") {
-		if err := n.RegisterScanner(azure.TenantScope, libscanner.New("tenant", tenantResourceTypes, &azure.ListerOpts{
-			Authorizers: authorizers,
-			TenantID:    tenant.ID,
-		})); err != nil {
+		if err := n.RegisterScanner(azure.TenantScope,
+			libscanner.New("tenant", tenantResourceTypes, &azure.ListerOpts{
+				Authorizers: authorizers,
+				TenantID:    tenant.ID,
+			})); err != nil {
 			return err
 		}
 
@@ -171,12 +172,13 @@ func execute(c *cli.Context) error { //nolint:funlen
 		for _, subscriptionID := range tenant.SubscriptionIds {
 			logrus.Debug("registering scanner for subscription resources")
 			parts := strings.Split(subscriptionID, "-")
-			if err := n.RegisterScanner(azure.SubscriptionScope, libscanner.New(fmt.Sprintf("sub/%s", parts[:1][0]), subResourceTypes, &azure.ListerOpts{
-				Authorizers:    tenant.Authorizers,
-				TenantID:       tenant.ID,
-				SubscriptionID: subscriptionID,
-				Regions:        parsedConfig.Regions,
-			})); err != nil {
+			if err := n.RegisterScanner(azure.SubscriptionScope,
+				libscanner.New(fmt.Sprintf("sub/%s", parts[:1][0]), subResourceTypes, &azure.ListerOpts{
+					Authorizers:    tenant.Authorizers,
+					TenantID:       tenant.ID,
+					SubscriptionID: subscriptionID,
+					Regions:        parsedConfig.Regions,
+				})); err != nil {
 				return err
 			}
 		}
@@ -185,13 +187,14 @@ func execute(c *cli.Context) error { //nolint:funlen
 	for subscriptionID, resourceGroups := range tenant.ResourceGroups {
 		for _, rg := range resourceGroups {
 			logrus.Debug("registering scanner for resource group")
-			if err := n.RegisterScanner(azure.ResourceGroupScope, libscanner.New(fmt.Sprintf("rg/%s", rg), rgResourceTypes, &azure.ListerOpts{
-				Authorizers:    tenant.Authorizers,
-				TenantID:       tenant.ID,
-				SubscriptionID: subscriptionID,
-				ResourceGroup:  rg,
-				Regions:        parsedConfig.Regions,
-			})); err != nil {
+			if err := n.RegisterScanner(azure.ResourceGroupScope,
+				libscanner.New(fmt.Sprintf("rg/%s", rg), rgResourceTypes, &azure.ListerOpts{
+					Authorizers:    tenant.Authorizers,
+					TenantID:       tenant.ID,
+					SubscriptionID: subscriptionID,
+					ResourceGroup:  rg,
+					Regions:        parsedConfig.Regions,
+				})); err != nil {
 				return err
 			}
 		}

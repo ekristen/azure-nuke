@@ -2,7 +2,6 @@ package resources
 
 import (
 	"context"
-	"github.com/ekristen/azure-nuke/pkg/azure"
 
 	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
@@ -13,6 +12,8 @@ import (
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
+
+	"github.com/ekristen/azure-nuke/pkg/azure"
 )
 
 const AzureADUserResource = "AzureADUser"

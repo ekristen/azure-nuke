@@ -3,7 +3,6 @@ package resources
 import (
 	"context"
 	"fmt"
-	"github.com/ekristen/azure-nuke/pkg/azure"
 	"regexp"
 	"time"
 
@@ -15,6 +14,8 @@ import (
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
+
+	"github.com/ekristen/azure-nuke/pkg/azure"
 )
 
 const SecurityAlertResource = "SecurityAlert"
