@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 	"fmt"
+	"github.com/ekristen/azure-nuke/pkg/azure"
 	"strings"
 
 	"github.com/gotidy/ptr"
@@ -18,8 +19,6 @@ import (
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
-
-	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
 const SubscriptionRoleAssignmentResource = "SubscriptionRoleAssignment"
@@ -27,7 +26,7 @@ const SubscriptionRoleAssignmentResource = "SubscriptionRoleAssignment"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:     SubscriptionRoleAssignmentResource,
-		Scope:    nuke.Subscription,
+		Scope:    azure.SubscriptionScope,
 		Resource: &SubscriptionRoleAssignment{},
 		Lister: &SubscriptionRoleAssignmentLister{
 			roleNameCache:      make(map[*string]*string),
@@ -37,6 +36,8 @@ func init() {
 }
 
 type SubscriptionRoleAssignment struct {
+	*BaseResource `property:",inline"`
+
 	client *armauthorization.RoleAssignmentsClient
 
 	ID               *string `property:"-"`
@@ -78,7 +79,7 @@ type SubscriptionRoleAssignmentLister struct {
 }
 
 func (l *SubscriptionRoleAssignmentLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) { //nolint:gocyclo,funlen
-	opts := o.(*nuke.ListerOpts)
+	opts := o.(*azure.ListerOpts)
 	var resources []resource.Resource
 
 	log := logrus.WithField("r", SubscriptionRoleAssignmentResource).WithField("s", opts.SubscriptionID)
@@ -171,6 +172,9 @@ func (l *SubscriptionRoleAssignmentLister) List(ctx context.Context, o interface
 			roleDefinitionID := roleDefinitionIDParts[len(roleDefinitionIDParts)-1]
 
 			resources = append(resources, &SubscriptionRoleAssignment{
+				BaseResource: &BaseResource{
+					Region: ptr.String("global"),
+				},
 				client:           client,
 				scope:            t.Properties.Scope,
 				subscriptionID:   ptr.String(opts.SubscriptionID),

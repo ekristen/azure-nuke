@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	"github.com/ekristen/azure-nuke/pkg/azure"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -11,8 +12,6 @@ import (
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
-
-	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
 const VirtualNetworkResource = "VirtualNetwork"
@@ -20,7 +19,7 @@ const VirtualNetworkResource = "VirtualNetwork"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:     VirtualNetworkResource,
-		Scope:    nuke.ResourceGroup,
+		Scope:    azure.ResourceGroupScope,
 		Resource: &VirtualNetwork{},
 		Lister:   &VirtualNetworkLister{},
 	})
@@ -30,7 +29,7 @@ type VirtualNetworkLister struct {
 }
 
 func (l VirtualNetworkLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
-	opts := o.(*nuke.ListerOpts)
+	opts := o.(*azure.ListerOpts)
 
 	log := logrus.WithField("r", VirtualNetworkResource).WithField("s", opts.SubscriptionID)
 
@@ -53,11 +52,14 @@ func (l VirtualNetworkLister) List(ctx context.Context, o interface{}) ([]resour
 	for list.NotDone() {
 		for _, g := range list.Values() {
 			resources = append(resources, &VirtualNetwork{
-				client:        client,
-				Name:          g.Name,
-				ResourceGroup: &opts.ResourceGroup,
-				Region:        g.Location,
-				Tags:          g.Tags,
+				BaseResource: &BaseResource{
+					Region:         g.Location,
+					ResourceGroup:  &opts.ResourceGroup,
+					SubscriptionID: &opts.SubscriptionID,
+				},
+				client: client,
+				Name:   g.Name,
+				Tags:   g.Tags,
 			})
 		}
 
@@ -74,12 +76,11 @@ func (l VirtualNetworkLister) List(ctx context.Context, o interface{}) ([]resour
 // ---------------------------------------------
 
 type VirtualNetwork struct {
-	client network.VirtualNetworksClient
+	*BaseResource `property:",inline"`
 
-	Region        *string
-	ResourceGroup *string
-	Name          *string
-	Tags          map[string]*string
+	client network.VirtualNetworksClient
+	Name   *string
+	Tags   map[string]*string
 }
 
 func (r *VirtualNetwork) Remove(ctx context.Context) error {

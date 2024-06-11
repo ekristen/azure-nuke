@@ -1,4 +1,4 @@
-package nuke
+package azure
 
 import (
 	"fmt"
@@ -6,13 +6,13 @@ import (
 
 	libnuke "github.com/ekristen/libnuke/pkg/nuke"
 	"github.com/ekristen/libnuke/pkg/utils"
-
-	"github.com/ekristen/azure-nuke/pkg/azure"
 )
 
+// Prompt is a struct that contains the parameters and tenant details use to craft a unique prompt
+// for the user to confirm the nuke operation.
 type Prompt struct {
 	Parameters *libnuke.Parameters
-	Tenant     *azure.Tenant
+	Tenant     *Tenant
 }
 
 func (p *Prompt) Prompt() error {

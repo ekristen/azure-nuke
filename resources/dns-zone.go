@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	"github.com/ekristen/azure-nuke/pkg/azure"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -11,8 +12,6 @@ import (
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
-
-	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
 const DNSZoneResource = "DNSZone"
@@ -20,7 +19,7 @@ const DNSZoneResource = "DNSZone"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:     DNSZoneResource,
-		Scope:    nuke.ResourceGroup,
+		Scope:    azure.ResourceGroupScope,
 		Resource: &DNSZone{},
 		Lister:   &DNSZoneLister{},
 	})
@@ -30,7 +29,7 @@ type DNSZoneLister struct {
 }
 
 func (l DNSZoneLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
-	opts := o.(*nuke.ListerOpts)
+	opts := o.(*azure.ListerOpts)
 
 	log := logrus.WithFields(logrus.Fields{
 		"r": DNSZoneResource,
@@ -59,12 +58,14 @@ func (l DNSZoneLister) List(ctx context.Context, o interface{}) ([]resource.Reso
 		for _, g := range list.Values() {
 			log.Trace("adding entity to list")
 			resources = append(resources, &DNSZone{
+				BaseResource: &BaseResource{
+					Region:         g.Location,
+					ResourceGroup:  &opts.ResourceGroup,
+					SubscriptionID: &opts.SubscriptionID,
+				},
 				client: client,
-
-				Region:        g.Location,
-				ResourceGroup: &opts.ResourceGroup,
-				Name:          g.Name,
-				Tags:          g.Tags,
+				Name:   g.Name,
+				Tags:   g.Tags,
 			})
 		}
 
@@ -79,12 +80,11 @@ func (l DNSZoneLister) List(ctx context.Context, o interface{}) ([]resource.Reso
 }
 
 type DNSZone struct {
-	client dns.ZonesClient
+	*BaseResource `property:",inline"`
 
-	Region        *string
-	ResourceGroup *string
-	Name          *string
-	Tags          map[string]*string
+	client dns.ZonesClient
+	Name   *string
+	Tags   map[string]*string
 }
 
 func (r *DNSZone) Remove(ctx context.Context) error {

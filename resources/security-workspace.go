@@ -2,8 +2,10 @@ package resources
 
 import (
 	"context"
+	"github.com/ekristen/azure-nuke/pkg/azure"
 	"time"
 
+	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
 	"github.com/Azure/azure-sdk-for-go/services/preview/security/mgmt/v3.0/security" //nolint:staticcheck
@@ -11,8 +13,6 @@ import (
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
-
-	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
 const SecurityWorkspaceResource = "SecurityWorkspace"
@@ -20,17 +20,18 @@ const SecurityWorkspaceResource = "SecurityWorkspace"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:     SecurityWorkspaceResource,
-		Scope:    nuke.Subscription,
+		Scope:    azure.SubscriptionScope,
 		Resource: &SecurityWorkspace{},
 		Lister:   &SecurityWorkspaceLister{},
 	})
 }
 
 type SecurityWorkspace struct {
-	client security.WorkspaceSettingsClient
+	*BaseResource `property:",inline"`
 
-	Name  *string `description:"The name of the workspace"`
-	Scope *string `description:"The scope of the workspace"`
+	client security.WorkspaceSettingsClient
+	Name   *string `description:"The name of the workspace"`
+	Scope  *string `description:"The scope of the workspace"`
 }
 
 func (r *SecurityWorkspace) Remove(ctx context.Context) error {
@@ -52,7 +53,7 @@ type SecurityWorkspaceLister struct {
 }
 
 func (l SecurityWorkspaceLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
-	opts := o.(*nuke.ListerOpts)
+	opts := o.(*azure.ListerOpts)
 
 	log := logrus.
 		WithField("r", SecurityWorkspaceResource).
@@ -78,6 +79,9 @@ func (l SecurityWorkspaceLister) List(ctx context.Context, o interface{}) ([]res
 		log.Trace("listing not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &SecurityWorkspace{
+				BaseResource: &BaseResource{
+					Region: ptr.String("global"),
+				},
 				client: client,
 				Name:   g.Name,
 				Scope:  g.Scope,

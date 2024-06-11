@@ -2,7 +2,10 @@ package resources
 
 import (
 	"context"
+	"fmt"
+	"github.com/ekristen/azure-nuke/pkg/azure"
 
+	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
 	"github.com/hashicorp/go-azure-sdk/sdk/odata"
@@ -11,8 +14,6 @@ import (
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
-
-	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
 const ApplicationFederatedCredentialResource = "ApplicationFederatedCredential"
@@ -20,13 +21,15 @@ const ApplicationFederatedCredentialResource = "ApplicationFederatedCredential"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:     ApplicationFederatedCredentialResource,
-		Scope:    nuke.Tenant,
+		Scope:    azure.TenantScope,
 		Resource: &ApplicationFederatedCredential{},
 		Lister:   &ApplicationFederatedCredentialLister{},
 	})
 }
 
 type ApplicationFederatedCredential struct {
+	*BaseResource `property:",inline"`
+
 	client        *msgraph.ApplicationsClient
 	ID            *string
 	Name          *string
@@ -48,22 +51,23 @@ func (r *ApplicationFederatedCredential) Properties() types.Properties {
 }
 
 func (r *ApplicationFederatedCredential) String() string {
-	return *r.Name
+	return fmt.Sprintf("%s -> %s", *r.AppUniqueName, *r.Name)
 }
+
+// -------------------------------------------------------------------------------------------------------
 
 type ApplicationFederatedCredentialLister struct {
 }
 
 func (l ApplicationFederatedCredentialLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
-	opts := o.(*nuke.ListerOpts)
+	var resources []resource.Resource
+	opts := o.(*azure.ListerOpts)
 
 	log := logrus.WithField("r", ApplicationFederatedCredentialResource).WithField("s", opts.SubscriptionID)
 
 	client := msgraph.NewApplicationsClient()
 	client.BaseClient.Authorizer = opts.Authorizers.Graph
 	client.BaseClient.DisableRetries = true
-
-	resources := make([]resource.Resource, 0)
 
 	log.Trace("attempting to list application federated creds")
 
@@ -84,6 +88,9 @@ func (l ApplicationFederatedCredentialLister) List(ctx context.Context, o interf
 
 		for _, cred := range *creds {
 			resources = append(resources, &ApplicationFederatedCredential{
+				BaseResource: &BaseResource{
+					Region: ptr.String("global"),
+				},
 				client:        client,
 				ID:            cred.ID,
 				Name:          cred.Name,

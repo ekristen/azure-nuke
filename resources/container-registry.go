@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	"github.com/ekristen/azure-nuke/pkg/azure"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -11,8 +12,6 @@ import (
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
-
-	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
 const ContainerRegistryResource = "ContainerRegistry"
@@ -20,19 +19,18 @@ const ContainerRegistryResource = "ContainerRegistry"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:     ContainerRegistryResource,
-		Scope:    nuke.ResourceGroup,
+		Scope:    azure.ResourceGroupScope,
 		Resource: &ContainerRegistry{},
 		Lister:   &ContainerRegistryLister{},
 	})
 }
 
 type ContainerRegistry struct {
-	client containerregistry.RegistriesClient
+	*BaseResource `property:",inline"`
 
-	Region        *string
-	ResourceGroup *string
-	Name          *string
-	Tags          map[string]*string
+	client containerregistry.RegistriesClient
+	Name   *string
+	Tags   map[string]*string
 }
 
 func (r *ContainerRegistry) Remove(ctx context.Context) error {
@@ -52,7 +50,8 @@ type ContainerRegistryLister struct {
 }
 
 func (l ContainerRegistryLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
-	opts := o.(*nuke.ListerOpts)
+	opts := o.(*azure.ListerOpts)
+	var resources []resource.Resource
 
 	log := logrus.WithField("r", ContainerRegistryResource).WithField("s", opts.SubscriptionID)
 
@@ -60,8 +59,6 @@ func (l ContainerRegistryLister) List(ctx context.Context, o interface{}) ([]res
 	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
-
-	resources := make([]resource.Resource, 0)
 
 	log.Trace("attempting to list container registries")
 
@@ -76,11 +73,14 @@ func (l ContainerRegistryLister) List(ctx context.Context, o interface{}) ([]res
 		log.Trace("list not done")
 		for _, entity := range list.Values() {
 			resources = append(resources, &ContainerRegistry{
-				client:        client,
-				Region:        entity.Location,
-				ResourceGroup: &opts.ResourceGroup,
-				Name:          entity.Name,
-				Tags:          entity.Tags,
+				BaseResource: &BaseResource{
+					Region:         entity.Location,
+					ResourceGroup:  &opts.ResourceGroup,
+					SubscriptionID: &opts.SubscriptionID,
+				},
+				client: client,
+				Name:   entity.Name,
+				Tags:   entity.Tags,
 			})
 		}
 

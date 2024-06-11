@@ -2,8 +2,10 @@ package resources
 
 import (
 	"context"
+	"github.com/ekristen/azure-nuke/pkg/azure"
 	"time"
 
+	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
 	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns" //nolint:staticcheck
@@ -11,8 +13,6 @@ import (
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
-
-	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
 const PrivateDNSZoneResource = "PrivateDNSZone"
@@ -20,18 +20,18 @@ const PrivateDNSZoneResource = "PrivateDNSZone"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:     PrivateDNSZoneResource,
-		Scope:    nuke.Subscription,
+		Scope:    azure.SubscriptionScope,
 		Resource: &PrivateDNSZone{},
 		Lister:   &PrivateDNSZoneLister{},
 	})
 }
 
 type PrivateDNSZone struct {
-	client        privatedns.PrivateZonesClient
-	Region        *string
-	ResourceGroup *string
-	Name          *string
-	Tags          map[string]*string
+	*BaseResource `property:",inline"`
+
+	client privatedns.PrivateZonesClient
+	Name   *string
+	Tags   map[string]*string
 }
 
 func (r *PrivateDNSZone) Remove(ctx context.Context) error {
@@ -51,7 +51,8 @@ type PrivateDNSZoneLister struct {
 }
 
 func (l PrivateDNSZoneLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
-	opts := o.(*nuke.ListerOpts)
+	var resources []resource.Resource
+	opts := o.(*azure.ListerOpts)
 
 	log := logrus.WithFields(logrus.Fields{
 		"r": PrivateDNSZoneResource,
@@ -65,8 +66,6 @@ func (l PrivateDNSZoneLister) List(ctx context.Context, o interface{}) ([]resour
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
 
-	resources := make([]resource.Resource, 0)
-
 	list, err := client.List(ctx, nil)
 	if err != nil {
 		log.WithError(err).Error("unable to list")
@@ -79,12 +78,16 @@ func (l PrivateDNSZoneLister) List(ctx context.Context, o interface{}) ([]resour
 		log.WithField("count", len(list.Values())).Trace("list not done")
 		for _, g := range list.Values() {
 			log.Trace("adding entity to list")
+
 			resources = append(resources, &PrivateDNSZone{
-				client:        client,
-				Region:        g.Location,
-				ResourceGroup: &opts.ResourceGroup,
-				Name:          g.Name,
-				Tags:          g.Tags,
+				BaseResource: &BaseResource{
+					Region:         g.Location,
+					ResourceGroup:  azure.GetResourceGroupFromID(*g.ID),
+					SubscriptionID: ptr.String(opts.SubscriptionID),
+				},
+				client: client,
+				Name:   g.Name,
+				Tags:   g.Tags,
 			})
 		}
 

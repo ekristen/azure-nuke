@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	"github.com/ekristen/azure-nuke/pkg/azure"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -11,8 +12,6 @@ import (
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
-
-	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
 const SSHPublicKeyResource = "SSHPublicKey"
@@ -20,20 +19,18 @@ const SSHPublicKeyResource = "SSHPublicKey"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:     SSHPublicKeyResource,
-		Scope:    nuke.Subscription,
+		Scope:    azure.SubscriptionScope,
 		Resource: &SSHPublicKey{},
 		Lister:   &SSHPublicKeyLister{},
 	})
 }
 
 type SSHPublicKey struct {
-	client compute.SSHPublicKeysClient
+	*BaseResource `property:",inline"`
 
-	Region         *string
-	SubscriptionID *string
-	ResourceGroup  *string
-	Name           *string
-	Tags           map[string]*string
+	client compute.SSHPublicKeysClient
+	Name   *string
+	Tags   map[string]*string
 }
 
 func (r *SSHPublicKey) Remove(ctx context.Context) error {
@@ -55,7 +52,7 @@ type SSHPublicKeyLister struct {
 }
 
 func (l SSHPublicKeyLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
-	opts := o.(*nuke.ListerOpts)
+	opts := o.(*azure.ListerOpts)
 
 	log := logrus.WithField("r", SSHPublicKeyResource).WithField("s", opts.SubscriptionID)
 
@@ -79,11 +76,14 @@ func (l SSHPublicKeyLister) List(ctx context.Context, o interface{}) ([]resource
 		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &SSHPublicKey{
-				client:        client,
-				Name:          g.Name,
-				ResourceGroup: nuke.GetResourceGroupFromID(*g.ID),
-				Region:        g.Location,
-				Tags:          g.Tags,
+				BaseResource: &BaseResource{
+					Region:         &opts.Region,
+					SubscriptionID: &opts.SubscriptionID,
+					ResourceGroup:  azure.GetResourceGroupFromID(*g.ID),
+				},
+				client: client,
+				Name:   g.Name,
+				Tags:   g.Tags,
 			})
 		}
 

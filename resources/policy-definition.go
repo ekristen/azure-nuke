@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	"github.com/ekristen/azure-nuke/pkg/azure"
 	"time"
 
 	"github.com/gotidy/ptr"
@@ -12,8 +13,6 @@ import (
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
-
-	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
 const PolicyDefinitionResource = "PolicyDefinition"
@@ -21,13 +20,15 @@ const PolicyDefinitionResource = "PolicyDefinition"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:     PolicyDefinitionResource,
-		Scope:    nuke.Subscription,
+		Scope:    azure.SubscriptionScope,
 		Resource: &PolicyDefinition{},
 		Lister:   &PolicyDefinitionLister{},
 	})
 }
 
 type PolicyDefinition struct {
+	*BaseResource `property:",inline"`
+
 	client      policy.DefinitionsClient
 	Name        *string
 	DisplayName string
@@ -51,7 +52,7 @@ type PolicyDefinitionLister struct {
 }
 
 func (l PolicyDefinitionLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
-	opts := o.(*nuke.ListerOpts)
+	opts := o.(*azure.ListerOpts)
 
 	log := logrus.WithField("r", PolicyDefinitionResource).WithField("s", opts.SubscriptionID)
 
@@ -82,6 +83,9 @@ func (l PolicyDefinitionLister) List(ctx context.Context, o interface{}) ([]reso
 			}
 
 			resources = append(resources, &PolicyDefinition{
+				BaseResource: &BaseResource{
+					Region: ptr.String("global"),
+				},
 				client:      client,
 				Name:        g.Name,
 				DisplayName: ptr.ToString(g.DisplayName),

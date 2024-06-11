@@ -3,8 +3,10 @@ package resources
 import (
 	"context"
 	"fmt"
+	"github.com/ekristen/azure-nuke/pkg/azure"
 	"strings"
 
+	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/security/armsecurity"
@@ -13,8 +15,6 @@ import (
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
-
-	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
 const SecurityAssessmentResource = "SecurityAssessment"
@@ -22,15 +22,16 @@ const SecurityAssessmentResource = "SecurityAssessment"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:     SecurityAssessmentResource,
-		Scope:    nuke.Subscription,
+		Scope:    azure.SubscriptionScope,
 		Resource: &SecurityAssessment{},
 		Lister:   &SecurityAssessmentLister{},
 	})
 }
 
 type SecurityAssessment struct {
-	client *armsecurity.AssessmentsClient
+	*BaseResource `property:",inline"`
 
+	client     *armsecurity.AssessmentsClient
 	ID         *string
 	ResourceID *string
 	Name       *string
@@ -60,7 +61,7 @@ type SecurityAssessmentLister struct {
 }
 
 func (l SecurityAssessmentLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
-	opts := o.(*nuke.ListerOpts)
+	opts := o.(*azure.ListerOpts)
 
 	log := logrus.
 		WithField("r", SecurityAssessmentResource).
@@ -95,8 +96,11 @@ func (l SecurityAssessmentLister) List(ctx context.Context, o interface{}) ([]re
 
 			parts := strings.Split(to.String(v.ID), "/providers/Microsoft.Security")
 			resources = append(resources, &SecurityAssessment{
+				BaseResource: &BaseResource{
+					Region: ptr.String("global"),
+				},
 				client:     client,
-				ResourceID: to.StringPtr(parts[0]),
+				ResourceID: ptr.String(parts[0]),
 				ID:         v.ID,
 				Name:       v.Name,
 			})

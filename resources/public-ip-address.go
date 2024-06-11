@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	"github.com/ekristen/azure-nuke/pkg/azure"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -11,8 +12,6 @@ import (
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
-
-	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
 const PublicIPAddressesResource = "PublicIPAddresses"
@@ -20,18 +19,18 @@ const PublicIPAddressesResource = "PublicIPAddresses"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:     PublicIPAddressesResource,
-		Scope:    nuke.ResourceGroup,
+		Scope:    azure.ResourceGroupScope,
 		Resource: &PublicIPAddresses{},
 		Lister:   &PublicIPAddressesLister{},
 	})
 }
 
 type PublicIPAddresses struct {
-	client        network.PublicIPAddressesClient
-	Region        *string
-	ResourceGroup *string
-	Name          *string
-	Tags          map[string]*string
+	*BaseResource `property:",inline"`
+
+	client network.PublicIPAddressesClient
+	Name   *string
+	Tags   map[string]*string
 }
 
 func (r *PublicIPAddresses) Remove(ctx context.Context) error {
@@ -51,7 +50,7 @@ type PublicIPAddressesLister struct {
 }
 
 func (l PublicIPAddressesLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
-	opts := o.(*nuke.ListerOpts)
+	opts := o.(*azure.ListerOpts)
 
 	log := logrus.WithField("r", PublicIPAddressesResource).WithField("s", opts.SubscriptionID)
 
@@ -75,11 +74,14 @@ func (l PublicIPAddressesLister) List(ctx context.Context, o interface{}) ([]res
 		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &PublicIPAddresses{
-				client:        client,
-				Region:        g.Location,
-				ResourceGroup: &opts.ResourceGroup,
-				Name:          g.Name,
-				Tags:          g.Tags,
+				BaseResource: &BaseResource{
+					Region:         g.Location,
+					ResourceGroup:  &opts.ResourceGroup,
+					SubscriptionID: &opts.SubscriptionID,
+				},
+				client: client,
+				Name:   g.Name,
+				Tags:   g.Tags,
 			})
 		}
 

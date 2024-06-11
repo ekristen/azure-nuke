@@ -2,8 +2,10 @@ package resources
 
 import (
 	"context"
+	"github.com/ekristen/azure-nuke/pkg/azure"
 	"time"
 
+	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonids"
@@ -13,8 +15,6 @@ import (
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
-
-	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
 const ManagementLockResource = "ManagementLock"
@@ -22,21 +22,20 @@ const ManagementLockResource = "ManagementLock"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:     ManagementLockResource,
-		Scope:    nuke.ResourceGroup,
+		Scope:    azure.ResourceGroupScope,
 		Resource: &ManagementLock{},
 		Lister:   &ManagementLockLister{},
 	})
 }
 
 type ManagementLock struct {
-	client         *managementlocks.ManagementLocksClient
-	ID             *string `property:"-"`
-	Scope          string  `property:"-"`
-	Name           *string
-	LockLevel      string
-	Region         *string
-	ResourceGroup  *string
-	SubscriptionID *string
+	*BaseResource `property:",inline"`
+
+	client    *managementlocks.ManagementLocksClient
+	ID        *string `property:"-"`
+	Scope     string  `property:"-"`
+	Name      *string
+	LockLevel string
 
 	scopedLockID *managementlocks.ScopedLockId
 }
@@ -61,7 +60,7 @@ func (r *ManagementLock) String() string {
 type ManagementLockLister struct{}
 
 func (l ManagementLockLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
-	opts := o.(*nuke.ListerOpts)
+	opts := o.(*azure.ListerOpts)
 
 	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(30*time.Second))
 	defer cancel()
@@ -93,13 +92,16 @@ func (l ManagementLockLister) List(ctx context.Context, o interface{}) ([]resour
 		}
 
 		resources = append(resources, &ManagementLock{
-			client:         client,
-			ID:             lock.Id,
-			Name:           lock.Name,
-			LockLevel:      string(lock.Properties.Level),
-			ResourceGroup:  &opts.ResourceGroup,
-			SubscriptionID: &opts.SubscriptionID,
-			scopedLockID:   scopedLockID,
+			BaseResource: &BaseResource{
+				Region:         ptr.String("global"),
+				ResourceGroup:  &opts.ResourceGroup,
+				SubscriptionID: &opts.SubscriptionID,
+			},
+			client:       client,
+			scopedLockID: scopedLockID,
+			ID:           lock.Id,
+			Name:         lock.Name,
+			LockLevel:    string(lock.Properties.Level),
 		})
 	}
 

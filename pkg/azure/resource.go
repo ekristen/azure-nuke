@@ -1,17 +1,15 @@
-package nuke
+package azure
 
 import (
 	"regexp"
 
 	"github.com/ekristen/libnuke/pkg/registry"
-
-	"github.com/ekristen/azure-nuke/pkg/azure"
 )
 
 const (
-	Tenant        registry.Scope = "tenant"
-	Subscription  registry.Scope = "subscription"
-	ResourceGroup registry.Scope = "resource-group"
+	TenantScope        registry.Scope = "tenant"
+	SubscriptionScope  registry.Scope = "subscription"
+	ResourceGroupScope registry.Scope = "resource-group"
 )
 
 var (
@@ -19,10 +17,12 @@ var (
 )
 
 type ListerOpts struct {
-	Authorizers    *azure.Authorizers
+	Authorizers    *Authorizers
 	TenantID       string
 	SubscriptionID string
 	ResourceGroup  string
+	ResourceGroups []string
+	Region         string
 	Regions        []string
 }
 

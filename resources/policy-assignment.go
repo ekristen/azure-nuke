@@ -2,8 +2,10 @@ package resources
 
 import (
 	"context"
+	"github.com/ekristen/azure-nuke/pkg/azure"
 	"time"
 
+	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
 	"github.com/Azure/azure-sdk-for-go/services/preview/resources/mgmt/2021-06-01-preview/policy" //nolint:staticcheck
@@ -11,8 +13,6 @@ import (
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
-
-	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
 const PolicyAssignmentResource = "PolicyAssignment"
@@ -20,13 +20,15 @@ const PolicyAssignmentResource = "PolicyAssignment"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:     PolicyAssignmentResource,
-		Scope:    nuke.Subscription,
+		Scope:    azure.SubscriptionScope,
 		Resource: &PolicyAssignment{},
 		Lister:   &PolicyAssignmentLister{},
 	})
 }
 
 type PolicyAssignment struct {
+	*BaseResource `property:",inline"`
+
 	client          policy.AssignmentsClient
 	Name            string
 	Scope           string
@@ -50,7 +52,7 @@ type PolicyAssignmentLister struct {
 }
 
 func (l PolicyAssignmentLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
-	opts := o.(*nuke.ListerOpts)
+	opts := o.(*azure.ListerOpts)
 
 	log := logrus.WithField("r", PolicyAssignmentResource).WithField("s", opts.SubscriptionID)
 
@@ -74,6 +76,9 @@ func (l PolicyAssignmentLister) List(ctx context.Context, o interface{}) ([]reso
 		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &PolicyAssignment{
+				BaseResource: &BaseResource{
+					Region: ptr.String("global"),
+				},
 				client:          client,
 				Name:            *g.Name,
 				Scope:           *g.Scope,

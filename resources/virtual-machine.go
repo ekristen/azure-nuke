@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	"github.com/ekristen/azure-nuke/pkg/azure"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -11,8 +12,6 @@ import (
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
-
-	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
 const VirtualMachineResource = "VirtualMachine"
@@ -20,19 +19,18 @@ const VirtualMachineResource = "VirtualMachine"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:     VirtualMachineResource,
-		Scope:    nuke.ResourceGroup,
+		Scope:    azure.ResourceGroupScope,
 		Resource: &VirtualMachine{},
 		Lister:   &VirtualMachineLister{},
 	})
 }
 
 type VirtualMachine struct {
-	client compute.VirtualMachinesClient
+	*BaseResource `property:",inline"`
 
-	Region        *string
-	ResourceGroup *string
-	Name          *string
-	Tags          map[string]*string
+	client compute.VirtualMachinesClient
+	Name   *string
+	Tags   map[string]*string
 }
 
 func (r *VirtualMachine) Remove(ctx context.Context) error {
@@ -54,7 +52,7 @@ type VirtualMachineLister struct {
 }
 
 func (l VirtualMachineLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
-	opts := o.(*nuke.ListerOpts)
+	opts := o.(*azure.ListerOpts)
 
 	log := logrus.WithField("r", VirtualMachineResource).WithField("s", opts.SubscriptionID)
 
@@ -78,11 +76,14 @@ func (l VirtualMachineLister) List(ctx context.Context, o interface{}) ([]resour
 		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &VirtualMachine{
-				client:        client,
-				Name:          g.Name,
-				ResourceGroup: &opts.ResourceGroup,
-				Region:        g.Location,
-				Tags:          g.Tags,
+				BaseResource: &BaseResource{
+					Region:         g.Location,
+					ResourceGroup:  &opts.ResourceGroup,
+					SubscriptionID: &opts.SubscriptionID,
+				},
+				client: client,
+				Name:   g.Name,
+				Tags:   g.Tags,
 			})
 		}
 
