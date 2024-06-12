@@ -12,7 +12,7 @@ import (
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
 
-	"github.com/ekristen/azure-nuke/pkg/nuke"
+	"github.com/ekristen/azure-nuke/pkg/azure"
 )
 
 const StorageAccountResource = "StorageAccount"
@@ -20,7 +20,7 @@ const StorageAccountResource = "StorageAccount"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:     StorageAccountResource,
-		Scope:    nuke.ResourceGroup,
+		Scope:    azure.ResourceGroupScope,
 		Resource: &StorageAccount{},
 		Lister:   &StorageAccountLister{},
 		DependsOn: []string{
@@ -30,16 +30,15 @@ func init() {
 }
 
 type StorageAccount struct {
-	client storage.AccountsClient
+	*BaseResource `property:",inline"`
 
-	Name          *string
-	ResourceGroup string
-	Region        *string
-	Tags          map[string]*string
+	client storage.AccountsClient
+	Name   *string
+	Tags   map[string]*string
 }
 
 func (r *StorageAccount) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, r.ResourceGroup, *r.Name)
+	_, err := r.client.Delete(ctx, *r.ResourceGroup, *r.Name)
 	return err
 }
 
@@ -57,7 +56,7 @@ type StorageAccountLister struct {
 }
 
 func (l StorageAccountLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
-	opts := o.(*nuke.ListerOpts)
+	opts := o.(*azure.ListerOpts)
 
 	log := logrus.WithField("r", StorageAccountResource).WithField("s", opts.SubscriptionID)
 
@@ -81,11 +80,14 @@ func (l StorageAccountLister) List(ctx context.Context, o interface{}) ([]resour
 		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &StorageAccount{
-				client:        client,
-				Name:          g.Name,
-				ResourceGroup: opts.ResourceGroup,
-				Region:        g.Location,
-				Tags:          g.Tags,
+				BaseResource: &BaseResource{
+					Region:         g.Location,
+					ResourceGroup:  &opts.ResourceGroup,
+					SubscriptionID: &opts.SubscriptionID,
+				},
+				client: client,
+				Name:   g.Name,
+				Tags:   g.Tags,
 			})
 		}
 

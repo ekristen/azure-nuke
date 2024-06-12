@@ -17,7 +17,7 @@ import (
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
 
-	"github.com/ekristen/azure-nuke/pkg/nuke"
+	"github.com/ekristen/azure-nuke/pkg/azure"
 )
 
 const RecoveryServicesBackupProtectedItemResource = "RecoveryServicesBackupProtectedItem"
@@ -25,18 +25,18 @@ const RecoveryServicesBackupProtectedItemResource = "RecoveryServicesBackupProte
 func init() {
 	registry.Register(&registry.Registration{
 		Name:     RecoveryServicesBackupProtectedItemResource,
-		Scope:    nuke.ResourceGroup,
+		Scope:    azure.ResourceGroupScope,
 		Resource: &RecoveryServicesBackupProtectedItem{},
 		Lister:   &RecoveryServicesBackupProtectedItemLister{},
 	})
 }
 
 type RecoveryServicesBackupProtectedItem struct {
+	*BaseResource `property:",inline"`
+
 	client     *armrecoveryservicesbackup.BackupProtectedItemsClient
 	itemClient *armrecoveryservicesbackup.ProtectedItemsClient
 
-	Region        *string
-	ResourceGroup *string
 	ID            *string
 	Name          *string
 	VaultName     *string
@@ -67,7 +67,7 @@ type RecoveryServicesBackupProtectedItemLister struct {
 }
 
 func (l RecoveryServicesBackupProtectedItemLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
-	opts := o.(*nuke.ListerOpts)
+	opts := o.(*azure.ListerOpts)
 
 	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(30*time.Second))
 	defer cancel()
@@ -122,13 +122,17 @@ func (l RecoveryServicesBackupProtectedItemLister) List(ctx context.Context, o i
 					}
 
 					resources = append(resources, &RecoveryServicesBackupProtectedItem{
-						client:        client,
-						itemClient:    protectedItems,
-						VaultName:     v.Name,
-						ID:            i.ID,
-						Name:          i.Name,
-						Region:        i.Location,
-						ResourceGroup: to.StringPtr(opts.ResourceGroup),
+						BaseResource: &BaseResource{
+							Region:         i.Location,
+							ResourceGroup:  &opts.ResourceGroup,
+							SubscriptionID: &opts.SubscriptionID,
+						},
+						client:     client,
+						itemClient: protectedItems,
+						VaultName:  v.Name,
+						ID:         i.ID,
+						Name:       i.Name,
+
 						ContainerName: to.StringPtr(containerName),
 						backupFabric:  to.StringPtr("Azure"), // TODO: this should be calculated
 					})

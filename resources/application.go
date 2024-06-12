@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 
+	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
 	"github.com/hashicorp/go-azure-sdk/sdk/odata"
@@ -12,7 +13,7 @@ import (
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
 
-	"github.com/ekristen/azure-nuke/pkg/nuke"
+	"github.com/ekristen/azure-nuke/pkg/azure"
 )
 
 const ApplicationResource = "Application"
@@ -20,7 +21,7 @@ const ApplicationResource = "Application"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:     ApplicationResource,
-		Scope:    nuke.Tenant,
+		Scope:    azure.TenantScope,
 		Resource: &Application{},
 		Lister:   &ApplicationLister{},
 	})
@@ -30,15 +31,14 @@ type ApplicationLister struct {
 }
 
 func (l ApplicationLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
-	opts := o.(*nuke.ListerOpts)
+	var resources []resource.Resource
+	opts := o.(*azure.ListerOpts)
 
 	log := logrus.WithField("r", ApplicationResource).WithField("s", opts.SubscriptionID)
 
 	client := msgraph.NewApplicationsClient()
 	client.BaseClient.Authorizer = opts.Authorizers.Graph
 	client.BaseClient.DisableRetries = true
-
-	resources := make([]resource.Resource, 0)
 
 	log.Trace("attempting to list applications")
 
@@ -53,6 +53,9 @@ func (l ApplicationLister) List(ctx context.Context, o interface{}) ([]resource.
 		entity := &(*entities)[i]
 
 		resources = append(resources, &Application{
+			BaseResource: &BaseResource{
+				Region: ptr.String("global"),
+			},
 			client: client,
 			ID:     entity.ID(),
 			Name:   entity.DisplayName,
@@ -65,6 +68,8 @@ func (l ApplicationLister) List(ctx context.Context, o interface{}) ([]resource.
 }
 
 type Application struct {
+	*BaseResource `property:",inline"`
+
 	client *msgraph.ApplicationsClient
 	ID     *string
 	Name   *string

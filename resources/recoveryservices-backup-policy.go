@@ -17,7 +17,7 @@ import (
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
 
-	"github.com/ekristen/azure-nuke/pkg/nuke"
+	"github.com/ekristen/azure-nuke/pkg/azure"
 )
 
 const RecoveryServicesBackupPolicyResource = "RecoveryServicesBackupPolicy"
@@ -25,7 +25,7 @@ const RecoveryServicesBackupPolicyResource = "RecoveryServicesBackupPolicy"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:     RecoveryServicesBackupPolicyResource,
-		Scope:    nuke.ResourceGroup,
+		Scope:    azure.ResourceGroupScope,
 		Resource: &RecoveryServicesBackupPolicy{},
 		Lister:   &RecoveryServicesBackupPolicyLister{},
 		DependsOn: []string{
@@ -35,13 +35,13 @@ func init() {
 }
 
 type RecoveryServicesBackupPolicy struct {
+	*BaseResource `property:",inline"`
+
 	client            backuppolicies.BackupPoliciesClient
 	protectionsClient protectionpolicies.ProtectionPoliciesClient
 
-	Region        *string
-	ResourceGroup string
-	ID            *string
-	Name          *string
+	ID   *string
+	Name *string
 
 	backupPolicyID protectionpolicies.BackupPolicyId
 }
@@ -67,7 +67,7 @@ type RecoveryServicesBackupPolicyLister struct {
 }
 
 func (l RecoveryServicesBackupPolicyLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
-	opts := o.(*nuke.ListerOpts)
+	opts := o.(*azure.ListerOpts)
 
 	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(30*time.Second))
 	defer cancel()
@@ -119,12 +119,15 @@ func (l RecoveryServicesBackupPolicyLister) List(ctx context.Context, o interfac
 
 		for _, item := range items.Items {
 			resources = append(resources, &RecoveryServicesBackupPolicy{
+				BaseResource: &BaseResource{
+					Region:         item.Location,
+					ResourceGroup:  &opts.ResourceGroup,
+					SubscriptionID: &opts.SubscriptionID,
+				},
 				client:            client,
 				protectionsClient: protectionsClient,
 				ID:                item.Id,
 				Name:              item.Name,
-				Region:            item.Location,
-				ResourceGroup:     opts.ResourceGroup,
 				backupPolicyID: protectionpolicies.NewBackupPolicyID(
 					opts.SubscriptionID, opts.ResourceGroup, ptr.ToString(v.Name), ptr.ToString(item.Name)),
 			})

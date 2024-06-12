@@ -9,10 +9,9 @@ import (
 
 	"github.com/ekristen/libnuke/pkg/registry"
 
+	"github.com/ekristen/azure-nuke/pkg/azure"
 	"github.com/ekristen/azure-nuke/pkg/commands/global"
 	"github.com/ekristen/azure-nuke/pkg/common"
-	"github.com/ekristen/azure-nuke/pkg/nuke"
-
 	_ "github.com/ekristen/azure-nuke/resources"
 )
 
@@ -31,11 +30,11 @@ func execute(c *cli.Context) error {
 		} else {
 			color.New(color.Bold).Printf("%-55s", name)
 			c := color.FgGreen
-			if reg.Scope == nuke.Tenant {
+			if reg.Scope == azure.TenantScope {
 				c = color.FgHiGreen
-			} else if reg.Scope == nuke.Subscription {
+			} else if reg.Scope == azure.SubscriptionScope {
 				c = color.FgHiBlue
-			} else if reg.Scope == nuke.ResourceGroup {
+			} else if reg.Scope == azure.ResourceGroupScope {
 				c = color.FgHiMagenta
 			}
 			color.New(c).Printf(fmt.Sprintf("%s\n", string(reg.Scope)))

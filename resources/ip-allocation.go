@@ -12,7 +12,7 @@ import (
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
 
-	"github.com/ekristen/azure-nuke/pkg/nuke"
+	"github.com/ekristen/azure-nuke/pkg/azure"
 )
 
 const IPAllocationResource = "IPAllocation"
@@ -20,7 +20,7 @@ const IPAllocationResource = "IPAllocation"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:     IPAllocationResource,
-		Scope:    nuke.ResourceGroup,
+		Scope:    azure.ResourceGroupScope,
 		Resource: &IPAllocation{},
 		Lister:   &IPAllocationLister{},
 	})
@@ -30,7 +30,7 @@ type IPAllocationLister struct {
 }
 
 func (l IPAllocationLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
-	opts := o.(*nuke.ListerOpts)
+	opts := o.(*azure.ListerOpts)
 
 	log := logrus.WithField("r", IPAllocationResource).WithField("s", opts.SubscriptionID)
 
@@ -54,11 +54,15 @@ func (l IPAllocationLister) List(ctx context.Context, o interface{}) ([]resource
 		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &IPAllocation{
-				client:        client,
-				Region:        g.Location,
-				ResourceGroup: &opts.ResourceGroup,
-				Name:          g.Name,
-				Tags:          g.Tags,
+				BaseResource: &BaseResource{
+					Region:         g.Location,
+					ResourceGroup:  &opts.ResourceGroup,
+					SubscriptionID: &opts.SubscriptionID,
+				},
+				client: client,
+
+				Name: g.Name,
+				Tags: g.Tags,
 			})
 		}
 
@@ -73,12 +77,11 @@ func (l IPAllocationLister) List(ctx context.Context, o interface{}) ([]resource
 }
 
 type IPAllocation struct {
-	client network.IPAllocationsClient
+	*BaseResource `property:",inline"`
 
-	Region        *string
-	ResourceGroup *string
-	Name          *string
-	Tags          map[string]*string
+	client network.IPAllocationsClient
+	Name   *string
+	Tags   map[string]*string
 }
 
 func (r *IPAllocation) Remove(ctx context.Context) error {

@@ -12,7 +12,7 @@ import (
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
 
-	"github.com/ekristen/azure-nuke/pkg/nuke"
+	"github.com/ekristen/azure-nuke/pkg/azure"
 )
 
 const AppServicePlanResource = "AppServicePlan"
@@ -20,7 +20,7 @@ const AppServicePlanResource = "AppServicePlan"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:     AppServicePlanResource,
-		Scope:    nuke.ResourceGroup,
+		Scope:    azure.ResourceGroupScope,
 		Resource: &AppServicePlan{},
 		Lister:   &AppServicePlanLister{},
 	})
@@ -30,7 +30,7 @@ type AppServicePlanLister struct {
 }
 
 func (l AppServicePlanLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
-	opts := o.(*nuke.ListerOpts)
+	opts := o.(*azure.ListerOpts)
 
 	log := logrus.WithField("r", AppServicePlanResource).WithField("s", opts.SubscriptionID)
 
@@ -54,9 +54,11 @@ func (l AppServicePlanLister) List(ctx context.Context, o interface{}) ([]resour
 		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &AppServicePlan{
-				client:        client,
-				Name:          *g.Name,
-				ResourceGroup: opts.ResourceGroup,
+				BaseResource: &BaseResource{
+					ResourceGroup: &opts.ResourceGroup,
+				},
+				client: client,
+				Name:   *g.Name,
 			})
 		}
 
@@ -71,13 +73,14 @@ func (l AppServicePlanLister) List(ctx context.Context, o interface{}) ([]resour
 }
 
 type AppServicePlan struct {
-	client        web.AppServicePlansClient
-	Name          string
-	ResourceGroup string
+	*BaseResource `property:",inline"`
+
+	client web.AppServicePlansClient
+	Name   string
 }
 
 func (r *AppServicePlan) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, r.ResourceGroup, r.Name)
+	_, err := r.client.Delete(ctx, r.GetResourceGroup(), r.Name)
 	return err
 }
 

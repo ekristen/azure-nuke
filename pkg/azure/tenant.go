@@ -20,7 +20,7 @@ type Tenant struct {
 	SubscriptionIds []string
 	TenantIds       []string
 
-	Locations      map[string][]string
+	Regions        map[string][]string
 	ResourceGroups map[string][]string
 }
 
@@ -39,7 +39,7 @@ func NewTenant( //nolint:gocyclo
 		ID:              tenantID,
 		TenantIds:       make([]string, 0),
 		SubscriptionIds: make([]string, 0),
-		Locations:       make(map[string][]string),
+		Regions:         make(map[string][]string),
 		ResourceGroups:  make(map[string][]string),
 	}
 

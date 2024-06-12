@@ -16,7 +16,7 @@ import (
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
 
-	"github.com/ekristen/azure-nuke/pkg/nuke"
+	"github.com/ekristen/azure-nuke/pkg/azure"
 )
 
 const BudgetResource = "Budget"
@@ -24,28 +24,27 @@ const BudgetResource = "Budget"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:     BudgetResource,
-		Scope:    nuke.Subscription,
+		Scope:    azure.SubscriptionScope,
 		Resource: &Budget{},
 		Lister:   &BudgetLister{},
 	})
 }
 
 type Budget struct {
-	client *budgets.BudgetsClient
+	*BaseResource `property:",inline"`
 
-	ID             *string
-	Name           *string
-	SubscriptionID *string
+	client *budgets.BudgetsClient
+	ID     *string
+	Name   *string
 }
 
 type BudgetLister struct{}
 
 func (l BudgetLister) List(pctx context.Context, o interface{}) ([]resource.Resource, error) {
-	opts := o.(*nuke.ListerOpts)
+	opts := o.(*azure.ListerOpts)
+	var resources []resource.Resource
 
 	log := logrus.WithField("r", BudgetResource).WithField("s", opts.SubscriptionID)
-
-	resources := make([]resource.Resource, 0)
 
 	client, err := budgets.NewBudgetsClientWithBaseURI(environments.AzurePublic().ResourceManager)
 	if err != nil {
@@ -69,10 +68,13 @@ func (l BudgetLister) List(pctx context.Context, o interface{}) ([]resource.Reso
 
 	for _, entry := range *list.Model {
 		resources = append(resources, &Budget{
-			client:         client,
-			ID:             entry.Id,
-			Name:           entry.Name,
-			SubscriptionID: ptr.String(opts.SubscriptionID), // note: this is just the guid
+			BaseResource: &BaseResource{
+				Region:         ptr.String("global"),
+				SubscriptionID: ptr.String(opts.SubscriptionID), // note: this is just the guid
+			},
+			client: client,
+			ID:     entry.Id,
+			Name:   entry.Name,
 		})
 	}
 

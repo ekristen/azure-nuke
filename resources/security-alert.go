@@ -15,7 +15,7 @@ import (
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
 
-	"github.com/ekristen/azure-nuke/pkg/nuke"
+	"github.com/ekristen/azure-nuke/pkg/azure"
 )
 
 const SecurityAlertResource = "SecurityAlert"
@@ -25,18 +25,19 @@ const SecurityAlertLocation = "/Microsoft.Security/locations/(?P<region>.*)/aler
 func init() {
 	registry.Register(&registry.Registration{
 		Name:     SecurityAlertResource,
-		Scope:    nuke.Subscription,
+		Scope:    azure.SubscriptionScope,
 		Resource: &SecurityAlert{},
 		Lister:   &SecurityAlertsLister{},
 	})
 }
 
 type SecurityAlert struct {
+	*BaseResource `property:",inline"`
+
 	client      security.AlertsClient
 	ID          string
 	Name        string
 	DisplayName string
-	Region      string
 	Status      string
 }
 
@@ -51,7 +52,7 @@ func (r *SecurityAlert) Filter() error {
 func (r *SecurityAlert) Remove(ctx context.Context) error {
 	// Note: we cannot actually remove alerts :(
 	// So we just have to dismiss them instead
-	_, err := r.client.UpdateSubscriptionLevelStateToDismiss(ctx, r.Region, r.Name)
+	_, err := r.client.UpdateSubscriptionLevelStateToDismiss(ctx, *r.Region, r.Name)
 	return err
 }
 
@@ -69,7 +70,7 @@ type SecurityAlertsLister struct {
 }
 
 func (l SecurityAlertsLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
-	opts := o.(*nuke.ListerOpts)
+	opts := o.(*azure.ListerOpts)
 
 	log := logrus.
 		WithField("r", SecurityAlertResource).
@@ -98,11 +99,13 @@ func (l SecurityAlertsLister) List(ctx context.Context, o interface{}) ([]resour
 		for _, g := range list.Values() {
 			matches := locationRe.FindStringSubmatch(ptr.ToString(g.ID))
 			resources = append(resources, &SecurityAlert{
+				BaseResource: &BaseResource{
+					Region: ptr.String(matches[1]),
+				},
 				client:      client,
 				ID:          *g.ID,
 				Name:        *g.Name,
 				DisplayName: ptr.ToString(g.AlertDisplayName),
-				Region:      matches[1],
 				Status:      string(g.AlertProperties.Status),
 			})
 		}

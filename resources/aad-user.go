@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 
+	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
 	"github.com/hashicorp/go-azure-sdk/sdk/odata"
@@ -12,7 +13,7 @@ import (
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
 
-	"github.com/ekristen/azure-nuke/pkg/nuke"
+	"github.com/ekristen/azure-nuke/pkg/azure"
 )
 
 const AzureADUserResource = "AzureADUser"
@@ -20,7 +21,7 @@ const AzureADUserResource = "AzureADUser"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:     AzureADUserResource,
-		Scope:    nuke.Tenant,
+		Scope:    azure.TenantScope,
 		Resource: &AzureADUser{},
 		Lister:   &AzureADUserLister{},
 		DependsOn: []string{
@@ -33,15 +34,14 @@ type AzureADUserLister struct {
 }
 
 func (l AzureADUserLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
-	opts := o.(*nuke.ListerOpts)
+	var resources []resource.Resource
+	opts := o.(*azure.ListerOpts)
 
 	log := logrus.WithField("r", AzureADUserResource).WithField("s", opts.SubscriptionID)
 
 	client := msgraph.NewUsersClient()
 	client.BaseClient.Authorizer = opts.Authorizers.Graph
 	client.BaseClient.DisableRetries = true
-
-	resources := make([]resource.Resource, 0)
 
 	log.Trace("attempting to list azure ad users")
 
@@ -56,6 +56,9 @@ func (l AzureADUserLister) List(ctx context.Context, o interface{}) ([]resource.
 		entity := &(*entities)[i]
 
 		resources = append(resources, &AzureADUser{
+			BaseResource: &BaseResource{
+				Region: ptr.String("global"),
+			},
 			client: client,
 			ID:     entity.ID(),
 			Name:   entity.DisplayName,
@@ -67,6 +70,8 @@ func (l AzureADUserLister) List(ctx context.Context, o interface{}) ([]resource.
 }
 
 type AzureADUser struct {
+	*BaseResource `property:",inline"`
+
 	client *msgraph.UsersClient
 	ID     *string `description:"The ID of the Entra ID User"`
 	Name   *string `description:"The DisplayName of the Entra ID User"`

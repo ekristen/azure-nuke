@@ -12,7 +12,7 @@ import (
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
 
-	"github.com/ekristen/azure-nuke/pkg/nuke"
+	"github.com/ekristen/azure-nuke/pkg/azure"
 )
 
 const KeyVaultResource = "KeyVault"
@@ -20,7 +20,7 @@ const KeyVaultResource = "KeyVault"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:     KeyVaultResource,
-		Scope:    nuke.ResourceGroup,
+		Scope:    azure.SubscriptionScope,
 		Resource: &KeyVault{},
 		Lister:   &KeyVaultLister{},
 	})
@@ -30,7 +30,7 @@ type KeyVaultLister struct {
 }
 
 func (l KeyVaultLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
-	opts := o.(*nuke.ListerOpts)
+	opts := o.(*azure.ListerOpts)
 
 	log := logrus.WithField("r", KeyVaultResource).WithField("s", opts.SubscriptionID)
 
@@ -43,7 +43,7 @@ func (l KeyVaultLister) List(ctx context.Context, o interface{}) ([]resource.Res
 
 	log.Trace("attempting to list key vaults")
 
-	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup, nil)
+	list, err := client.ListBySubscription(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -54,12 +54,14 @@ func (l KeyVaultLister) List(ctx context.Context, o interface{}) ([]resource.Res
 		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &KeyVault{
-				client:         client,
-				Region:         g.Location,
-				ResourceGroup:  opts.ResourceGroup,
-				SubscriptionID: opts.SubscriptionID,
-				Name:           g.Name,
-				Tags:           g.Tags,
+				BaseResource: &BaseResource{
+					Region:         g.Location,
+					ResourceGroup:  azure.GetResourceGroupFromID(*g.ID),
+					SubscriptionID: &opts.SubscriptionID,
+				},
+				client: client,
+				Name:   g.Name,
+				Tags:   g.Tags,
 			})
 		}
 
@@ -74,16 +76,15 @@ func (l KeyVaultLister) List(ctx context.Context, o interface{}) ([]resource.Res
 }
 
 type KeyVault struct {
-	client         keyvault.VaultsClient
-	Region         *string
-	ResourceGroup  string
-	SubscriptionID string
-	Name           *string
-	Tags           map[string]*string
+	*BaseResource `property:",inline"`
+
+	client keyvault.VaultsClient
+	Name   *string
+	Tags   map[string]*string
 }
 
 func (r *KeyVault) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, r.ResourceGroup, *r.Name)
+	_, err := r.client.Delete(ctx, *r.ResourceGroup, *r.Name)
 
 	return err
 }

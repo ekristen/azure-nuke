@@ -15,7 +15,7 @@ import (
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
 
-	"github.com/ekristen/azure-nuke/pkg/nuke"
+	"github.com/ekristen/azure-nuke/pkg/azure"
 )
 
 const RecoveryServicesBackupProtectionContainerResource = "RecoveryServicesBackupProtectionContainer"
@@ -23,21 +23,21 @@ const RecoveryServicesBackupProtectionContainerResource = "RecoveryServicesBacku
 func init() {
 	registry.Register(&registry.Registration{
 		Name:     RecoveryServicesBackupProtectionContainerResource,
-		Scope:    nuke.ResourceGroup,
+		Scope:    azure.ResourceGroupScope,
 		Resource: &RecoveryServicesBackupProtectionContainers{},
 		Lister:   &RecoveryServicesBackupProtectionContainersLister{},
 	})
 }
 
 type RecoveryServicesBackupProtectionContainers struct {
-	client        *armrecoveryservicesbackup.BackupProtectionContainersClient
-	pClient       *armrecoveryservicesbackup.ProtectionContainersClient
-	ID            *string
-	Name          *string
-	Region        *string
-	ResourceGroup *string
-	VaultName     *string
-	backupFabric  *string
+	*BaseResource `property:",inline"`
+
+	client       *armrecoveryservicesbackup.BackupProtectionContainersClient
+	pClient      *armrecoveryservicesbackup.ProtectionContainersClient
+	ID           *string
+	Name         *string
+	VaultName    *string
+	backupFabric *string
 }
 
 func (r *RecoveryServicesBackupProtectionContainers) Filter() error {
@@ -61,7 +61,7 @@ type RecoveryServicesBackupProtectionContainersLister struct {
 }
 
 func (l RecoveryServicesBackupProtectionContainersLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
-	opts := o.(*nuke.ListerOpts)
+	opts := o.(*azure.ListerOpts)
 
 	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(30*time.Second))
 	defer cancel()
@@ -115,14 +115,17 @@ func (l RecoveryServicesBackupProtectionContainersLister) List(ctx context.Conte
 
 				for _, i := range page.Value {
 					resources = append(resources, &RecoveryServicesBackupProtectionContainers{
-						client:        client,
-						pClient:       protectedContainers,
-						VaultName:     v.Name,
-						ID:            i.ID,
-						Name:          i.Name,
-						Region:        i.Location,
-						ResourceGroup: to.StringPtr(opts.ResourceGroup),
-						backupFabric:  to.StringPtr("Azure"), // TODO: this should be calculated
+						BaseResource: &BaseResource{
+							Region:         i.Location,
+							ResourceGroup:  &opts.ResourceGroup,
+							SubscriptionID: &opts.SubscriptionID,
+						},
+						client:       client,
+						pClient:      protectedContainers,
+						VaultName:    v.Name,
+						ID:           i.ID,
+						Name:         i.Name,
+						backupFabric: to.StringPtr("Azure"), // TODO: this should be calculated
 					})
 				}
 			}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonids"
@@ -14,7 +15,7 @@ import (
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
 
-	"github.com/ekristen/azure-nuke/pkg/nuke"
+	"github.com/ekristen/azure-nuke/pkg/azure"
 )
 
 const ResourceGroupResource = "ResourceGroup"
@@ -22,7 +23,7 @@ const ResourceGroupResource = "ResourceGroup"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:     ResourceGroupResource,
-		Scope:    nuke.Subscription,
+		Scope:    azure.SubscriptionScope,
 		Resource: &ResourceGroup{},
 		Lister:   &ResourceGroupLister{},
 	})
@@ -30,19 +31,20 @@ func init() {
 
 // ResourceGroup represents an Azure Resource Group.
 type ResourceGroup struct {
-	client         *resourcegroups.ResourceGroupsClient
-	listerOpts     *nuke.ListerOpts
-	Name           *string            `description:"The Name of the resource group."`
-	Region         string             `description:"The region that the resource group belongs to."`
-	SubscriptionID string             `description:"The subscription ID that the resource group belongs to."`
-	Tags           *map[string]string `description:"The tags assigned to the resource group."`
+	*BaseResource `property:",inline"`
+
+	client *resourcegroups.ResourceGroupsClient
+	Name   *string            `description:"The Name of the resource group."`
+	Tags   *map[string]string `description:"The tags assigned to the resource group."`
 }
 
 func (r *ResourceGroup) Remove(ctx context.Context) error {
 	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(30*time.Second))
 	defer cancel()
 
-	_, err := r.client.Delete(ctx, commonids.NewResourceGroupID(r.SubscriptionID, *r.Name), resourcegroups.DefaultDeleteOperationOptions())
+	_, err := r.client.Delete(ctx,
+		commonids.NewResourceGroupID(*r.SubscriptionID, *r.Name),
+		resourcegroups.DefaultDeleteOperationOptions())
 	return err
 }
 
@@ -60,7 +62,7 @@ type ResourceGroupLister struct {
 }
 
 func (l ResourceGroupLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
-	opts := o.(*nuke.ListerOpts)
+	opts := o.(*azure.ListerOpts)
 
 	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(30*time.Second))
 	defer cancel()
@@ -86,12 +88,13 @@ func (l ResourceGroupLister) List(ctx context.Context, o interface{}) ([]resourc
 
 	for _, entity := range *list.Model {
 		resources = append(resources, &ResourceGroup{
-			client:         client,
-			listerOpts:     opts,
-			Name:           entity.Name,
-			Region:         entity.Location,
-			SubscriptionID: opts.SubscriptionID,
-			Tags:           entity.Tags,
+			BaseResource: &BaseResource{
+				Region:         ptr.String(entity.Location),
+				SubscriptionID: ptr.String(opts.SubscriptionID),
+			},
+			client: client,
+			Name:   entity.Name,
+			Tags:   entity.Tags,
 		})
 	}
 

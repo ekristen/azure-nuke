@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 
+	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
 	"github.com/hashicorp/go-azure-sdk/sdk/odata"
@@ -12,7 +13,7 @@ import (
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
 
-	"github.com/ekristen/azure-nuke/pkg/nuke"
+	"github.com/ekristen/azure-nuke/pkg/azure"
 )
 
 const AzureAdGroupResource = "AzureADGroup"
@@ -20,7 +21,7 @@ const AzureAdGroupResource = "AzureADGroup"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:     AzureAdGroupResource,
-		Scope:    nuke.Tenant,
+		Scope:    azure.TenantScope,
 		Resource: AzureAdGroup{},
 		Lister:   &AzureAdGroupLister{},
 	})
@@ -30,7 +31,7 @@ type AzureAdGroupLister struct {
 }
 
 func (l AzureAdGroupLister) List(_ context.Context, o interface{}) ([]resource.Resource, error) {
-	opts := o.(*nuke.ListerOpts)
+	opts := o.(*azure.ListerOpts)
 
 	log := logrus.WithField("r", AzureAdGroupResource).WithField("s", opts.SubscriptionID)
 
@@ -55,6 +56,9 @@ func (l AzureAdGroupLister) List(_ context.Context, o interface{}) ([]resource.R
 		entity := &(*entities)[i]
 
 		resources = append(resources, &AzureAdGroup{
+			BaseResource: &BaseResource{
+				Region: ptr.String("global"),
+			},
 			client: client,
 			ID:     entity.ID(),
 			Name:   entity.DisplayName,
@@ -65,6 +69,8 @@ func (l AzureAdGroupLister) List(_ context.Context, o interface{}) ([]resource.R
 }
 
 type AzureAdGroup struct {
+	*BaseResource `property:",inline"`
+
 	client *msgraph.GroupsClient
 	ID     *string `description:"The ID of the Entra ID Group"`
 	Name   *string `description:"The name of the Entra ID Group"`

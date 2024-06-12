@@ -3,7 +3,6 @@ package resources
 import (
 	"context"
 	"fmt"
-
 	"strings"
 
 	"github.com/gotidy/ptr"
@@ -16,7 +15,7 @@ import (
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
 
-	"github.com/ekristen/azure-nuke/pkg/nuke"
+	"github.com/ekristen/azure-nuke/pkg/azure"
 )
 
 const ServicePrincipalResource = "ServicePrincipal"
@@ -24,13 +23,15 @@ const ServicePrincipalResource = "ServicePrincipal"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:     ServicePrincipalResource,
-		Scope:    nuke.Tenant,
+		Scope:    azure.TenantScope,
 		Resource: &ServicePrincipal{},
 		Lister:   &ServicePrincipalsLister{},
 	})
 }
 
 type ServicePrincipal struct {
+	*BaseResource `property:",inline"`
+
 	client   *msgraph.ServicePrincipalsClient
 	ID       *string
 	Name     *string
@@ -77,15 +78,14 @@ type ServicePrincipalsLister struct {
 }
 
 func (l ServicePrincipalsLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
-	opts := o.(*nuke.ListerOpts)
+	var resources []resource.Resource
+	opts := o.(*azure.ListerOpts)
 
 	log := logrus.WithField("r", ServicePrincipalResource).WithField("s", opts.SubscriptionID)
 
 	client := msgraph.NewServicePrincipalsClient()
 	client.BaseClient.Authorizer = opts.Authorizers.MicrosoftGraph
 	client.BaseClient.DisableRetries = true
-
-	resources := make([]resource.Resource, 0)
 
 	log.Trace("attempting to list service principals")
 
@@ -107,6 +107,9 @@ func (l ServicePrincipalsLister) List(ctx context.Context, o interface{}) ([]res
 		}
 
 		resources = append(resources, &ServicePrincipal{
+			BaseResource: &BaseResource{
+				Region: ptr.String("global"),
+			},
 			client:   client,
 			ID:       entity.ID(),
 			Name:     entity.DisplayName,

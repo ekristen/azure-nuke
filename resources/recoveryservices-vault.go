@@ -15,7 +15,7 @@ import (
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
 
-	"github.com/ekristen/azure-nuke/pkg/nuke"
+	"github.com/ekristen/azure-nuke/pkg/azure"
 )
 
 const RecoveryServicesVaultResource = "RecoveryServicesVault"
@@ -23,7 +23,7 @@ const RecoveryServicesVaultResource = "RecoveryServicesVault"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:     RecoveryServicesVaultResource,
-		Scope:    nuke.ResourceGroup,
+		Scope:    azure.ResourceGroupScope,
 		Resource: &RecoveryServicesVault{},
 		Lister:   &RecoveryServicesVaultLister{},
 		DependsOn: []string{
@@ -33,12 +33,12 @@ func init() {
 }
 
 type RecoveryServicesVault struct {
-	client        *vaults.VaultsClient
-	vaultID       vaults.VaultId
-	Region        string
-	ResourceGroup string
-	ID            *string
-	Name          *string
+	*BaseResource `property:",inline"`
+
+	client  *vaults.VaultsClient
+	vaultID vaults.VaultId
+	ID      *string
+	Name    *string
 }
 
 func (r *RecoveryServicesVault) Filter() error {
@@ -62,7 +62,7 @@ type RecoveryServicesVaultLister struct {
 }
 
 func (l RecoveryServicesVaultLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
-	opts := o.(*nuke.ListerOpts)
+	opts := o.(*azure.ListerOpts)
 
 	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(30*time.Second))
 	defer cancel()
@@ -91,12 +91,15 @@ func (l RecoveryServicesVaultLister) List(ctx context.Context, o interface{}) ([
 
 	for _, item := range items.Items {
 		resources = append(resources, &RecoveryServicesVault{
-			client:        client,
-			vaultID:       vaults.NewVaultID(opts.SubscriptionID, opts.ResourceGroup, ptr.ToString(item.Id)),
-			Region:        item.Location,
-			ResourceGroup: opts.ResourceGroup,
-			ID:            item.Id,
-			Name:          item.Name,
+			BaseResource: &BaseResource{
+				Region:        ptr.String(item.Location),
+				ResourceGroup: ptr.String(opts.ResourceGroup),
+			},
+			client:  client,
+			vaultID: vaults.NewVaultID(opts.SubscriptionID, opts.ResourceGroup, ptr.ToString(item.Id)),
+
+			ID:   item.Id,
+			Name: item.Name,
 		})
 	}
 

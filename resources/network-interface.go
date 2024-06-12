@@ -14,7 +14,7 @@ import (
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
 
-	"github.com/ekristen/azure-nuke/pkg/nuke"
+	"github.com/ekristen/azure-nuke/pkg/azure"
 )
 
 const NetworkInterfaceResource = "NetworkInterface"
@@ -22,7 +22,7 @@ const NetworkInterfaceResource = "NetworkInterface"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:     NetworkInterfaceResource,
-		Scope:    nuke.ResourceGroup,
+		Scope:    azure.ResourceGroupScope,
 		Resource: &NetworkInterface{},
 		Lister:   &NetworkInterfaceLister{},
 	})
@@ -32,7 +32,7 @@ type NetworkInterfaceLister struct {
 }
 
 func (l NetworkInterfaceLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
-	opts := o.(*nuke.ListerOpts)
+	opts := o.(*azure.ListerOpts)
 
 	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(30*time.Second))
 	defer cancel()
@@ -58,12 +58,14 @@ func (l NetworkInterfaceLister) List(ctx context.Context, o interface{}) ([]reso
 
 	for _, g := range list.Items {
 		resources = append(resources, &NetworkInterface{
-			client:         client,
-			Region:         g.Location,
-			ResourceGroup:  &opts.ResourceGroup,
-			SubscriptionID: &opts.SubscriptionID,
-			Name:           g.Name,
-			Tags:           g.Tags,
+			BaseResource: &BaseResource{
+				Region:         g.Location,
+				ResourceGroup:  &opts.ResourceGroup,
+				SubscriptionID: &opts.SubscriptionID,
+			},
+			client: client,
+			Name:   g.Name,
+			Tags:   g.Tags,
 		})
 	}
 
@@ -73,12 +75,11 @@ func (l NetworkInterfaceLister) List(ctx context.Context, o interface{}) ([]reso
 }
 
 type NetworkInterface struct {
-	client         *networkinterfaces.NetworkInterfacesClient
-	Region         *string
-	ResourceGroup  *string
-	SubscriptionID *string
-	Name           *string
-	Tags           *map[string]string
+	*BaseResource `property:",inline"`
+
+	client *networkinterfaces.NetworkInterfacesClient
+	Name   *string
+	Tags   *map[string]string
 }
 
 func (r *NetworkInterface) Remove(ctx context.Context) error {

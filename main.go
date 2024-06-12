@@ -10,7 +10,7 @@ import (
 	"github.com/ekristen/azure-nuke/pkg/common"
 
 	_ "github.com/ekristen/azure-nuke/pkg/commands/list"
-	_ "github.com/ekristen/azure-nuke/pkg/commands/nuke"
+	_ "github.com/ekristen/azure-nuke/pkg/commands/run"
 
 	_ "github.com/ekristen/azure-nuke/resources"
 )

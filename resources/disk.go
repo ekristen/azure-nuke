@@ -12,7 +12,7 @@ import (
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
 
-	"github.com/ekristen/azure-nuke/pkg/nuke"
+	"github.com/ekristen/azure-nuke/pkg/azure"
 )
 
 const DiskResource = "Disk"
@@ -20,7 +20,7 @@ const DiskResource = "Disk"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:     DiskResource,
-		Scope:    nuke.ResourceGroup,
+		Scope:    azure.ResourceGroupScope,
 		Lister:   &DiskLister{},
 		Resource: &Disk{},
 		DependsOn: []string{
@@ -30,11 +30,11 @@ func init() {
 }
 
 type Disk struct {
-	client        compute.DisksClient
-	Region        *string
-	ResourceGroup *string
-	Name          *string
-	Tags          map[string]*string
+	*BaseResource `property:",inline"`
+
+	client compute.DisksClient
+	Name   *string
+	Tags   map[string]*string
 }
 
 func (r *Disk) Remove(ctx context.Context) error {
@@ -54,7 +54,7 @@ type DiskLister struct {
 }
 
 func (l DiskLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
-	opts := o.(*nuke.ListerOpts)
+	opts := o.(*azure.ListerOpts)
 
 	log := logrus.WithField("r", DiskResource).WithField("s", opts.SubscriptionID)
 
@@ -76,13 +76,16 @@ func (l DiskLister) List(ctx context.Context, o interface{}) ([]resource.Resourc
 
 	for list.NotDone() {
 		log.Trace("list not done")
-		for _, g := range list.Values() {
+		for _, r := range list.Values() {
 			resources = append(resources, &Disk{
-				client:        client,
-				Region:        g.Location,
-				ResourceGroup: &opts.ResourceGroup,
-				Name:          g.Name,
-				Tags:          g.Tags,
+				BaseResource: &BaseResource{
+					Region:         r.Location,
+					ResourceGroup:  &opts.ResourceGroup,
+					SubscriptionID: &opts.SubscriptionID,
+				},
+				client: client,
+				Name:   r.Name,
+				Tags:   r.Tags,
 			})
 		}
 

@@ -12,7 +12,7 @@ import (
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
 
-	"github.com/ekristen/azure-nuke/pkg/nuke"
+	"github.com/ekristen/azure-nuke/pkg/azure"
 )
 
 const NetworkSecurityGroupResource = "NetworkSecurityGroup"
@@ -20,18 +20,18 @@ const NetworkSecurityGroupResource = "NetworkSecurityGroup"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:     NetworkSecurityGroupResource,
-		Scope:    nuke.ResourceGroup,
+		Scope:    azure.ResourceGroupScope,
 		Resource: &NetworkSecurityGroup{},
 		Lister:   &NetworkSecurityGroupLister{},
 	})
 }
 
 type NetworkSecurityGroup struct {
-	client        network.SecurityGroupsClient
-	Region        *string
-	ResourceGroup *string
-	Name          *string
-	Tags          map[string]*string
+	*BaseResource `property:",inline"`
+
+	client network.SecurityGroupsClient
+	Name   *string
+	Tags   map[string]*string
 }
 
 func (r *NetworkSecurityGroup) Remove(ctx context.Context) error {
@@ -51,7 +51,7 @@ type NetworkSecurityGroupLister struct {
 }
 
 func (l NetworkSecurityGroupLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
-	opts := o.(*nuke.ListerOpts)
+	opts := o.(*azure.ListerOpts)
 
 	log := logrus.WithField("r", NetworkSecurityGroupResource).WithField("s", opts.SubscriptionID)
 
@@ -75,11 +75,13 @@ func (l NetworkSecurityGroupLister) List(ctx context.Context, o interface{}) ([]
 		log.Trace("list not done")
 		for _, g := range list.Values() {
 			resources = append(resources, &NetworkSecurityGroup{
-				client:        client,
-				Region:        g.Location,
-				ResourceGroup: &opts.ResourceGroup,
-				Name:          g.Name,
-				Tags:          g.Tags,
+				BaseResource: &BaseResource{
+					Region:        g.Location,
+					ResourceGroup: &opts.ResourceGroup,
+				},
+				client: client,
+				Name:   g.Name,
+				Tags:   g.Tags,
 			})
 		}
 

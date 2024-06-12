@@ -1,4 +1,4 @@
-package nuke
+package run
 
 import (
 	"context"
@@ -22,7 +22,6 @@ import (
 	"github.com/ekristen/azure-nuke/pkg/commands/global"
 	"github.com/ekristen/azure-nuke/pkg/common"
 	"github.com/ekristen/azure-nuke/pkg/config"
-	"github.com/ekristen/azure-nuke/pkg/nuke"
 )
 
 type log2LogrusWriter struct {
@@ -108,12 +107,12 @@ func execute(c *cli.Context) error { //nolint:funlen
 
 	n.RegisterVersion(fmt.Sprintf("> %s", common.AppVersion.String()))
 
-	p := &nuke.Prompt{Parameters: params, Tenant: tenant}
+	p := &azure.Prompt{Parameters: params, Tenant: tenant}
 	n.RegisterPrompt(p.Prompt)
 
 	tenantConfig := parsedConfig.Accounts[c.String("tenant-id")]
 	tenantResourceTypes := types.ResolveResourceTypes(
-		registry.GetNamesForScope(nuke.Tenant),
+		registry.GetNamesForScope(azure.TenantScope),
 		[]types.Collection{
 			n.Parameters.Includes,
 			parsedConfig.ResourceTypes.GetIncludes(),
@@ -129,7 +128,7 @@ func execute(c *cli.Context) error { //nolint:funlen
 	)
 
 	subResourceTypes := types.ResolveResourceTypes(
-		registry.GetNamesForScope(nuke.Subscription),
+		registry.GetNamesForScope(azure.SubscriptionScope),
 		[]types.Collection{
 			n.Parameters.Includes,
 			parsedConfig.ResourceTypes.GetIncludes(),
@@ -145,7 +144,7 @@ func execute(c *cli.Context) error { //nolint:funlen
 	)
 
 	rgResourceTypes := types.ResolveResourceTypes(
-		registry.GetNamesForScope(nuke.ResourceGroup),
+		registry.GetNamesForScope(azure.ResourceGroupScope),
 		[]types.Collection{
 			n.Parameters.Includes,
 			parsedConfig.ResourceTypes.GetIncludes(),
@@ -161,39 +160,41 @@ func execute(c *cli.Context) error { //nolint:funlen
 	)
 
 	if slices.Contains(parsedConfig.Regions, "global") || slices.Contains(parsedConfig.Regions, "all") {
-		parts := strings.Split(c.String("tenant-id"), "-")
-		if err := n.RegisterScanner(nuke.Tenant, libscanner.New(fmt.Sprintf("ten/%s", parts[:1][0]), tenantResourceTypes, &nuke.ListerOpts{
-			Authorizers: authorizers,
-			TenantID:    tenant.ID,
-		})); err != nil {
+		if err := n.RegisterScanner(azure.TenantScope,
+			libscanner.New("tenant", tenantResourceTypes, &azure.ListerOpts{
+				Authorizers: authorizers,
+				TenantID:    tenant.ID,
+			})); err != nil {
 			return err
 		}
-	}
 
-	logrus.Debug("registering scanner for tenant subscription resources")
-	for _, subscriptionID := range tenant.SubscriptionIds {
-		logrus.Debug("registering scanner for subscription resources")
-		parts := strings.Split(subscriptionID, "-")
-		if err := n.RegisterScanner(nuke.Subscription, libscanner.New(fmt.Sprintf("sub/%s", parts[:1][0]), subResourceTypes, &nuke.ListerOpts{
-			Authorizers:    tenant.Authorizers,
-			TenantID:       tenant.ID,
-			SubscriptionID: subscriptionID,
-			Regions:        parsedConfig.Regions,
-		})); err != nil {
-			return err
+		logrus.Debug("registering scanner for tenant subscription resources")
+		for _, subscriptionID := range tenant.SubscriptionIds {
+			logrus.Debug("registering scanner for subscription resources")
+			parts := strings.Split(subscriptionID, "-")
+			if err := n.RegisterScanner(azure.SubscriptionScope,
+				libscanner.New(fmt.Sprintf("sub/%s", parts[:1][0]), subResourceTypes, &azure.ListerOpts{
+					Authorizers:    tenant.Authorizers,
+					TenantID:       tenant.ID,
+					SubscriptionID: subscriptionID,
+					Regions:        parsedConfig.Regions,
+				})); err != nil {
+				return err
+			}
 		}
 	}
 
 	for subscriptionID, resourceGroups := range tenant.ResourceGroups {
 		for _, rg := range resourceGroups {
 			logrus.Debug("registering scanner for resource group")
-			if err := n.RegisterScanner(nuke.ResourceGroup, libscanner.New(fmt.Sprintf("rg/%s", rg), rgResourceTypes, &nuke.ListerOpts{
-				Authorizers:    tenant.Authorizers,
-				TenantID:       tenant.ID,
-				SubscriptionID: subscriptionID,
-				ResourceGroup:  rg,
-				Regions:        parsedConfig.Regions,
-			})); err != nil {
+			if err := n.RegisterScanner(azure.ResourceGroupScope,
+				libscanner.New(fmt.Sprintf("rg/%s", rg), rgResourceTypes, &azure.ListerOpts{
+					Authorizers:    tenant.Authorizers,
+					TenantID:       tenant.ID,
+					SubscriptionID: subscriptionID,
+					ResourceGroup:  rg,
+					Regions:        parsedConfig.Regions,
+				})); err != nil {
 				return err
 			}
 		}

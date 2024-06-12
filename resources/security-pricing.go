@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
 	"github.com/Azure/azure-sdk-for-go/services/preview/security/mgmt/v3.0/security" //nolint:staticcheck
@@ -13,7 +14,7 @@ import (
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
 
-	"github.com/ekristen/azure-nuke/pkg/nuke"
+	"github.com/ekristen/azure-nuke/pkg/azure"
 )
 
 const SecurityPricingResource = "SecurityPricing"
@@ -21,7 +22,7 @@ const SecurityPricingResource = "SecurityPricing"
 func init() {
 	registry.Register(&registry.Registration{
 		Name:     SecurityPricingResource,
-		Scope:    nuke.Subscription,
+		Scope:    azure.SubscriptionScope,
 		Resource: &SecurityPricing{},
 		Lister:   &SecurityPricingLister{},
 		DependsOn: []string{
@@ -31,6 +32,8 @@ func init() {
 }
 
 type SecurityPricing struct {
+	*BaseResource `property:",inline"`
+
 	client      security.PricingsClient
 	Name        *string
 	PricingTier string
@@ -66,7 +69,7 @@ type SecurityPricingLister struct {
 }
 
 func (l SecurityPricingLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
-	opts := o.(*nuke.ListerOpts)
+	opts := o.(*azure.ListerOpts)
 
 	log := logrus.
 		WithField("r", SecurityPricingResource).
@@ -90,6 +93,9 @@ func (l SecurityPricingLister) List(ctx context.Context, o interface{}) ([]resou
 
 	for _, price := range *list.Value {
 		resources = append(resources, &SecurityPricing{
+			BaseResource: &BaseResource{
+				Region: ptr.String("global"),
+			},
 			client:      client,
 			Name:        price.Name,
 			PricingTier: string(price.PricingTier),

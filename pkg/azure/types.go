@@ -15,16 +15,3 @@ type Authorizers struct {
 
 	IdentityCreds azcore.TokenCredential
 }
-
-/*
-ref: https://github.com/Azure/go-autorest/issues/252
-func LogRequestPreparer() autorest.PrepareDecorator {
-	return func(p autorest.Preparer) autorest.Preparer {
-		return autorest.PreparerFunc(func(r *http.Request) (*http.Request, error) {
-			resDump, _ := httputil.DumpRequestOut(r, true)
-			log.Println(string(resDump))
-			return r, nil
-		})
-	}
-}
-*/
