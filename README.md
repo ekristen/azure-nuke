@@ -17,6 +17,12 @@ brew install ekristen/tap/azure-nuke@1
 
 Or grab from the [beta releases](https://github.com/ekristen/azure-nuke/releases?q=beta&expanded=true)
 
+### Supported OS/Architectures
+
+- Darwin AMD64/ARM64
+- Linux AMD64/ARM64/ARM
+- Windows AMD64
+
 ## Overview
 
 Remove all resources from an Azure Tenant and it's Subscriptions.
