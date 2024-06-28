@@ -6,7 +6,5 @@ plugins:
 branches:
   - name: v+([0-9])?(.{+([0-9]),x}).x
   - name: main
-    prerelease: 'beta'
-    channel: beta
   - name: next
     prerelease: true
