@@ -2,8 +2,9 @@ package resources
 
 import (
 	"context"
-	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2022-07-01/containerservice"
 	"time"
+
+	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2022-07-01/containerservice" //nolint:staticcheck
 
 	"github.com/sirupsen/logrus"
 
@@ -87,7 +88,6 @@ func (l ManagedClusterLister) List(ctx context.Context, o interface{}) ([]resour
 				Name:   g.Name,
 				Tags:   g.Tags,
 			})
-
 		}
 
 		if err := list.NextWithContext(ctx); err != nil {
