@@ -1,7 +1,6 @@
 package list
 
 import (
-	"fmt"
 	"sort"
 
 	"github.com/fatih/color"
@@ -24,11 +23,11 @@ func execute(c *cli.Context) error {
 		reg := registry.GetRegistration(name)
 
 		if reg.AlternativeResource != "" {
-			color.New(color.Bold).Printf("%-55s\n", name)
-			color.New(color.Bold, color.FgYellow).Printf("  > %-55s", reg.AlternativeResource)
-			color.New(color.FgCyan).Printf("alternative resource\n")
+			_, _ = color.New(color.Bold).Printf("%-55s\n", name)
+			_, _ = color.New(color.Bold, color.FgYellow).Printf("  > %-55s", reg.AlternativeResource)
+			_, _ = color.New(color.FgCyan).Printf("alternative resource\n")
 		} else {
-			color.New(color.Bold).Printf("%-55s", name)
+			_, _ = color.New(color.Bold).Printf("%-55s", name)
 			c := color.FgGreen
 			if reg.Scope == azure.TenantScope {
 				c = color.FgHiGreen
@@ -37,7 +36,7 @@ func execute(c *cli.Context) error {
 			} else if reg.Scope == azure.ResourceGroupScope {
 				c = color.FgHiMagenta
 			}
-			color.New(c).Printf(fmt.Sprintf("%s\n", string(reg.Scope)))
+			_, _ = color.New(c).Printf("%s\n", string(reg.Scope))
 		}
 	}
 
