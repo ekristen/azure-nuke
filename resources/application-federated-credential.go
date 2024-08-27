@@ -31,11 +31,11 @@ func init() {
 type ApplicationFederatedCredential struct {
 	*BaseResource `property:",inline"`
 
-	client        *msgraph.ApplicationsClient
-	ID            *string
-	Name          *string
-	AppID         *string
-	AppUniqueName *string
+	client      *msgraph.ApplicationsClient
+	ID          *string
+	Name        *string
+	AppID       *string
+	DisplayName *string
 }
 
 func (r *ApplicationFederatedCredential) Filter() error {
@@ -52,7 +52,7 @@ func (r *ApplicationFederatedCredential) Properties() types.Properties {
 }
 
 func (r *ApplicationFederatedCredential) String() string {
-	return fmt.Sprintf("%s -> %s", *r.AppUniqueName, *r.Name)
+	return fmt.Sprintf("%s -> %s", ptr.ToString(r.DisplayName), ptr.ToString(r.Name))
 }
 
 // -------------------------------------------------------------------------------------------------------
@@ -92,11 +92,11 @@ func (l ApplicationFederatedCredentialLister) List(ctx context.Context, o interf
 				BaseResource: &BaseResource{
 					Region: ptr.String("global"),
 				},
-				client:        client,
-				ID:            cred.ID,
-				Name:          cred.Name,
-				AppID:         entity.ID(),
-				AppUniqueName: entity.UniqueName,
+				client:      client,
+				ID:          cred.ID,
+				Name:        cred.Name,
+				AppID:       entity.ID(),
+				DisplayName: entity.DisplayName,
 			})
 		}
 	}
