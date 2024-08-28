@@ -81,6 +81,10 @@ github.com/ekristen/libnuke v0.16.0 h1:Y4byXbueWylD3os5za/WwGO9sElfrwTcTl00frgzL
 github.com/ekristen/libnuke v0.16.0/go.mod h1:riI1tjCf6r+et/9oUBd1vQeFmn2Sn6UeFUR0nWkMeYw=
 github.com/ekristen/libnuke v0.18.0 h1:sF533oSET50FjgIkYV72rvgNzCzUR/AH2tQeKVim31g=
 github.com/ekristen/libnuke v0.18.0/go.mod h1:riI1tjCf6r+et/9oUBd1vQeFmn2Sn6UeFUR0nWkMeYw=
+github.com/ekristen/libnuke v0.18.1-0.20240823164827-b883322c19f3 h1:WvEvPadtrt/Q+3DAOVRKKXvHBnrshhbT3Hke0tNvGFY=
+github.com/ekristen/libnuke v0.18.1-0.20240823164827-b883322c19f3/go.mod h1:riI1tjCf6r+et/9oUBd1vQeFmn2Sn6UeFUR0nWkMeYw=
+github.com/ekristen/libnuke v0.18.1-0.20240823194224-2f43f05ef66d h1:BeqtLt4T/UB32zjx0DckuFkXq9UDGBKPzwcFa281Jcs=
+github.com/ekristen/libnuke v0.18.1-0.20240823194224-2f43f05ef66d/go.mod h1:riI1tjCf6r+et/9oUBd1vQeFmn2Sn6UeFUR0nWkMeYw=
 github.com/emirpasic/gods v1.12.0/go.mod h1:YfzfFFoVP/catgzJb4IKIqXjX78Ha8FMSDh3ymbK86o=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
