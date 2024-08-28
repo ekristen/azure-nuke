@@ -2,9 +2,9 @@ package resources
 
 import (
 	"context"
-	"github.com/gotidy/ptr"
 	"time"
 
+	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute" //nolint:staticcheck
