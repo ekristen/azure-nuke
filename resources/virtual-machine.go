@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute" //nolint:staticcheck
@@ -29,9 +30,10 @@ func init() {
 type VirtualMachine struct {
 	*BaseResource `property:",inline"`
 
-	client compute.VirtualMachinesClient
-	Name   *string
-	Tags   map[string]*string
+	client       compute.VirtualMachinesClient
+	Name         *string
+	Tags         map[string]*string
+	CreationDate *time.Time
 }
 
 func (r *VirtualMachine) Remove(ctx context.Context) error {
@@ -76,15 +78,29 @@ func (l VirtualMachineLister) List(ctx context.Context, o interface{}) ([]resour
 	for list.NotDone() {
 		log.Trace("list not done")
 		for _, g := range list.Values() {
+			instanceView, err := client.InstanceView(ctx, opts.ResourceGroup, *g.Name)
+			if err != nil {
+				return nil, err
+			}
+
+			var creationDate *time.Time
+			for _, status := range *instanceView.Statuses {
+				if status.Code != nil && *status.Code == "ProvisioningState/succeeded" {
+					creationDate = ptr.Time(status.Time.Time)
+					break
+				}
+			}
+
 			resources = append(resources, &VirtualMachine{
 				BaseResource: &BaseResource{
 					Region:         g.Location,
 					ResourceGroup:  &opts.ResourceGroup,
 					SubscriptionID: &opts.SubscriptionID,
 				},
-				client: client,
-				Name:   g.Name,
-				Tags:   g.Tags,
+				client:       client,
+				Name:         g.Name,
+				Tags:         g.Tags,
+				CreationDate: creationDate,
 			})
 		}
 
