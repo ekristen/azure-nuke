@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute" //nolint:staticcheck
@@ -32,9 +33,10 @@ func init() {
 type Disk struct {
 	*BaseResource `property:",inline"`
 
-	client compute.DisksClient
-	Name   *string
-	Tags   map[string]*string
+	client       compute.DisksClient
+	Name         *string
+	Tags         map[string]*string
+	CreationDate *time.Time
 }
 
 func (r *Disk) Remove(ctx context.Context) error {
@@ -83,9 +85,10 @@ func (l DiskLister) List(ctx context.Context, o interface{}) ([]resource.Resourc
 					ResourceGroup:  &opts.ResourceGroup,
 					SubscriptionID: &opts.SubscriptionID,
 				},
-				client: client,
-				Name:   r.Name,
-				Tags:   r.Tags,
+				client:       client,
+				Name:         r.Name,
+				Tags:         r.Tags,
+				CreationDate: ptr.Time(r.DiskProperties.TimeCreated.Time),
 			})
 		}
 
