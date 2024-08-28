@@ -16,51 +16,51 @@ import (
 	"github.com/ekristen/azure-nuke/pkg/azure"
 )
 
-const DiskResource = "Disk"
+const ComputeSnapshotResource = "ComputeSnapshot"
 
 func init() {
 	registry.Register(&registry.Registration{
-		Name:     DiskResource,
+		Name:     ComputeSnapshotResource,
 		Scope:    azure.ResourceGroupScope,
-		Lister:   &DiskLister{},
-		Resource: &Disk{},
+		Lister:   &ComputeSnapshotLister{},
+		Resource: &ComputeSnapshot{},
 		DependsOn: []string{
 			VirtualMachineResource,
 		},
 	})
 }
 
-type Disk struct {
+type ComputeSnapshot struct {
 	*BaseResource `property:",inline"`
 
-	client       compute.DisksClient
+	client       compute.SnapshotsClient
 	Name         *string
 	Tags         map[string]*string
 	CreationDate *time.Time
 }
 
-func (r *Disk) Remove(ctx context.Context) error {
+func (r *ComputeSnapshot) Remove(ctx context.Context) error {
 	_, err := r.client.Delete(ctx, *r.ResourceGroup, *r.Name)
 	return err
 }
 
-func (r *Disk) Properties() types.Properties {
+func (r *ComputeSnapshot) Properties() types.Properties {
 	return types.NewPropertiesFromStruct(r)
 }
 
-func (r *Disk) String() string {
+func (r *ComputeSnapshot) String() string {
 	return *r.Name
 }
 
-type DiskLister struct {
+type ComputeSnapshotLister struct {
 }
 
-func (l DiskLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
+func (l ComputeSnapshotLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)
 
-	log := logrus.WithField("r", DiskResource).WithField("s", opts.SubscriptionID)
+	log := logrus.WithField("r", ComputeSnapshotResource).WithField("s", opts.SubscriptionID)
 
-	client := compute.NewDisksClient(opts.SubscriptionID)
+	client := compute.NewSnapshotsClient(opts.SubscriptionID)
 	client.Authorizer = opts.Authorizers.Management
 	client.RetryAttempts = 1
 	client.RetryDuration = time.Second * 2
@@ -79,7 +79,7 @@ func (l DiskLister) List(ctx context.Context, o interface{}) ([]resource.Resourc
 	for list.NotDone() {
 		log.Trace("list not done")
 		for _, r := range list.Values() {
-			resources = append(resources, &Disk{
+			resources = append(resources, &ComputeSnapshot{
 				BaseResource: &BaseResource{
 					Region:         r.Location,
 					ResourceGroup:  &opts.ResourceGroup,
@@ -88,7 +88,7 @@ func (l DiskLister) List(ctx context.Context, o interface{}) ([]resource.Resourc
 				client:       client,
 				Name:         r.Name,
 				Tags:         r.Tags,
-				CreationDate: ptr.Time(r.DiskProperties.TimeCreated.Time),
+				CreationDate: ptr.Time(r.SnapshotProperties.TimeCreated.Time),
 			})
 		}
 
