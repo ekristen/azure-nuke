@@ -15,7 +15,7 @@ import (
 	"github.com/ekristen/azure-nuke/pkg/azure"
 )
 
-const PublicIPAddressesResource = "PublicIPAddresses"
+const PublicIPAddressesResource = "PublicIPAddress"
 
 func init() {
 	registry.Register(&registry.Registration{
@@ -23,6 +23,9 @@ func init() {
 		Scope:    azure.ResourceGroupScope,
 		Resource: &PublicIPAddresses{},
 		Lister:   &PublicIPAddressesLister{},
+		DeprecatedAliases: []string{
+			"PublicIPAddresses",
+		},
 	})
 }
 
