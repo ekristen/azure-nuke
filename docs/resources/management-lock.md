@@ -7,8 +7,6 @@
 
 ## Properties
 
+- **`BaseResource`**: No description provided
 - **`Name`**: No description provided
 - **`LockLevel`**: No description provided
-- **`Region`**: No description provided
-- **`ResourceGroup`**: No description provided
-- **`SubscriptionID`**: No description provided

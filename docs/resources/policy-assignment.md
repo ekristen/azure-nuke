@@ -7,6 +7,7 @@
 
 ## Properties
 
+- **`BaseResource`**: No description provided
+- **`Name`**: No description provided
 - **`Scope`**: No description provided
 - **`EnforcementMode`**: No description provided
-- **`Name`**: No description provided

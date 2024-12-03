@@ -7,5 +7,5 @@
 
 ## Properties
 
-- **`ResourceGroup`**: No description provided
+- **`BaseResource`**: No description provided
 - **`Name`**: No description provided

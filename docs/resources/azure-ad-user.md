@@ -7,9 +7,10 @@
 
 ## Properties
 
+- **`BaseResource`**: No description provided
+- **`ID`**: The ID of the Entra ID User
 - **`Name`**: The DisplayName of the Entra ID User
 - **`UPN`**: This is the user principal name of the Entra ID user, usually in the format of email
-- **`ID`**: The ID of the Entra ID User
 ## Depends On
 
 !!! Experimental Feature
