@@ -84,6 +84,13 @@ nav:
       - Overview: config.md
       - Filtering: config-filtering.md
       - Presets: config-presets.md
+  - Development:
+      - Overview: development.md
+      - Contributing: contributing.md
+      - Standards: standards.md
+      - Resources: resources.md
+      - Releases: releases.md
+      - Testing: testing.md
   - Resources:
       - Overview: resources/overview.md
       - App Service Plan: resources/app-service-plan.md
@@ -121,10 +128,3 @@ nav:
       - Storage Account: resources/storage-account.md
       - Virtual Machine: resources/virtual-machine.md
       - Virtual Network: resources/virtual-network.md
-  - Development:
-      - Overview: development.md
-      - Contributing: contributing.md
-      - Standards: standards.md
-      - Resources: resources.md
-      - Releases: releases.md
-      - Testing: testing.md
