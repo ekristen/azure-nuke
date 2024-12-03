@@ -24,6 +24,8 @@ github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/recoveryservices/armrecove
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/recoveryservices/armrecoveryservicesbackup v1.0.0/go.mod h1:65T59IeW3MusDYTq3zjvzzipDyct3UbWTZVL31go+Ww=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/security/armsecurity v0.11.0 h1:hxVDRUlzurR0SR71oRaZjn/qS6Ub2nVCPZ+AYxFR+IA=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/security/armsecurity v0.11.0/go.mod h1:ThM/jv2MXLB5PMseu0si9VcGF62a3963e7lMvPZ4zyU=
+github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/security/armsecurity v0.14.0 h1:JfjIyBJvEvQNP/9MEUo1/6eoiPkiag2OZImw32xakcc=
+github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/security/armsecurity v0.14.0/go.mod h1:HakuHOrWlp2G1WlFvkL7JApTZAbxRJnRiz+w4SYak5s=
 github.com/Azure/go-autorest v14.2.0+incompatible h1:V5VMDjClD3GiElqLWO7mz2MxNAK/vTfRHdAubSIPRgs=
 github.com/Azure/go-autorest v14.2.0+incompatible/go.mod h1:r+4oMnoxhatjLLJ6zxSWATqVooLgysK6ZNox3g/xq24=
 github.com/Azure/go-autorest/autorest v0.11.28/go.mod h1:MrkzG3Y3AH668QyF9KRk5neJnGgmhQ6krbhR8Q5eMvA=
