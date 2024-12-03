@@ -37,7 +37,7 @@ func (w *log2LogrusWriter) Write(b []byte) (int, error) {
 	return n, nil
 }
 
-func execute(c *cli.Context) error { //nolint:funlen
+func execute(c *cli.Context) error { //nolint:funlen,gocyclo
 	ctx, cancel := context.WithCancel(c.Context)
 	defer cancel()
 
