@@ -2,9 +2,10 @@ package resources
 
 import (
 	"context"
+	"strings"
+
 	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
-	"strings"
 
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonids"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/insights/2021-05-01-preview/diagnosticsettings"
