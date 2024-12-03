@@ -13,7 +13,7 @@ require (
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/ekristen/libnuke v0.18.0
 	github.com/fatih/camelcase v1.0.0
-	github.com/fatih/color v1.17.0
+	github.com/fatih/color v1.18.0
 	github.com/gotidy/ptr v1.4.0
 	github.com/hashicorp/go-azure-helpers v0.71.0
 	github.com/hashicorp/go-azure-sdk v0.20240125.1100331
