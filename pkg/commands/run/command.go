@@ -37,7 +37,7 @@ func (w *log2LogrusWriter) Write(b []byte) (int, error) {
 	return n, nil
 }
 
-func execute(c *cli.Context) error { //nolint:funlen
+func execute(c *cli.Context) error { //nolint:funlen,gocyclo
 	ctx, cancel := context.WithCancel(c.Context)
 	defer cancel()
 
@@ -66,6 +66,16 @@ func execute(c *cli.Context) error { //nolint:funlen
 		NoDryRun:   c.Bool("no-dry-run"),
 		Includes:   c.StringSlice("include"),
 		Excludes:   c.StringSlice("exclude"),
+	}
+
+	if len(c.StringSlice("feature-flag")) > 0 {
+		if slices.Contains(c.StringSlice("feature-flag"), "wait-on-dependencies") {
+			params.WaitOnDependencies = true
+		}
+
+		if slices.Contains(c.StringSlice("feature-flag"), "filter-groups") {
+			params.UseFilterGroups = true
+		}
 	}
 
 	parsedConfig, err := config.New(libconfig.Options{

@@ -7,10 +7,9 @@
 
 ## Properties
 
-- **`Region`**: No description provided
-- **`ResourceGroup`**: No description provided
-- **`ID`**: No description provided
 - **`Name`**: No description provided
+- **`BaseResource`**: No description provided
+- **`ID`**: No description provided
 ## Depends On
 
 !!! Experimental Feature

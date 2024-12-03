@@ -7,5 +7,6 @@
 
 ## Properties
 
+- **`BaseResource`**: No description provided
 - **`ID`**: The ID of the Entra ID Group
 - **`Name`**: The name of the Entra ID Group

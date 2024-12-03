@@ -38,7 +38,7 @@ linters:
     - bodyclose
     - dogsled
     - errcheck
-    - exportloopref
+    - copyloopvar
     - funlen
     - goconst
     - gocritic

@@ -7,8 +7,8 @@
 
 ## Properties
 
-- **`ID`**: No description provided
 - **`Name`**: No description provided
 - **`DisplayName`**: No description provided
-- **`Region`**: No description provided
 - **`Status`**: No description provided
+- **`BaseResource`**: No description provided
+- **`ID`**: No description provided

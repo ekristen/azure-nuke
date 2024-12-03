@@ -1,9 +1,9 @@
-# Application
+# Application Gateway
 
 ## Details
 
-- **Type:** `Application`
-- **Scope:** tenant
+- **Type:** `ApplicationGateway`
+- **Scope:** resource-group
 
 ## Properties
 

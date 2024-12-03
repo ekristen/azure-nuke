@@ -72,6 +72,7 @@ nav:
   - Features:
       - Overview: features/overview.md
       - Global Filters: features/global-filters.md
+      - Filter Groups: features/filter-groups.md
       - Enabled Regions: features/enabled-regions.md
       - Region as Global Filters: features/regions.md
       - Signed Binaries: features/signed-binaries.md
@@ -84,28 +85,38 @@ nav:
       - Overview: config.md
       - Filtering: config-filtering.md
       - Presets: config-presets.md
+  - Development:
+      - Overview: development.md
+      - Contributing: contributing.md
+      - Standards: standards.md
+      - Resources: resources.md
+      - Releases: releases.md
+      - Testing: testing.md
   - Resources:
       - Overview: resources/overview.md
       - App Service Plan: resources/app-service-plan.md
       - Application: resources/application.md
       - Application Certificate: resources/application-certificate.md
       - Application Federated Credential: resources/application-federated-credential.md
+      - Application Gateway: resources/application-gateway.md
       - Application Secret: resources/application-secret.md
       - Azure AD Group: resources/azure-ad-group.md
       - Azure AD User: resources/azure-ad-user.md
       - Budget: resources/budget.md
+      - Compute Snapshot: resources/compute-snapshot.md
       - Container Registry: resources/container-registry.md
       - DNS Zone: resources/dns-zone.md
       - Disk: resources/disk.md
       - IP Allocation: resources/ip-allocation.md
       - Key Vault: resources/key-vault.md
       - Management Lock: resources/management-lock.md
+      - Monitor Diagnostic Setting: resources/monitor-diagnostic-setting.md
       - Network Interface: resources/network-interface.md
       - Network Security Group: resources/network-security-group.md
       - Policy Assignment: resources/policy-assignment.md
       - Policy Definition: resources/policy-definition.md
       - Private DNS Zone: resources/private-dns-zone.md
-      - Public IP Addresses: resources/public-ip-addresses.md
+      - Public IP Address: resources/public-ip-address.md
       - Recovery Services Backup Policy: resources/recovery-services-backup-policy.md
       - Recovery Services Backup Protected Item: resources/recovery-services-backup-protected-item.md
       - Recovery Services Backup Protection Container: resources/recovery-services-backup-protection-container.md
@@ -119,12 +130,7 @@ nav:
       - Security Workspace: resources/security-workspace.md
       - Service Principal: resources/service-principal.md
       - Storage Account: resources/storage-account.md
+      - Subscription Role Assignment: resources/subscription-role-assignment.md
       - Virtual Machine: resources/virtual-machine.md
       - Virtual Network: resources/virtual-network.md
-  - Development:
-      - Overview: development.md
-      - Contributing: contributing.md
-      - Standards: standards.md
-      - Resources: resources.md
-      - Releases: releases.md
-      - Testing: testing.md
+

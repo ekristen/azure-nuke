@@ -1,6 +1,6 @@
 !!! warning
     Filtering is a powerful tool, but it is also a double-edged sword. It is easy to make mistakes in the filter
-    configuration. Also, since aws-nuke is in continuous development, there is always a possibility to introduce new
+    configuration. Also, since azure-nuke is in continuous development, there is always a possibility to introduce new
     bugs, no matter how careful we review new code.
 
 # Filtering
@@ -23,12 +23,12 @@ a resource does NOT have any filters defined, the `__global__` ones will still b
 
 ### Example
 
-In this example, we are ignoring all resources that have the tag `aws-nuke` set to `ignore`. Additionally filtering
+In this example, we are ignoring all resources that have the tag `azure-nuke` set to `ignore`. Additionally filtering
 a specific instance by its `id`. When the `EC2Instance` resource is processed, it will have both filters applied. These
 
 ```yaml
 __global__:
-  - property: tag:aws-nuke
+  - property: tag:azure-nuke
     value: "ignore"
 
 EC2Instance:
@@ -40,9 +40,67 @@ This will ultimately render as the following filters for the `EC2Instance` resou
 ```yaml
 EC2Instance:
   - "i-01b489457a60298dd"
-  - property: tag:aws-nuke
+  - property: tag:azure-nuke
     value: "ignore"
 ```
+
+## Filter Groups
+
+!!! important
+Filter groups are an experimental feature and are disabled by default. To enable filter groups, use the
+`--feature-flag filter-groups` flag.
+
+Filter groups are used to group filters together. This is useful when filters need to be AND'd together. For example,
+if you want to delete all resources that are tagged with `env:dev` and `namespace:test` you can use the following filter
+group:
+
+```yaml
+presets:
+  example:
+    filters:
+      ResourceType:
+        - property: tag:env
+          value: dev
+          group: group1
+        - property: tag:namespace
+          value: test
+          group: group2
+```
+
+In this example, the `group1` and `group2` filters are AND'd together. This means that a resource must match both filters
+to be excluded from deletion.
+
+Only a single filter in a group is required to match. This means that if a resource matches any filter in a group it will
+count as a match for the group.
+
+### Example
+
+In this example, we are ignoring all resources that have the tag `azure-nuke` set to `ignore`. Additionally filtering
+a specific instance by its `id`. When the `EC2Instance` resource is processed, it will have both filters applied. These
+
+```yaml
+presets:
+  example:
+    filters:
+      __global__:
+        - property: tag:azure-nuke
+          value: "ignore"
+      EC2Instance:
+        - "i-01b489457a60298dd"
+```
+
+This will ultimately render as the following filters for the `EC2Instance` resource:
+
+```yaml
+presets:
+  example:
+    filters:
+      EC2Instance:
+        - "i-01b489457a60298dd"
+        - property: tag:azure-nuke
+          value: "ignore"
+```
+
 
 ## Types
 
@@ -143,7 +201,7 @@ EC2Image:
 ## Properties
 
 By default, when writing a filter if you do not specify a property, it will use the `Name` property. However, resources
-that do no support Properties, aws-nuke will fall back to what is called the `Legacy String`, it's essentially a
+that do no support Properties, azure-nuke will fall back to what is called the `Legacy String`, it's essentially a
 function that returns a string representation of the resource. 
 
 Some resources support filtering via properties. When a resource support these properties, they will be listed in
@@ -175,7 +233,7 @@ ResourceGroup:
     invert: true
 ```
 
-In this case *any* ResourceGroup ***but*** the ones called "foo" will be filtered. Be aware that *aws-nuke*
+In this case *any* ResourceGroup ***but*** the ones called "foo" will be filtered. Be aware that *azure-nuke*
 internally takes every resource and applies every filter on it. If a filter matches, it marks the node as filtered.
 
 ## Example
@@ -194,12 +252,12 @@ ResourceGroup:
 
 It is possible to filter this is important for not deleting the current user for example or for resources like S3
 Buckets which have a globally shared namespace and might be hard to recreate. Currently, the filtering is based on
-the resource identifier. The identifier will be printed as the first step of *aws-nuke* (eg `i-01b489457a60298dd` 
+the resource identifier. The identifier will be printed as the first step of *azure-nuke* (eg `i-01b489457a60298dd` 
 for an EC2 instance).
 
 !!! warning
-    **Even with filters you should not run aws-nuke on any AWS account, where you cannot afford to lose all resources.
-    It is easy to make mistakes in the filter configuration. Also, since aws-nuke is in continuous development, there is
+    **Even with filters you should not run azure-nuke on any AWS account, where you cannot afford to lose all resources.
+    It is easy to make mistakes in the filter configuration. Also, since azure-nuke is in continuous development, there is
     always a possibility to introduce new bugs, no matter how careful we review new code.**
 
 The filters are part of the account-specific configuration and are grouped by resource types. This is an example of a
