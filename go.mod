@@ -11,16 +11,16 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/recoveryservices/armrecoveryservicesbackup v1.0.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/security/armsecurity v0.11.0
 	github.com/Azure/go-autorest/autorest/to v0.4.0
-	github.com/ekristen/libnuke v0.18.0
+	github.com/ekristen/libnuke v0.21.7
 	github.com/fatih/camelcase v1.0.0
-	github.com/fatih/color v1.17.0
+	github.com/fatih/color v1.18.0
 	github.com/gotidy/ptr v1.4.0
 	github.com/hashicorp/go-azure-helpers v0.71.0
 	github.com/hashicorp/go-azure-sdk v0.20240125.1100331
 	github.com/iancoleman/strcase v0.3.0
 	github.com/manicminer/hamilton v0.72.0
 	github.com/sirupsen/logrus v1.9.3
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	github.com/urfave/cli/v2 v2.27.5
 )
 
@@ -78,7 +78,7 @@ require (
 	golang.org/x/crypto v0.27.0 // indirect
 	golang.org/x/net v0.29.0 // indirect
 	golang.org/x/oauth2 v0.16.0 // indirect
-	golang.org/x/sync v0.8.0 // indirect
+	golang.org/x/sync v0.9.0 // indirect
 	golang.org/x/sys v0.25.0 // indirect
 	golang.org/x/text v0.18.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
