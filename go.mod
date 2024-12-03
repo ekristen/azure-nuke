@@ -15,7 +15,7 @@ require (
 	github.com/fatih/camelcase v1.0.0
 	github.com/fatih/color v1.17.0
 	github.com/gotidy/ptr v1.4.0
-	github.com/hashicorp/go-azure-helpers v0.69.0
+	github.com/hashicorp/go-azure-helpers v0.71.0
 	github.com/hashicorp/go-azure-sdk v0.20240125.1100331
 	github.com/iancoleman/strcase v0.3.0
 	github.com/manicminer/hamilton v0.72.0
