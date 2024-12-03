@@ -20,7 +20,7 @@ require (
 	github.com/iancoleman/strcase v0.3.0
 	github.com/manicminer/hamilton v0.72.0
 	github.com/sirupsen/logrus v1.9.3
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	github.com/urfave/cli/v2 v2.27.5
 )
 
