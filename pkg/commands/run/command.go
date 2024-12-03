@@ -68,6 +68,16 @@ func execute(c *cli.Context) error { //nolint:funlen
 		Excludes:   c.StringSlice("exclude"),
 	}
 
+	if len(c.StringSlice("feature-flag")) > 0 {
+		if slices.Contains(c.StringSlice("feature-flag"), "wait-on-dependencies") {
+			params.WaitOnDependencies = true
+		}
+
+		if slices.Contains(c.StringSlice("feature-flag"), "filter-groups") {
+			params.UseFilterGroups = true
+		}
+	}
+
 	parsedConfig, err := config.New(libconfig.Options{
 		Path:         c.Path("config"),
 		Deprecations: registry.GetDeprecatedResourceTypeMapping(),
