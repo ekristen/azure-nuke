@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"slices"
 	"strings"
 	"time"
@@ -47,7 +48,10 @@ func execute(c *cli.Context) error { //nolint:funlen,gocyclo
 		entry: logrus.WithField("source", "standard-logger"),
 	})
 
-	logrus.Tracef("tenant id: %s", c.String("tenant-id"))
+	logger := logrus.StandardLogger()
+	logger.SetOutput(os.Stdout)
+
+	logger.Tracef("tenant id: %s", c.String("tenant-id"))
 
 	authorizers, err := azure.ConfigureAuth(ctx,
 		c.String("environment"), c.String("tenant-id"), c.String("client-id"),
@@ -57,7 +61,7 @@ func execute(c *cli.Context) error { //nolint:funlen,gocyclo
 		return err
 	}
 
-	logrus.Trace("preparing to run nuke")
+	logger.Trace("preparing to run nuke")
 
 	params := &libnuke.Parameters{
 		Force:      c.Bool("force"),
@@ -113,7 +117,7 @@ func execute(c *cli.Context) error { //nolint:funlen,gocyclo
 	n := libnuke.New(params, filters, parsedConfig.Settings)
 
 	n.SetRunSleep(5 * time.Second)
-	n.SetLogger(logrus.WithField("component", "nuke"))
+	n.SetLogger(logger.WithField("component", "nuke"))
 
 	n.RegisterVersion(fmt.Sprintf("> %s", common.AppVersion.String()))
 
@@ -178,9 +182,17 @@ func execute(c *cli.Context) error { //nolint:funlen,gocyclo
 			return err
 		}
 
-		logrus.Debug("registering scanner for tenant subscription resources")
+		logger.
+			WithField("component", "run").
+			WithField("scope", "tenant").
+			Debug("registering scanner")
 		for _, subscriptionID := range tenant.SubscriptionIds {
-			logrus.Debug("registering scanner for subscription resources")
+			logger.
+				WithField("component", "run").
+				WithField("scope", "subscription").
+				WithField("subscription_id", subscriptionID).
+				Debug("registering scanner")
+
 			parts := strings.Split(subscriptionID, "-")
 			if err := n.RegisterScanner(azure.SubscriptionScope,
 				libscanner.New(fmt.Sprintf("sub/%s", parts[:1][0]), subResourceTypes, &azure.ListerOpts{
@@ -196,9 +208,15 @@ func execute(c *cli.Context) error { //nolint:funlen,gocyclo
 
 	for subscriptionID, resourceGroups := range tenant.ResourceGroups {
 		for _, rg := range resourceGroups {
-			logrus.Debug("registering scanner for resource group")
+			logger.
+				WithField("component", "run").
+				WithField("scope", "resource-group").
+				WithField("subscription_id", subscriptionID).
+				WithField("resource_group", rg).
+				Debug("registering scanner")
+
 			if err := n.RegisterScanner(azure.ResourceGroupScope,
-				libscanner.New(fmt.Sprintf("rg/%s", rg), rgResourceTypes, &azure.ListerOpts{
+				libscanner.New(fmt.Sprintf("sub/%s/rg/%s", subscriptionID, rg), rgResourceTypes, &azure.ListerOpts{
 					Authorizers:    tenant.Authorizers,
 					TenantID:       tenant.ID,
 					SubscriptionID: subscriptionID,

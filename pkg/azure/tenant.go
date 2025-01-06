@@ -66,19 +66,20 @@ func NewTenant( //nolint:gocyclo
 			return nil, err
 		}
 		for _, s := range list.Values() {
+			slog := log.WithField("subscription_id", *s.SubscriptionID)
 			if len(subscriptionIDs) > 0 && !slices.Contains(subscriptionIDs, *s.SubscriptionID) {
-				log.Warnf("skipping subscription id: %s (reason: not requested)", *s.SubscriptionID)
+				slog.Warnf("skipping subscription id: %s (reason: not requested)", *s.SubscriptionID)
 				continue
 			}
 
-			log.Tracef("adding subscriptions id: %s", *s.SubscriptionID)
+			slog.Trace("adding subscription")
 			tenant.SubscriptionIds = append(tenant.SubscriptionIds, *s.SubscriptionID)
 
-			log.Trace("listing resource groups")
+			slog.Trace("listing resource groups")
 			groupsClient := resources.NewGroupsClient(*s.SubscriptionID)
 			groupsClient.Authorizer = authorizers.Management
 
-			log.Debugf("configured regions: %v", regions)
+			slog.Debugf("configured regions: %v", regions)
 			for list, err := groupsClient.List(ctx, "", nil); list.NotDone(); err = list.NextWithContext(ctx) {
 				if err != nil {
 					return nil, err
@@ -90,7 +91,7 @@ func NewTenant( //nolint:gocyclo
 						continue
 					}
 
-					log.Debugf("resource group name: %s", *g.Name)
+					slog.Debugf("resource group name: %s", *g.Name)
 					tenant.ResourceGroups[*s.SubscriptionID] = append(tenant.ResourceGroups[*s.SubscriptionID], *g.Name)
 				}
 			}
