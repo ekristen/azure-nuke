@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.12-labs
-FROM alpine:3.20.3 as base
+FROM alpine:3.21.2 as base
 ARG PROJECT_NAME=azure-nuke
 RUN apk add --no-cache ca-certificates
 RUN adduser -D azure-nuke
