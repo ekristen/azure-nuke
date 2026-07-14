@@ -23,3 +23,9 @@
 - Updated `.pre-commit-config.yaml` to use a local/system `golangci-lint` hook instead of building from the old upstream hook repo.
 - Adjusted CLI flag for golangci-lint v2 (`--fast-only` replaces `--fast`).
 - Validation: `pre-commit run golangci-lint --all-files` passes.
+
+## CI Lint Follow-up
+- GitHub Actions failed on `gocritic deprecatedComment` in `pkg/config/config.go` for `Tenants` and `TenantBlocklist` field docs.
+- Updated both field doc blocks to place `Deprecated:` text in a dedicated paragraph (added blank `//` separator before deprecation notice).
+- Validation: `golangci-lint run ./pkg/config/...` reports 0 issues.
+- Commit: `6195eb8` pushed to `feature/add-copilot-and-devcontainer`.
