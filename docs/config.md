@@ -58,7 +58,7 @@ provided.
 ### All Enabled Regions
 
 You may specify the special region `all` to run against all enabled regions. This will run against all regions that are
-enabled in the account. It will not run against regions that are disabled. It will also automatically include the 
+enabled in the account. It will not run against regions that are disabled. It will also automatically include the
 special region `global` which is for specific global resources.
 
 !!! important

@@ -12,7 +12,7 @@ information about the properties that are available for filtering.
 
 ## Scope
 
-The `Scope` field in the resource registration defines how the resource is scoped within Azure. This information is ued 
+The `Scope` field in the resource registration defines how the resource is scoped within Azure. This information is ued
 to determine how and when it's queried during the discovery phase of the tool. The following scopes are supported:
 
 - `ResourceGroup` - The resource is scoped to a resource group.

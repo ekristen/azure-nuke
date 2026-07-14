@@ -1,6 +1,6 @@
 # Install
 
-## Install the pre-compiled binary 
+## Install the pre-compiled binary
 
 ### Homebrew Tap (MacOS/Linux)
 
@@ -32,4 +32,3 @@ To compile **azure-nuke** from source you need a working [Golang](https://golang
 ```bash
 goreleaser build --clean --snapshot --single-target
 ```
-

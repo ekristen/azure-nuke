@@ -1,0 +1,70 @@
+{
+  "name": "azure-nuke",
+  "image": "mcr.microsoft.com/devcontainers/go:1.26-trixie",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:4": {
+      "moby": false
+    },
+    "ghcr.io/devcontainers-extra/features/golangci-lint:1": {
+      "version": "v2.12.2"
+    },
+    "ghcr.io/devcontainers-extra/features/pre-commit:2": {},
+    "ghcr.io/devcontainers/features/git:1": {},
+     "ghcr.io/devcontainers/features/azure-cli:1": {},
+     "ghcr.io/stuartleeks/dev-container-features/azure-cli-persistence:0": {},
+     "ghcr.io/stuartleeks/dev-container-features/shell-history:0": {}
+  },
+  "forwardPorts": [8080, 6060],
+  "portsAttributes": {
+    "8080": {
+      "label": "Documentation",
+      "onAutoForward": "notify"
+    },
+    "6060": {
+      "label": "Profiling (pprof)",
+      "onAutoForward": "notify"
+    }
+  },
+  "mounts": [
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh,target=/home/vscode/.ssh,type=bind,readonly"
+  ],
+  "remoteEnv": {
+    "CGO_ENABLED": "0",
+    "GOFLAGS": "-v -mod=readonly"
+  },
+  "remoteUser": "vscode",
+  "postCreateCommand": "bash .devcontainer/post-create-command.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go",
+        "ms-vscode.makefile-tools",
+        "eamodio.gitlens",
+        "GitHub.copilot",
+        "GitHub.vscode-pull-request-github"
+      ],
+      "settings": {
+        "go.useLanguageServer": true,
+        "go.lintOnSave": "package",
+        "go.lintTool": "golangci-lint",
+        "go.lintFlags": [
+          "--fast"
+        ],
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "golang.go",
+        "[go]": {
+          "editor.formatOnSave": true,
+          "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+          }
+        },
+        "go.coverOnSingleTestFile": true,
+        "go.coverOnTestPackage": true,
+        "files.exclude": {
+          "**/node_modules": true,
+          "**/.DS_Store": true
+        }
+      }
+    }
+  }
+}

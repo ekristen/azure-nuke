@@ -74,4 +74,3 @@ if they keep to appear.
 
 *azure-nuke* retries deleting all resources until all specified ones are deleted or until there are only resources
 with errors left.
-

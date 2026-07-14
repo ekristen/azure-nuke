@@ -4,7 +4,7 @@ Remove all resources from an Azure Tenant and it's Subscriptions.
 resources and create a Pull Request or to create an [Issue](https://github.com/ekristen/aws-nuke/issues/new).
 
 !!! danger "Destructive Tool"
-    Be aware that this is a very destructive tool, hence you have to be very careful while using it. Otherwise, 
+    Be aware that this is a very destructive tool, hence you have to be very careful while using it. Otherwise,
     you might delete production data.
 
 ## What's New in Version 1
@@ -30,4 +30,3 @@ aws-nuke, and [azure-nuke](https://github.com/ekristen/azure-nuke) and soon [gcp
 I also needed a version of this tool for Azure and GCP, and initially I just copied and altered the code I needed for
 Azure, but I didn't want to have to maintain multiple copies of the same code, so I decided to create
 [libnuke](https://github.com/ekristen/libnuke) to abstract all the code that was common between the two tools and write proper unit tests for it.
-

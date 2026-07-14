@@ -8,4 +8,4 @@ To keep things consistent with [libnuke](https://github.com/ekristen/libnuke) we
 
 Due to how Azure APIs are designed and unlike AWS, there is no easy or simple way to limit a query to a specific region.
 Some APIs support it, some state they do, but do not, therefore this tool uses the [regions configuration](../config.md#regions)
-to filter resources automatically based on region. 
+to filter resources automatically based on region.

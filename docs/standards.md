@@ -10,5 +10,3 @@ See the [contributing guide](contributing.md) for more information.
 ## CLI Standards
 
 - Use `--no-` prefix for boolean flags
-
-

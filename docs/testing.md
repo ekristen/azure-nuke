@@ -36,7 +36,7 @@ To add another service to be mocked out, you will need to do the following:
     ```go
     //go:generate ../mocks/generate_mocks.sh <service> <service>iface
     package resources
-    
+
     // Note: empty on purpose, this file exist purely to generate mocks for the <service> service
     ```
 4. Run `make generate` to generate the mocks
@@ -61,13 +61,13 @@ To add another integration test, you will need to do the following:
 2. Add the following code to the file: (replace `<resource>` with actual resource name)
    ```go
     //go:build integration
-    
+
     package resources
-    
+
     import (
         "testing"
     )
-    
+
     func Test_ExampleResource_Remove(t *testing.T) {
         // 1. write code to create resource in AWS using golang sdk
         // 2. stub the resource struct out that is defined in <resource>.go file

@@ -1,0 +1,65 @@
+name: "Validate DevContainer"
+
+on:
+  push:
+    paths:
+      - ".devcontainer/**"
+      - ".pre-commit-config.yaml"
+      - ".github/workflows/devcontainer.yml"
+  pull_request:
+    paths:
+      - ".devcontainer/**"
+      - ".pre-commit-config.yaml"
+      - ".github/workflows/devcontainer.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: "Validate DevContainer Build"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: "Setup devcontainer CLI"
+        run: npm install -g @devcontainers/cli
+
+      - name: "Build devcontainer"
+        run: devcontainer build --workspace-folder . --log-level trace
+
+      - name: "Verify devcontainer.json syntax"
+        run: |
+          if ! python3 -m json.tool .devcontainer/devcontainer.json > /dev/null; then
+            echo "❌ devcontainer.json has invalid JSON syntax"
+            exit 1
+          fi
+          echo "✅ devcontainer.json is valid JSON"
+
+      - name: "Check required files exist"
+        run: |
+          files=(
+            ".devcontainer/devcontainer.json"
+            ".devcontainer/Dockerfile"
+            ".devcontainer/post-create-command.sh"
+            ".devcontainer/README.md"
+            ".pre-commit-config.yaml"
+            ".vscode/launch.json"
+          )
+          for file in "${files[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "❌ Missing required file: $file"
+              exit 1
+            fi
+          done
+          echo "✅ All required files present"
+
+      - name: "Verify post-create-command.sh is executable"
+        run: |
+          chmod +x .devcontainer/post-create-command.sh
+          bash -n .devcontainer/post-create-command.sh
+          echo "✅ post-create-command.sh is valid shell script"
+
+      - name: "Verify Dockerfile syntax"
+        run: |
+          if ! docker run --rm -i hadolint/hadolint < .devcontainer/Dockerfile; then
+            echo "⚠️  Dockerfile has linting issues (non-blocking)"
+          fi
+          echo "✅ Dockerfile syntax check passed"

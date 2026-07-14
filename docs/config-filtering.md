@@ -109,7 +109,7 @@ The following are comparisons  that you can use to filter resources. These are u
 - `exact`
 - `contains`
 - `glob`
-- `regex` 
+- `regex`
 - `dateOlderThan`
 
 To use a non-default comparison type, it is required to specify an object with `type` and `value` instead of the
@@ -202,7 +202,7 @@ EC2Image:
 
 By default, when writing a filter if you do not specify a property, it will use the `Name` property. However, resources
 that do no support Properties, azure-nuke will fall back to what is called the `Legacy String`, it's essentially a
-function that returns a string representation of the resource. 
+function that returns a string representation of the resource.
 
 Some resources support filtering via properties. When a resource support these properties, they will be listed in
 the output like in this example:
@@ -252,7 +252,7 @@ ResourceGroup:
 
 It is possible to filter this is important for not deleting the current user for example or for resources like S3
 Buckets which have a globally shared namespace and might be hard to recreate. Currently, the filtering is based on
-the resource identifier. The identifier will be printed as the first step of *azure-nuke* (eg `i-01b489457a60298dd` 
+the resource identifier. The identifier will be printed as the first step of *azure-nuke* (eg `i-01b489457a60298dd`
 for an EC2 instance).
 
 !!! warning
