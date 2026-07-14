@@ -1,7 +1,7 @@
 # Resources
 
 Resources are the core of the tool, they are what is used to list and remove resources from Azure. The resources are
-broken down into separate files. 
+broken down into separate files.
 
 When creating a resource there's the base resource type, then there's the `Lister` type that returns a list of resources
 that it discovers. Those resources are then filtered by any filtering criteria on the resource itself.
@@ -28,7 +28,7 @@ package resources
 
 import (
     "context"
-    
+
     "github.com/ekristen/libnuke/pkg/resource"
     "github.com/ekristen/libnuke/pkg/types"
 )
@@ -78,7 +78,7 @@ func (l *ExampleResourceLister) List(_ context.Context, o interface{}) ([]resour
     opts := o.(*nuke.ListerOpts)
 
     var resources []resource.Resource
-    
+
     // list the resources and add to resources slice
 
     return resources, nil
@@ -92,7 +92,7 @@ package resources
 
 import (
 	"context"
-	
+
 	"github.com/ekristen/libnuke/pkg/resource"
 	"github.com/ekristen/libnuke/pkg/types"
 
@@ -105,7 +105,7 @@ func (l *ExampleResourceLister) List(_ context.Context, o interface{}) ([]resour
 	opts := o.(*nuke.ListerOpts)
 
 	var resources []resource.Resource
-	
+
 	// list the resources and add to resources slice
 
 	return resources, nil

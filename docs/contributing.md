@@ -12,7 +12,7 @@ can only act retroactive on changes of AWS services. Otherwise, it would be a fu
 If a resource is not yet supported by *azure-nuke*, you have two options to resolve this:
 
 * File [an issue](https://github.com/ekristen/azure-nuke/issues/new) and describe which resource is missing. This way someone can take care of it.
-* Add the resource yourself and open a Pull Request. Please follow the guidelines below to see how to create 
+* Add the resource yourself and open a Pull Request. Please follow the guidelines below to see how to create
   such a resource.
 
 ### Some Resource Does Not Get Deleted
@@ -21,7 +21,7 @@ Please check the following points before creating a bug issue:
 
 * Is the resource actually supported by *azure-nuke*? If not, please follow the guidelines above.
 * Are there permission problems? In this case *azure-nuke* will print errors that usually contain the status code `403`.
-* Did you just get scared by an error that was printed? *azure-nuke* does not know about dependencies between resources. 
+* Did you just get scared by an error that was printed? *azure-nuke* does not know about dependencies between resources.
   To work around this it will just retry deleting all resources in multiple iterations. Therefore, it is normal that
   there are a lot of dependency errors in the first one. The iterations are separated by lines starting with
   `Removal requested:` and only the errors in the last block indicate actual errors.
@@ -114,12 +114,12 @@ import (
     "context"
 
     "github.com/sirupsen/logrus"
-	
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	
+
 	"github.com/ekristen/libnuke/pkg/settings"
-	
+
 	"github.com/ekristen/azure-nuke/pkg/types"
 )
 ```
@@ -136,7 +136,7 @@ single commit and then merged into the main branch. This keeps the commit histor
 We are using the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification for our commit
 messages. This allows us to automatically generate a changelog and version numbers.
 
-All commits in a pull request must follow this format or the GitHub Actions will fail. 
+All commits in a pull request must follow this format or the GitHub Actions will fail.
 
 #### Signed Commits
 

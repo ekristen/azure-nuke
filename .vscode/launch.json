@@ -1,0 +1,67 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Connect to Delve",
+      "type": "go",
+      "request": "attach",
+      "mode": "local",
+      "dlvToolPath": "dlv",
+      "showLog": false
+    },
+    {
+      "name": "Debug azure-nuke (dry-run)",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "program": "${workspaceFolder}",
+      "args": [
+        "--config",
+        "config.yaml",
+        "--dry-run",
+        "--verbose"
+      ],
+      "showLog": true,
+      "trace": "verbose",
+      "logOutput": "rpc"
+    },
+    {
+      "name": "Debug azure-nuke (interactive)",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "program": "${workspaceFolder}",
+      "args": [
+        "--config",
+        "config.yaml"
+      ],
+      "env": {},
+      "preLaunchTask": "",
+      "showLog": true,
+      "promptOnActionScriptWarning": true
+    },
+    {
+      "name": "Debug Test",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${fileDirname}",
+      "args": [
+        "-test.run",
+        "^${selectedText}$"
+      ],
+      "showLog": true
+    },
+    {
+      "name": "Debug Package Tests",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceFolder}/...",
+      "showLog": true,
+      "args": [
+        "-test.v"
+      ]
+    }
+  ]
+}

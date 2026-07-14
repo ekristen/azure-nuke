@@ -36,7 +36,7 @@ builds:
     hooks:
       post:
         - cmd: |
-            {{- if eq .Os "darwin" -}} 
+            {{- if eq .Os "darwin" -}}
             quill sign-and-notarize "{{ .Path }}" --dry-run={{ .IsSnapshot }} --ad-hoc={{ .IsSnapshot }} -vv
             {{- else -}}
             true
@@ -126,4 +126,3 @@ snapshot:
   version_template: '{{ trimprefix .Summary "v" }}'
 changelog:
   disable: true # We are skipping changelog because we are using semantic release
-

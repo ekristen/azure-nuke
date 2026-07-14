@@ -9,4 +9,3 @@ config.yaml
 test-*.yaml
 config*.yaml
 cosign.key
-

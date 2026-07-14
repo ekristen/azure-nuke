@@ -58,11 +58,13 @@ type Config struct {
 
 	// These are tenants that are configured. There is a more generic Accounts in the config that is available that
 	// should be used instead of this.
+	//
 	// Deprecated: Use Accounts instead. Will be removed in 2.x
 	Tenants map[string]*config.Account `yaml:"tenants"`
 
 	// TenantBlocklist is a list of tenant IDs that should be blocklisted. This is used to prevent you from accidentally
 	// nuking your production account.
+	//
 	// Deprecated: Use Blocklist instead. Will be removed in 2.x
 	TenantBlocklist []string `yaml:"tenant-blocklist"`
 }

@@ -10,9 +10,9 @@ To reduce the blast radius of accidents, there are some safety precautions:
    resources.
 2. **azure-nuke** asks you twice to confirm the deletion by entering the account alias. The first time is directly
    after the start and the second time after listing all nuke-able resources.
-       
+
     !!! note "ProTip"
-        This can be disabled by adding `--no-prompt` to the command line. 
+        This can be disabled by adding `--no-prompt` to the command line.
 
 3. The config file contains a blocklist field. If the Account ID of the account you want to nuke is part of this
    blocklist, **azure-nuke** will abort. It is recommended, that you add every production account to this blocklist.
@@ -24,4 +24,3 @@ To reduce the blast radius of accidents, there are some safety precautions:
    keep up to date.
 
 Feel free to create an issue, if you have any ideas to improve the safety procedures.
-

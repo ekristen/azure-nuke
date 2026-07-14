@@ -1,0 +1,44 @@
+# Pre-commit hooks configuration for azure-nuke
+# Install hooks with: pre-commit install
+# Run manually with: pre-commit run --all-files
+
+repos:
+  # Go linting (use preinstalled binary from devcontainer/toolchain)
+  - repo: local
+    hooks:
+      - id: golangci-lint
+        name: golangci-lint
+        entry: golangci-lint run --fast-only --no-config
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
+  # File cleanup
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        stages: [pre-commit]
+      - id: end-of-file-fixer
+        stages: [pre-commit]
+      - id: check-yaml
+        args: [--unsafe]
+        stages: [pre-commit]
+      - id: check-added-large-files
+        args: [--maxkb=1000]
+        stages: [pre-commit]
+
+  # Conventional commits validation
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.0.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args:
+          - --force-scope
+          - --scope-regex=^(core|resources|config|commands|pkg|docs|ci|deps|test)(\(.+\))?
+        # Optional: Enforce scopes
+        # Scope examples: core, resources, config, commands, docs, ci, deps
+
+default_stages: [pre-commit]
+fail_fast: false
