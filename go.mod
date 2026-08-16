@@ -1,6 +1,6 @@
 module github.com/ekristen/azure-nuke
 
-go 1.21.6
+go 1.22
 
 require (
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible
@@ -23,6 +23,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.11.1
 	github.com/urfave/cli/v2 v2.27.7
+	github.com/urfave/cli/v3 v3.11.0
 )
 
 require (
