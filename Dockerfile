@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.18-labs
+# syntax=docker/dockerfile:1.27-labs
 FROM alpine:3.22.1 as base
 ARG PROJECT_NAME=azure-nuke
 RUN apk add --no-cache ca-certificates
