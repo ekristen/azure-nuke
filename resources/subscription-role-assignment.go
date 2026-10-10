@@ -13,7 +13,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -113,7 +113,9 @@ func (l *SubscriptionRoleAssignmentLister) List(ctx context.Context, o interface
 	spClient.BaseClient.DisableRetries = true
 
 	log.Debug("listing subscription role assignments")
-	pager := client.NewListPager(&armauthorization.RoleAssignmentsClientListOptions{Filter: ptr.String("atScope()")})
+	pager := client.NewListForSubscriptionPager(&armauthorization.RoleAssignmentsClientListForSubscriptionOptions{
+		Filter: ptr.String("atScope()"),
+	})
 
 	for pager.More() {
 		nextResult, err := pager.NextPage(ctx)

@@ -9,7 +9,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/security/armsecurity"
-	"github.com/Azure/go-autorest/autorest/to"
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -44,7 +43,7 @@ func (r *SecurityAssessment) Filter() error {
 }
 
 func (r *SecurityAssessment) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, strings.TrimLeft(to.String(r.ResourceID), "/"), to.String(r.Name), nil)
+	_, err := r.client.Delete(ctx, strings.TrimLeft(ptr.ToString(r.ResourceID), "/"), ptr.ToString(r.Name), nil)
 	return err
 }
 
@@ -94,7 +93,7 @@ func (l SecurityAssessmentLister) List(ctx context.Context, o interface{}) ([]re
 				continue
 			}
 
-			parts := strings.Split(to.String(v.ID), "/providers/Microsoft.Security")
+			parts := strings.Split(ptr.ToString(v.ID), "/providers/Microsoft.Security")
 			resources = append(resources, &SecurityAssessment{
 				BaseResource: &BaseResource{
 					Region: ptr.String("global"),

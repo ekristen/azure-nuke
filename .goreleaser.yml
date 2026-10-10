@@ -112,14 +112,14 @@ signs:
     cmd: cosign
     signature: "${artifact}.sig"
     certificate: "${artifact}.pem"
-    args: ["sign-blob", "--yes", "--oidc-provider=github", "--oidc-issuer=https://token.actions.githubusercontent.com", "--output-certificate=${certificate}", "--output-signature=${signature}", "${artifact}"]
+    args: ["sign-blob", "--yes", "--use-signing-config=false", "--new-bundle-format=false", "--oidc-provider=github", "--oidc-issuer=https://token.actions.githubusercontent.com", "--output-certificate=${certificate}", "--output-signature=${signature}", "${artifact}"]
     artifacts: all
 docker_signs:
   - ids:
       - default
     artifacts: all
     cmd: cosign
-    args: ["sign", "--yes", "--oidc-provider=github", "--oidc-issuer=https://token.actions.githubusercontent.com", "--output-certificate=${certificate}", "--output-signature=${signature}", "${artifact}"]
+    args: ["sign", "--yes", "--use-signing-config=false", "--new-bundle-format=false", "--oidc-provider=github", "--oidc-issuer=https://token.actions.githubusercontent.com", "--output-certificate=${certificate}", "--output-signature=${signature}", "${artifact}"]
 checksum:
   name_template: "checksums.txt"
 snapshot:
