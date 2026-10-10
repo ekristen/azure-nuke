@@ -160,6 +160,11 @@ func execute(ctx context.Context, cmd *cli.Command) error { //nolint:funlen,gocy
 		nil,
 	)
 
+	// the tenant scanner, and so the tenant resource types, only run for the global region
+	if slices.Contains(parsedConfig.Regions, "global") || slices.Contains(parsedConfig.Regions, "all") {
+		p.TenantResourceTypes = tenantResourceTypes
+	}
+
 	subResourceTypes := types.ResolveResourceTypes(
 		registry.GetNamesForScope(azure.SubscriptionScope),
 		[]types.Collection{
