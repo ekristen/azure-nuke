@@ -5,6 +5,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v12"
 
 	"github.com/ekristen/libnuke/pkg/registry"
@@ -72,9 +73,10 @@ func (l VirtualNetworkLister) List(ctx context.Context, o interface{}) ([]resour
 type VirtualNetwork struct {
 	*BaseResource `property:",inline"`
 
-	client *armnetwork.VirtualNetworksClient
-	Name   *string
-	Tags   map[string]*string
+	client   *armnetwork.VirtualNetworksClient
+	removeOp *runtime.Poller[armnetwork.VirtualNetworksClientDeleteResponse]
+	Name     *string
+	Tags     map[string]*string
 }
 
 func (r *VirtualNetwork) Remove(ctx context.Context) error {
@@ -83,8 +85,12 @@ func (r *VirtualNetwork) Remove(ctx context.Context) error {
 		return err
 	}
 
-	_, err = poller.PollUntilDone(ctx, nil)
-	return err
+	r.removeOp = poller
+	return nil
+}
+
+func (r *VirtualNetwork) HandleWait(ctx context.Context) error {
+	return azure.WaitForPoller(ctx, r.removeOp)
 }
 
 func (r *VirtualNetwork) Properties() types.Properties {

@@ -55,5 +55,7 @@ OPTIONS:
    --log-caller                               log the caller (aka line number and file) (default: false)
    --log-disable-color                        disable log coloring (default: false)
    --log-full-timestamp                       force log output to always show full timestamp (default: false)
+   --log-format value                         log format (default: "standard") [$AZURE_NUKE_LOG_FORMAT]
+   --json                                     output as json, shorthand for --log-format=json (default: false) [$AZURE_NUKE_LOG_FORMAT_JSON]
    --help, -h                                 show help (default: false)
 ```

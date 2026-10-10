@@ -7,6 +7,7 @@ import (
 	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/recoveryservices/armrecoveryservices/v3"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/recoveryservices/armrecoveryservicesbackup/v5"
 
@@ -35,6 +36,7 @@ type RecoveryServicesBackupPolicy struct {
 	*BaseResource `property:",inline"`
 
 	protectionsClient *armrecoveryservicesbackup.ProtectionPoliciesClient
+	removeOp          *runtime.Poller[armrecoveryservicesbackup.ProtectionPoliciesClientDeleteResponse]
 
 	ID        *string
 	Name      *string
@@ -51,8 +53,12 @@ func (r *RecoveryServicesBackupPolicy) Remove(ctx context.Context) error {
 		return err
 	}
 
-	_, err = poller.PollUntilDone(ctx, nil)
-	return err
+	r.removeOp = poller
+	return nil
+}
+
+func (r *RecoveryServicesBackupPolicy) HandleWait(ctx context.Context) error {
+	return azure.WaitForPoller(ctx, r.removeOp)
 }
 
 func (r *RecoveryServicesBackupPolicy) Properties() types.Properties {

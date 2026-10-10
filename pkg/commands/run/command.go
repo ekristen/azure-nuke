@@ -88,6 +88,16 @@ func execute(ctx context.Context, cmd *cli.Command) error { //nolint:funlen,gocy
 		return err
 	}
 
+	if err := parsedConfig.ValidateAccount(cmd.String("tenant-id")); err != nil {
+		return err
+	}
+
+	for _, subscriptionID := range cmd.StringSlice("subscription-id") {
+		if parsedConfig.InBlocklist(subscriptionID) {
+			return fmt.Errorf("subscription %s is in the blocklist", subscriptionID)
+		}
+	}
+
 	tenant, err := azure.NewTenant(ctx,
 		authorizers, cmd.String("tenant-id"), cmd.StringSlice("subscription-id"), parsedConfig.Regions)
 	if err != nil {
@@ -318,7 +328,7 @@ func init() {
 			Name:     "subscription-id",
 			Usage:    "the subscription-id to nuke (this filters to 1 or more subscription ids)",
 			Sources:  cli.EnvVars("AZURE_SUBSCRIPTION_ID"),
-			Required: false,
+			Required: true,
 		},
 		&cli.StringFlag{
 			Name:    "client-id",

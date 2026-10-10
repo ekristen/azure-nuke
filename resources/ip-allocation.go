@@ -5,6 +5,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v12"
 
 	"github.com/ekristen/libnuke/pkg/registry"
@@ -70,9 +71,10 @@ func (l IPAllocationLister) List(ctx context.Context, o interface{}) ([]resource
 type IPAllocation struct {
 	*BaseResource `property:",inline"`
 
-	client *armnetwork.IPAllocationsClient
-	Name   *string
-	Tags   map[string]*string
+	client   *armnetwork.IPAllocationsClient
+	removeOp *runtime.Poller[armnetwork.IPAllocationsClientDeleteResponse]
+	Name     *string
+	Tags     map[string]*string
 }
 
 func (r *IPAllocation) Remove(ctx context.Context) error {
@@ -81,8 +83,12 @@ func (r *IPAllocation) Remove(ctx context.Context) error {
 		return err
 	}
 
-	_, err = poller.PollUntilDone(ctx, nil)
-	return err
+	r.removeOp = poller
+	return nil
+}
+
+func (r *IPAllocation) HandleWait(ctx context.Context) error {
+	return azure.WaitForPoller(ctx, r.removeOp)
 }
 
 func (r *IPAllocation) Properties() types.Properties {

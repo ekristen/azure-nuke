@@ -31,7 +31,7 @@ blocklist:
 
 regions:
   - global
-  - us-east-1
+  - eastus
 
 accounts:
   11111111-1111-1111-1111-111111111111:
@@ -48,10 +48,11 @@ resource-types:
 
 The blocklist is simply a list of Accounts that the tool cannot run against. This is to protect the user from accidentally
 running the tool against the wrong account. The blocklist must always be populated with at least one entry.
+The run aborts if the tenant ID or any of the `--subscription-id` values is in the blocklist.
 
 ## Regions
 
-The regions is a list of AWS regions that the tool will run against. The tool will run against all regions specified in the
+The regions is a list of Azure regions that the tool will run against. The tool will run against all regions specified in the
 configuration. If no regions are listed, then the tool will **NOT** run against any region. Regions must be explicitly
 provided.
 
@@ -113,6 +114,12 @@ against all resource types unless Includes is specified.
 Settings are a map of resource types to their settings configuration. This allows for alternative behavior when removing
 resources. If a resource has a setting alternative, and you'd like to use its behavior, then you can specify the resource
 type in the `settings` section.
+
+```yaml
+settings:
+  ResourceGroup:
+    DeleteManaged: true
+```
 
 ## Global Presets
 

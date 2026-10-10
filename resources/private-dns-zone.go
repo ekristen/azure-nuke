@@ -6,6 +6,7 @@ import (
 	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns/v2"
 
 	"github.com/ekristen/libnuke/pkg/registry"
@@ -29,9 +30,10 @@ func init() {
 type PrivateDNSZone struct {
 	*BaseResource `property:",inline"`
 
-	client *armprivatedns.PrivateZonesClient
-	Name   *string
-	Tags   map[string]*string
+	client   *armprivatedns.PrivateZonesClient
+	removeOp *runtime.Poller[armprivatedns.PrivateZonesClientDeleteResponse]
+	Name     *string
+	Tags     map[string]*string
 }
 
 func (r *PrivateDNSZone) Remove(ctx context.Context) error {
@@ -40,8 +42,12 @@ func (r *PrivateDNSZone) Remove(ctx context.Context) error {
 		return err
 	}
 
-	_, err = poller.PollUntilDone(ctx, nil)
-	return err
+	r.removeOp = poller
+	return nil
+}
+
+func (r *PrivateDNSZone) HandleWait(ctx context.Context) error {
+	return azure.WaitForPoller(ctx, r.removeOp)
 }
 
 func (r *PrivateDNSZone) Properties() types.Properties {

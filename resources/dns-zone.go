@@ -5,6 +5,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
 
 	"github.com/ekristen/libnuke/pkg/registry"
@@ -76,9 +77,10 @@ func (l DNSZoneLister) List(ctx context.Context, o interface{}) ([]resource.Reso
 type DNSZone struct {
 	*BaseResource `property:",inline"`
 
-	client *armdns.ZonesClient
-	Name   *string
-	Tags   map[string]*string
+	client   *armdns.ZonesClient
+	removeOp *runtime.Poller[armdns.ZonesClientDeleteResponse]
+	Name     *string
+	Tags     map[string]*string
 }
 
 func (r *DNSZone) Remove(ctx context.Context) error {
@@ -87,8 +89,12 @@ func (r *DNSZone) Remove(ctx context.Context) error {
 		return err
 	}
 
-	_, err = poller.PollUntilDone(ctx, nil)
-	return err
+	r.removeOp = poller
+	return nil
+}
+
+func (r *DNSZone) HandleWait(ctx context.Context) error {
+	return azure.WaitForPoller(ctx, r.removeOp)
 }
 
 func (r *DNSZone) Properties() types.Properties {

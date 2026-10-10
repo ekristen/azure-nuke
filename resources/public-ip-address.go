@@ -5,6 +5,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v12"
 
 	"github.com/ekristen/libnuke/pkg/registry"
@@ -31,9 +32,10 @@ func init() {
 type PublicIPAddresses struct {
 	*BaseResource `property:",inline"`
 
-	client *armnetwork.PublicIPAddressesClient
-	Name   *string
-	Tags   map[string]*string
+	client   *armnetwork.PublicIPAddressesClient
+	removeOp *runtime.Poller[armnetwork.PublicIPAddressesClientDeleteResponse]
+	Name     *string
+	Tags     map[string]*string
 }
 
 func (r *PublicIPAddresses) Remove(ctx context.Context) error {
@@ -42,8 +44,12 @@ func (r *PublicIPAddresses) Remove(ctx context.Context) error {
 		return err
 	}
 
-	_, err = poller.PollUntilDone(ctx, nil)
-	return err
+	r.removeOp = poller
+	return nil
+}
+
+func (r *PublicIPAddresses) HandleWait(ctx context.Context) error {
+	return azure.WaitForPoller(ctx, r.removeOp)
 }
 
 func (r *PublicIPAddresses) Properties() types.Properties {

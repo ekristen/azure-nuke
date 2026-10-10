@@ -7,6 +7,7 @@ import (
 	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v12"
 
 	"github.com/ekristen/libnuke/pkg/registry"
@@ -74,9 +75,10 @@ func (l ApplicationGatewayLister) List(ctx context.Context, o interface{}) ([]re
 type ApplicationGateway struct {
 	*BaseResource `property:",inline"`
 
-	client *armnetwork.ApplicationGatewaysClient
-	ID     *string
-	Name   *string
+	client   *armnetwork.ApplicationGatewaysClient
+	removeOp *runtime.Poller[armnetwork.ApplicationGatewaysClientDeleteResponse]
+	ID       *string
+	Name     *string
 }
 
 func (r *ApplicationGateway) Filter() error {
@@ -89,8 +91,12 @@ func (r *ApplicationGateway) Remove(ctx context.Context) error {
 		return err
 	}
 
-	_, err = poller.PollUntilDone(ctx, nil)
-	return err
+	r.removeOp = poller
+	return nil
+}
+
+func (r *ApplicationGateway) HandleWait(ctx context.Context) error {
+	return azure.WaitForPoller(ctx, r.removeOp)
 }
 
 func (r *ApplicationGateway) Properties() types.Properties {

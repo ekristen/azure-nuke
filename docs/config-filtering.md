@@ -267,7 +267,7 @@ config that deletes all resources but the `admin` user with its access permissio
 ---
 regions:
   - global
-  - us-east-1
+  - eastus
 
 blocklist:
   - 00000000-0000-0000-0000-000000000000
@@ -296,7 +296,7 @@ multiple accounts. A configuration could look like this:
 ---
 regions:
   - global
-  - eu-west-1
+  - eastus
 
 blocklist:
   - 00000000-0000-0000-0000-000000000000
@@ -343,7 +343,7 @@ It is also possible to configure the resource types in the config file like in t
 
 ```yaml
 regions:
-  - us-east-1
+  - eastus
 
 blocklist:
   - 00000000-0000-0000-0000-000000000000
@@ -362,7 +362,7 @@ accounts:
 
 ```yaml
 regions:
-  - us-east-1
+  - eastus
 
 blocklist:
   - 00000000-0000-0000-0000-000000000000

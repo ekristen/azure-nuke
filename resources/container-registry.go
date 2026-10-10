@@ -5,6 +5,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerregistry/armcontainerregistry/v3"
 
 	"github.com/ekristen/libnuke/pkg/registry"
@@ -28,9 +29,10 @@ func init() {
 type ContainerRegistry struct {
 	*BaseResource `property:",inline"`
 
-	client *armcontainerregistry.RegistriesClient
-	Name   *string
-	Tags   map[string]*string
+	client   *armcontainerregistry.RegistriesClient
+	removeOp *runtime.Poller[armcontainerregistry.RegistriesClientDeleteResponse]
+	Name     *string
+	Tags     map[string]*string
 }
 
 func (r *ContainerRegistry) Remove(ctx context.Context) error {
@@ -39,8 +41,12 @@ func (r *ContainerRegistry) Remove(ctx context.Context) error {
 		return err
 	}
 
-	_, err = poller.PollUntilDone(ctx, nil)
-	return err
+	r.removeOp = poller
+	return nil
+}
+
+func (r *ContainerRegistry) HandleWait(ctx context.Context) error {
+	return azure.WaitForPoller(ctx, r.removeOp)
 }
 
 func (r *ContainerRegistry) Properties() types.Properties {

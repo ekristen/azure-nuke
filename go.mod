@@ -26,6 +26,7 @@ require (
 	github.com/ekristen/libnuke v1.3.0
 	github.com/fatih/camelcase v1.0.0
 	github.com/fatih/color v1.19.0
+	github.com/gertd/go-pluralize v0.2.1
 	github.com/gotidy/ptr v1.4.0
 	github.com/hashicorp/go-azure-sdk/sdk v0.20261005.1221110
 	github.com/iancoleman/strcase v0.3.0

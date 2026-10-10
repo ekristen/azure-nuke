@@ -34,7 +34,7 @@ blocklist:
 
 regions:
   - global
-  - us-east-1
+  - eastus
 
 accounts:
   11111111-1111-1111-1111-111111111111:

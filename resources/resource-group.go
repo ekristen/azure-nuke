@@ -2,15 +2,18 @@ package resources
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v4"
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/settings"
 	"github.com/ekristen/libnuke/pkg/types"
 
 	"github.com/ekristen/azure-nuke/pkg/azure"
@@ -24,6 +27,12 @@ func init() {
 		Scope:    azure.SubscriptionScope,
 		Resource: &ResourceGroup{},
 		Lister:   &ResourceGroupLister{},
+		DependsOn: []string{
+			ManagementLockResource,
+		},
+		Settings: []string{
+			"DeleteManaged",
+		},
 	})
 }
 
@@ -31,9 +40,21 @@ func init() {
 type ResourceGroup struct {
 	*BaseResource `property:",inline"`
 
-	client *armresources.ResourceGroupsClient
-	Name   *string            `description:"The Name of the resource group."`
-	Tags   map[string]*string `description:"The tags assigned to the resource group."`
+	client   *armresources.ResourceGroupsClient
+	removeOp *runtime.Poller[armresources.ResourceGroupsClientDeleteResponse]
+	settings *settings.Setting
+
+	Name      *string            `description:"The Name of the resource group."`
+	ManagedBy *string            `description:"The ID of the resource that manages the resource group."`
+	Tags      map[string]*string `description:"The tags assigned to the resource group."`
+}
+
+func (r *ResourceGroup) Filter() error {
+	if ptr.ToString(r.ManagedBy) != "" && !r.settings.GetBool("DeleteManaged") {
+		return errors.New("resource group is managed by another resource")
+	}
+
+	return nil
 }
 
 func (r *ResourceGroup) Remove(ctx context.Context) error {
@@ -45,8 +66,12 @@ func (r *ResourceGroup) Remove(ctx context.Context) error {
 		return err
 	}
 
-	_, err = poller.PollUntilDone(ctx, nil)
-	return err
+	r.removeOp = poller
+	return nil
+}
+
+func (r *ResourceGroup) HandleWait(ctx context.Context) error {
+	return azure.WaitForPoller(ctx, r.removeOp)
 }
 
 func (r *ResourceGroup) Properties() types.Properties {
@@ -55,6 +80,10 @@ func (r *ResourceGroup) Properties() types.Properties {
 
 func (r *ResourceGroup) String() string {
 	return *r.Name
+}
+
+func (r *ResourceGroup) Settings(setting *settings.Setting) {
+	r.settings = setting
 }
 
 // -------------------
@@ -91,9 +120,10 @@ func (l ResourceGroupLister) List(ctx context.Context, o interface{}) ([]resourc
 					Region:         entity.Location,
 					SubscriptionID: ptr.String(opts.SubscriptionID),
 				},
-				client: client,
-				Name:   entity.Name,
-				Tags:   entity.Tags,
+				client:    client,
+				Name:      entity.Name,
+				ManagedBy: entity.ManagedBy,
+				Tags:      entity.Tags,
 			})
 		}
 	}

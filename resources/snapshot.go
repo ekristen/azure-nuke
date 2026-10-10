@@ -6,6 +6,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v8"
 
 	"github.com/ekristen/libnuke/pkg/registry"
@@ -33,6 +34,7 @@ type ComputeSnapshot struct {
 	*BaseResource `property:",inline"`
 
 	client       *armcompute.SnapshotsClient
+	removeOp     *runtime.Poller[armcompute.SnapshotsClientDeleteResponse]
 	Name         *string
 	Tags         map[string]*string
 	CreationDate *time.Time
@@ -44,8 +46,12 @@ func (r *ComputeSnapshot) Remove(ctx context.Context) error {
 		return err
 	}
 
-	_, err = poller.PollUntilDone(ctx, nil)
-	return err
+	r.removeOp = poller
+	return nil
+}
+
+func (r *ComputeSnapshot) HandleWait(ctx context.Context) error {
+	return azure.WaitForPoller(ctx, r.removeOp)
 }
 
 func (r *ComputeSnapshot) Properties() types.Properties {

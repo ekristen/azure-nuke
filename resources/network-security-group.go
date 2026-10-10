@@ -5,6 +5,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v12"
 
 	"github.com/ekristen/libnuke/pkg/registry"
@@ -28,9 +29,10 @@ func init() {
 type NetworkSecurityGroup struct {
 	*BaseResource `property:",inline"`
 
-	client *armnetwork.SecurityGroupsClient
-	Name   *string
-	Tags   map[string]*string
+	client   *armnetwork.SecurityGroupsClient
+	removeOp *runtime.Poller[armnetwork.SecurityGroupsClientDeleteResponse]
+	Name     *string
+	Tags     map[string]*string
 }
 
 func (r *NetworkSecurityGroup) Remove(ctx context.Context) error {
@@ -39,8 +41,12 @@ func (r *NetworkSecurityGroup) Remove(ctx context.Context) error {
 		return err
 	}
 
-	_, err = poller.PollUntilDone(ctx, nil)
-	return err
+	r.removeOp = poller
+	return nil
+}
+
+func (r *NetworkSecurityGroup) HandleWait(ctx context.Context) error {
+	return azure.WaitForPoller(ctx, r.removeOp)
 }
 
 func (r *NetworkSecurityGroup) Properties() types.Properties {

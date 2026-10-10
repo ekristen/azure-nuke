@@ -110,6 +110,12 @@ func NewTenant( //nolint:gocyclo
 		}
 	}
 
+	for _, subscriptionID := range subscriptionIDs {
+		if !slices.Contains(tenant.SubscriptionIds, subscriptionID) {
+			return nil, fmt.Errorf("subscription not found: %s", subscriptionID)
+		}
+	}
+
 	if len(tenant.TenantIds) == 0 {
 		return nil, fmt.Errorf("tenant not found: %s", tenant.ID)
 	}

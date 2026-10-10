@@ -6,6 +6,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v12"
 
 	"github.com/ekristen/libnuke/pkg/registry"
@@ -74,9 +75,10 @@ func (l NetworkInterfaceLister) List(ctx context.Context, o interface{}) ([]reso
 type NetworkInterface struct {
 	*BaseResource `property:",inline"`
 
-	client *armnetwork.InterfacesClient
-	Name   *string
-	Tags   map[string]*string
+	client   *armnetwork.InterfacesClient
+	removeOp *runtime.Poller[armnetwork.InterfacesClientDeleteResponse]
+	Name     *string
+	Tags     map[string]*string
 }
 
 func (r *NetworkInterface) Remove(ctx context.Context) error {
@@ -88,8 +90,12 @@ func (r *NetworkInterface) Remove(ctx context.Context) error {
 		return err
 	}
 
-	_, err = poller.PollUntilDone(ctx, nil)
-	return err
+	r.removeOp = poller
+	return nil
+}
+
+func (r *NetworkInterface) HandleWait(ctx context.Context) error {
+	return azure.WaitForPoller(ctx, r.removeOp)
 }
 
 func (r *NetworkInterface) Properties() types.Properties {
