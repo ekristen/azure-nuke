@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v4"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
 )
 
@@ -17,8 +19,11 @@ type Tenant struct {
 	Authorizers *Authorizers
 
 	ID              string
+	Name            string
 	SubscriptionIds []string
 	TenantIds       []string
+
+	SubscriptionNames map[string]string
 
 	Regions        map[string][]string
 	ResourceGroups map[string][]string
@@ -41,9 +46,11 @@ func NewTenant( //nolint:gocyclo
 		SubscriptionIds: make([]string, 0),
 		Regions:         make(map[string][]string),
 		ResourceGroups:  make(map[string][]string),
+
+		SubscriptionNames: make(map[string]string),
 	}
 
-	tenantClient, err := armsubscription.NewTenantsClient(authorizers.IdentityCreds, nil)
+	tenantClient, err := armsubscriptions.NewTenantsClient(authorizers.IdentityCreds, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -58,6 +65,9 @@ func NewTenant( //nolint:gocyclo
 		for _, t := range page.Value {
 			log.Tracef("adding tenant: %s", *t.TenantID)
 			tenant.TenantIds = append(tenant.TenantIds, *t.TenantID)
+			if *t.TenantID == tenantID {
+				tenant.Name = displayName(t.DisplayName, t.DefaultDomain)
+			}
 		}
 	}
 
@@ -82,6 +92,7 @@ func NewTenant( //nolint:gocyclo
 
 			slog.Trace("adding subscription")
 			tenant.SubscriptionIds = append(tenant.SubscriptionIds, *s.SubscriptionID)
+			tenant.SubscriptionNames[*s.SubscriptionID] = ptr.ToString(s.DisplayName)
 
 			slog.Trace("listing resource groups")
 			groupsClient, err := armresources.NewResourceGroupsClient(*s.SubscriptionID, authorizers.IdentityCreds, nil)
@@ -142,4 +153,23 @@ func (t *Tenant) RemoveSubscriptions(skip func(subscriptionID string) bool) []st
 	})
 
 	return removed
+}
+
+// displayName joins a tenant's display name and default domain, either may be missing.
+func displayName(name, domain *string) string {
+	parts := make([]string, 0, 2)
+	for _, p := range []*string{name, domain} {
+		if ptr.ToString(p) != "" {
+			parts = append(parts, *p)
+		}
+	}
+	return strings.Join(parts, ", ")
+}
+
+// Describe returns the id with its name in parentheses when the name is known.
+func Describe(id, name string) string {
+	if name == "" {
+		return id
+	}
+	return fmt.Sprintf("%s (%s)", id, name)
 }

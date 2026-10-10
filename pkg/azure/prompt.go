@@ -20,8 +20,13 @@ func (p *Prompt) Prompt() error {
 	forceSleep := time.Duration(p.Parameters.ForceSleep) * time.Second
 
 	fmt.Printf("Do you really want to nuke the tenant and subscriptions with "+
-		"the ID %s?\n", p.Tenant.ID)
-	fmt.Printf("Subscriptions: %s\n", strings.Join(p.Tenant.SubscriptionIds, ", "))
+		"the ID %s?\n", Describe(p.Tenant.ID, p.Tenant.Name))
+
+	subscriptions := make([]string, 0, len(p.Tenant.SubscriptionIds))
+	for _, id := range p.Tenant.SubscriptionIds {
+		subscriptions = append(subscriptions, Describe(id, p.Tenant.SubscriptionNames[id]))
+	}
+	fmt.Printf("Subscriptions: %s\n", strings.Join(subscriptions, ", "))
 	if p.Parameters.Force {
 		fmt.Printf("Waiting %v before continuing.\n", forceSleep)
 		time.Sleep(forceSleep)
