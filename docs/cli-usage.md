@@ -43,6 +43,7 @@ OPTIONS:
    --no-dry-run                               actually run the removal of the resources after discovery (default: false)
    --no-prompt, --force                       disable prompting for verification to run (default: false)
    --prompt-delay value, --force-sleep value  seconds to delay after prompt before running (minimum: 3 seconds) (default: 10)
+   --max-wait-retries value                   maximum number of wait rounds for resources being removed before failing (0 = unlimited) (default: 0)
    --feature-flag value                       enable experimental behaviors that may not be fully tested or supported
    --environment value                        Azure Environment (default: "global") [$AZURE_ENVIRONMENT]
    --tenant-id value                          the tenant-id to nuke [$AZURE_TENANT_ID]

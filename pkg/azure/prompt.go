@@ -2,6 +2,7 @@ package azure
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	libnuke "github.com/ekristen/libnuke/pkg/nuke"
@@ -20,6 +21,7 @@ func (p *Prompt) Prompt() error {
 
 	fmt.Printf("Do you really want to nuke the tenant and subscriptions with "+
 		"the ID %s?\n", p.Tenant.ID)
+	fmt.Printf("Subscriptions: %s\n", strings.Join(p.Tenant.SubscriptionIds, ", "))
 	if p.Parameters.Force {
 		fmt.Printf("Waiting %v before continuing.\n", forceSleep)
 		time.Sleep(forceSleep)

@@ -85,9 +85,11 @@ func (r *NetworkInterface) Remove(ctx context.Context) error {
 	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(30*time.Second))
 	defer cancel()
 
+	r.removeOp = nil
+
 	poller, err := r.client.BeginDelete(ctx, *r.ResourceGroup, *r.Name, nil)
 	if err != nil {
-		return err
+		return azure.IgnoreNotFound(err)
 	}
 
 	r.removeOp = poller

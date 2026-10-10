@@ -1,7 +1,7 @@
 # Authentication
 
 The tenant is set with `--tenant-id` (`AZURE_TENANT_ID`) and the subscriptions to nuke with `--subscription-id`
-(`AZURE_SUBSCRIPTION_ID`, required, can be repeated).
+(`AZURE_SUBSCRIPTION_ID`, can be repeated; without it every subscription the identity can see, except blocklisted ones).
 
 ## Azure CLI
 

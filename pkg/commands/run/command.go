@@ -76,6 +76,7 @@ func execute(ctx context.Context, cmd *cli.Command) error { //nolint:funlen,gocy
 		Includes:           cmd.StringSlice("include"),
 		Excludes:           cmd.StringSlice("exclude"),
 		WaitOnDependencies: cmd.Bool("wait-on-dependencies"),
+		MaxWaitRetries:     int(cmd.Int("max-wait-retries")), //nolint:unconvert
 	}
 
 	parsedConfig, err := config.New(libconfig.Options{
@@ -92,8 +93,13 @@ func execute(ctx context.Context, cmd *cli.Command) error { //nolint:funlen,gocy
 		return err
 	}
 
+	// Azure returns subscription ids in lowercase, the blocklist may not be
+	inBlocklist := func(id string) bool {
+		return slices.ContainsFunc(parsedConfig.ResolveBlocklist(), func(b string) bool { return strings.EqualFold(b, id) })
+	}
+
 	for _, subscriptionID := range cmd.StringSlice("subscription-id") {
-		if parsedConfig.InBlocklist(subscriptionID) {
+		if inBlocklist(subscriptionID) {
 			return fmt.Errorf("subscription %s is in the blocklist", subscriptionID)
 		}
 	}
@@ -102,6 +108,11 @@ func execute(ctx context.Context, cmd *cli.Command) error { //nolint:funlen,gocy
 		authorizers, cmd.String("tenant-id"), cmd.StringSlice("subscription-id"), parsedConfig.Regions)
 	if err != nil {
 		return err
+	}
+
+	// Without --subscription-id every subscription of the tenant is nuked, except the blocklisted ones
+	for _, subscriptionID := range tenant.RemoveSubscriptions(inBlocklist) {
+		logger.Warnf("skipping subscription %s (reason: in the blocklist)", subscriptionID)
 	}
 
 	filters, err := parsedConfig.Filters(cmd.String("tenant-id"))
@@ -303,6 +314,10 @@ func init() {
 			Value:   10,
 			Aliases: []string{"force-sleep"},
 		},
+		&cli.IntFlag{
+			Name:  "max-wait-retries",
+			Usage: "maximum number of wait rounds for resources being removed before failing (0 = unlimited)",
+		},
 		&cli.BoolFlag{
 			Name:  "wait-on-dependencies",
 			Usage: "wait for dependent resources to be deleted before deleting resources that depend on them",
@@ -328,7 +343,7 @@ func init() {
 			Name:     "subscription-id",
 			Usage:    "the subscription-id to nuke (this filters to 1 or more subscription ids)",
 			Sources:  cli.EnvVars("AZURE_SUBSCRIPTION_ID"),
-			Required: true,
+			Required: false,
 		},
 		&cli.StringFlag{
 			Name:    "client-id",

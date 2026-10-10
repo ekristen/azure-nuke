@@ -78,9 +78,11 @@ type IPAllocation struct {
 }
 
 func (r *IPAllocation) Remove(ctx context.Context) error {
+	r.removeOp = nil
+
 	poller, err := r.client.BeginDelete(ctx, *r.ResourceGroup, *r.Name, nil)
 	if err != nil {
-		return err
+		return azure.IgnoreNotFound(err)
 	}
 
 	r.removeOp = poller

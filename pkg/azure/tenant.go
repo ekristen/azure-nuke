@@ -126,3 +126,20 @@ func NewTenant( //nolint:gocyclo
 
 	return tenant, nil
 }
+
+// RemoveSubscriptions drops the subscriptions for which skip returns true, with their resource groups, and returns
+// the removed ids.
+func (t *Tenant) RemoveSubscriptions(skip func(subscriptionID string) bool) []string {
+	removed := make([]string, 0)
+	t.SubscriptionIds = slices.DeleteFunc(t.SubscriptionIds, func(subscriptionID string) bool {
+		if !skip(subscriptionID) {
+			return false
+		}
+		removed = append(removed, subscriptionID)
+		delete(t.ResourceGroups, subscriptionID)
+		delete(t.Regions, subscriptionID)
+		return true
+	})
+
+	return removed
+}

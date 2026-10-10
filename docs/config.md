@@ -48,7 +48,9 @@ resource-types:
 
 The blocklist is simply a list of Accounts that the tool cannot run against. This is to protect the user from accidentally
 running the tool against the wrong account. The blocklist must always be populated with at least one entry.
-The run aborts if the tenant ID or any of the `--subscription-id` values is in the blocklist.
+The blocklist can hold tenant and subscription IDs. The run aborts if the tenant ID or any of the `--subscription-id`
+values is in the blocklist; without `--subscription-id`, blocklisted subscriptions of the tenant are skipped. Subscription
+IDs are compared case-insensitively.
 
 ## Regions
 
@@ -119,7 +121,23 @@ type in the `settings` section.
 settings:
   ResourceGroup:
     DeleteManaged: true
+    DeleteLocks: true
+    SoftDeleteKeyVaultKeys: true
+    SoftDeleteKeyVaultKeysTag: created-by=entigo-infralib
 ```
+
+`ResourceGroup` settings:
+
+- `DeleteManaged`: also delete resource groups managed by another resource (AKS node resource groups, Container Apps
+  infrastructure); by default they are filtered.
+- `SoftDeleteKeyVaultKeys`: before the resource group is deleted, soft-delete (never purge) the keys of its Key Vaults
+  and wait until they are deleted. A purge-protected vault with a fixed name that is recovered later then comes back
+  without live keys. `SoftDeleteKeyVaultKeysTag` limits this to vaults with that tag: `key=value`, or `key` for any
+  value. Keys backing a certificate and vaults without soft delete are skipped. The data plane must be reachable with
+  key delete rights (a firewall or a missing role makes the resource group fail on every attempt, it is not deleted
+  without its keys).
+- `DeleteLocks`: before the resource group is deleted, delete its management locks, including locks on its resources.
+  Needs `Microsoft.Authorization/locks/delete` (Owner or User Access Administrator; Contributor does not have it).
 
 ## Global Presets
 

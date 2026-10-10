@@ -8,6 +8,7 @@ import (
 	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v4"
 
@@ -32,6 +33,9 @@ func init() {
 		},
 		Settings: []string{
 			"DeleteManaged",
+			"DeleteLocks",
+			"SoftDeleteKeyVaultKeys",
+			"SoftDeleteKeyVaultKeysTag",
 		},
 	})
 }
@@ -41,6 +45,7 @@ type ResourceGroup struct {
 	*BaseResource `property:",inline"`
 
 	client   *armresources.ResourceGroupsClient
+	creds    azcore.TokenCredential
 	removeOp *runtime.Poller[armresources.ResourceGroupsClientDeleteResponse]
 	settings *settings.Setting
 
@@ -50,7 +55,7 @@ type ResourceGroup struct {
 }
 
 func (r *ResourceGroup) Filter() error {
-	if ptr.ToString(r.ManagedBy) != "" && !r.settings.GetBool("DeleteManaged") {
+	if ptr.ToString(r.ManagedBy) != "" && !r.setting("DeleteManaged") {
 		return errors.New("resource group is managed by another resource")
 	}
 
@@ -58,12 +63,37 @@ func (r *ResourceGroup) Filter() error {
 }
 
 func (r *ResourceGroup) Remove(ctx context.Context) error {
+	r.removeOp = nil
+
+	// Keys before locks: a failed key delete leaves the locks in place, and the next round retries both
+	if r.setting("SoftDeleteKeyVaultKeys") || r.setting("DeleteLocks") {
+		cleanupCtx, cancel := context.WithTimeout(ctx, resourceGroupCleanupTimeout)
+		defer cancel()
+
+		deleting, err := r.deleting(cleanupCtx)
+		if err != nil {
+			return azure.IgnoreNotFound(err)
+		}
+
+		// a retry after a failed poll: the delete already runs, its vaults may be half gone
+		if !deleting && r.setting("SoftDeleteKeyVaultKeys") {
+			if err := r.softDeleteKeys(cleanupCtx); err != nil {
+				return err
+			}
+		}
+		if !deleting && r.setting("DeleteLocks") {
+			if err := r.deleteLocks(cleanupCtx); err != nil {
+				return err
+			}
+		}
+	}
+
 	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(30*time.Second))
 	defer cancel()
 
 	poller, err := r.client.BeginDelete(ctx, *r.Name, nil)
 	if err != nil {
-		return err
+		return azure.IgnoreNotFound(err)
 	}
 
 	r.removeOp = poller
@@ -84,6 +114,10 @@ func (r *ResourceGroup) String() string {
 
 func (r *ResourceGroup) Settings(setting *settings.Setting) {
 	r.settings = setting
+}
+
+func (r *ResourceGroup) setting(key string) bool {
+	return r.settings != nil && r.settings.GetBool(key)
 }
 
 // -------------------
@@ -121,6 +155,7 @@ func (l ResourceGroupLister) List(ctx context.Context, o interface{}) ([]resourc
 					SubscriptionID: ptr.String(opts.SubscriptionID),
 				},
 				client:    client,
+				creds:     opts.Authorizers.IdentityCreds,
 				Name:      entity.Name,
 				ManagedBy: entity.ManagedBy,
 				Tags:      entity.Tags,

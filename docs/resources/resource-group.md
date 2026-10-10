@@ -21,3 +21,6 @@
 ## Settings
 
 - `DeleteManaged`
+- `DeleteLocks`
+- `SoftDeleteKeyVaultKeys`
+- `SoftDeleteKeyVaultKeysTag`
