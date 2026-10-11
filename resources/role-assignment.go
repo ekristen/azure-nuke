@@ -127,8 +127,6 @@ type RoleAssignment struct {
 	PrincipalType *string `description:"The type of the principal: User, Group, ServicePrincipal, ..."`
 }
 
-// Filter keeps every assignment outside the subscription's resource groups: on the subscription itself (owners, the
-// identity running the nuke) or inherited from a management group or the tenant root.
 // Filter keeps every assignment outside the subscription's resource groups: inherited from a management group or the
 // tenant root always, on the subscription itself (owners, the identity running the nuke) unless the
 // IncludeSubscriptionScope setting is on.
