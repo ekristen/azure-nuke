@@ -655,9 +655,13 @@ regions:
   - eastus
   - westus2
 ```
+
 Resources without a meaningful region (like AAD resources) typically use `"global"`.
+
 ### Context Deadlines
+
 Some resources add explicit context deadlines to prevent hanging:
+
 ```go
 ctx, cancel := context.WithDeadline(ctx, time.Now().Add(30*time.Second))
 defer cancel()
