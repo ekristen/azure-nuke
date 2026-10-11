@@ -14,3 +14,6 @@
 - **`PrincipalType`**: The type of the principal: User, Group, ServicePrincipal, ...
 - **`RoleName`**: The name of the assigned role.
 - **`Scope`**: The scope the role is assigned at.
+## Settings
+
+- `IncludeSubscriptionScope`

@@ -13,6 +13,7 @@ import (
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
+	"github.com/ekristen/libnuke/pkg/settings"
 	"github.com/ekristen/libnuke/pkg/types"
 
 	"github.com/ekristen/azure-nuke/pkg/azure"
@@ -29,6 +30,9 @@ func init() {
 		Scope:    azure.SubscriptionScope,
 		Resource: &RoleAssignment{},
 		Lister:   &RoleAssignmentLister{},
+		Settings: []string{
+			"IncludeSubscriptionScope",
+		},
 	})
 }
 
@@ -114,6 +118,7 @@ type RoleAssignment struct {
 	*BaseResource `property:",inline"`
 
 	client        *armauthorization.RoleAssignmentsClient
+	settings      *settings.Setting
 	ID            *string `description:"The ID of the role assignment."`
 	Name          *string `description:"The name (GUID) of the role assignment."`
 	Scope         *string `description:"The scope the role is assigned at."`
@@ -124,12 +129,27 @@ type RoleAssignment struct {
 
 // Filter keeps every assignment outside the subscription's resource groups: on the subscription itself (owners, the
 // identity running the nuke) or inherited from a management group or the tenant root.
+// Filter keeps every assignment outside the subscription's resource groups: inherited from a management group or the
+// tenant root always, on the subscription itself (owners, the identity running the nuke) unless the
+// IncludeSubscriptionScope setting is on.
 func (r *RoleAssignment) Filter() error {
-	if !strings.HasPrefix(strings.ToLower(ptr.ToString(r.Scope)),
-		strings.ToLower("/subscriptions/"+ptr.ToString(r.SubscriptionID)+"/resourceGroups/")) {
-		return errors.New("not assigned within a resource group of the subscription")
+	scope := strings.ToLower(ptr.ToString(r.Scope))
+	subscription := strings.ToLower("/subscriptions/" + ptr.ToString(r.SubscriptionID))
+
+	if scope == subscription {
+		if r.settings != nil && r.settings.GetBool("IncludeSubscriptionScope") {
+			return nil
+		}
+		return errors.New("assigned on the subscription")
+	}
+	if !strings.HasPrefix(scope, subscription+"/resourcegroups/") {
+		return errors.New("not assigned within the subscription")
 	}
 	return nil
+}
+
+func (r *RoleAssignment) Settings(setting *settings.Setting) {
+	r.settings = setting
 }
 
 func (r *RoleAssignment) Remove(ctx context.Context) error {

@@ -139,6 +139,12 @@ settings:
 - `DeleteLocks`: before the resource group is deleted, delete its management locks, including locks on its resources.
   Needs `Microsoft.Authorization/locks/delete` (Owner or User Access Administrator; Contributor does not have it).
 
+`RoleAssignment` settings:
+
+- `IncludeSubscriptionScope`: also delete assignments on the subscription itself (by default only those within its
+  resource groups are deleted; inherited ones never). Keep owners and service principals with filters, e.g. keep
+  everything but `PrincipalType` `ServicePrincipal` and keep a list of `PrincipalId`s.
+
 ## Global Presets
 
 To read more on global presets, see the [Presets](./config-presets.md) documentation.
