@@ -74,8 +74,7 @@ func (r *ServicePrincipal) String() string {
 
 // -------------------------------------------------------------
 
-type ServicePrincipalsLister struct {
-}
+type ServicePrincipalsLister struct{}
 
 func (l ServicePrincipalsLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	var resources []resource.Resource

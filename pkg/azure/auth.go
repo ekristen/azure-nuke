@@ -15,7 +15,8 @@ import (
 
 func ConfigureAuth(
 	ctx context.Context,
-	environment, tenantID, clientID, clientSecret, clientCertFile, clientFedTokenFile string) (*Authorizers, error) {
+	environment, tenantID, clientID, clientSecret, clientCertFile, clientFedTokenFile string,
+) (*Authorizers, error) {
 	env, err := environments.FromName(environment)
 	if err != nil {
 		return nil, err
@@ -74,6 +75,17 @@ func ConfigureAuth(
 			ClientID:      clientID,
 			TenantID:      tenantID,
 			TokenFilePath: clientFedTokenFile,
+		})
+		if err != nil {
+			return nil, err
+		}
+		authorizers.IdentityCreds = creds
+	} else {
+		logrus.Debug("authentication type: azure cli")
+		credentials.EnableAuthenticatingUsingAzureCLI = true
+
+		creds, err := azidentity.NewAzureCLICredential(&azidentity.AzureCLICredentialOptions{
+			TenantID: tenantID,
 		})
 		if err != nil {
 			return nil, err

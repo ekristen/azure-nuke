@@ -53,8 +53,7 @@ func (r *ApplicationCertificate) String() string {
 	return *r.ID
 }
 
-type ApplicationCertificateLister struct {
-}
+type ApplicationCertificateLister struct{}
 
 func (l ApplicationCertificateLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	var resources []resource.Resource

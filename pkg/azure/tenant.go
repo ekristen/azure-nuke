@@ -4,21 +4,26 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"       //nolint:staticcheck
-	"github.com/Azure/azure-sdk-for-go/services/subscription/mgmt/2020-09-01/subscription" //nolint:staticcheck
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v4"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
 )
 
 type Tenant struct {
 	Authorizers *Authorizers
 
 	ID              string
+	Name            string
 	SubscriptionIds []string
 	TenantIds       []string
+
+	SubscriptionNames map[string]string
 
 	Regions        map[string][]string
 	ResourceGroups map[string][]string
@@ -41,31 +46,44 @@ func NewTenant( //nolint:gocyclo
 		SubscriptionIds: make([]string, 0),
 		Regions:         make(map[string][]string),
 		ResourceGroups:  make(map[string][]string),
+
+		SubscriptionNames: make(map[string]string),
 	}
 
-	tenantClient := subscription.NewTenantsClient()
-	tenantClient.Authorizer = authorizers.Management
+	tenantClient, err := armsubscriptions.NewTenantsClient(authorizers.IdentityCreds, nil)
+	if err != nil {
+		return nil, err
+	}
 
 	log.Trace("attempting to list tenants")
-	for list, err := tenantClient.List(ctx); list.NotDone(); err = list.NextWithContext(ctx) {
+	tenantPager := tenantClient.NewListPager(nil)
+	for tenantPager.More() {
+		page, err := tenantPager.NextPage(ctx)
 		if err != nil {
 			return nil, err
 		}
-		for _, t := range list.Values() {
+		for _, t := range page.Value {
 			log.Tracef("adding tenant: %s", *t.TenantID)
 			tenant.TenantIds = append(tenant.TenantIds, *t.TenantID)
+			if *t.TenantID == tenantID {
+				tenant.Name = displayName(t.DisplayName, t.DefaultDomain)
+			}
 		}
 	}
 
-	client := subscription.NewSubscriptionsClient()
-	client.Authorizer = authorizers.Management
+	subClient, err := armsubscription.NewSubscriptionsClient(authorizers.IdentityCreds, nil)
+	if err != nil {
+		return nil, err
+	}
 
 	log.Trace("listing subscriptions")
-	for list, err := client.List(ctx); list.NotDone(); err = list.NextWithContext(ctx) {
+	subPager := subClient.NewListPager(nil)
+	for subPager.More() {
+		page, err := subPager.NextPage(ctx)
 		if err != nil {
 			return nil, err
 		}
-		for _, s := range list.Values() {
+		for _, s := range page.Value {
 			slog := log.WithField("subscription_id", *s.SubscriptionID)
 			if len(subscriptionIDs) > 0 && !slices.Contains(subscriptionIDs, *s.SubscriptionID) {
 				slog.Warnf("skipping subscription id: %s (reason: not requested)", *s.SubscriptionID)
@@ -74,18 +92,23 @@ func NewTenant( //nolint:gocyclo
 
 			slog.Trace("adding subscription")
 			tenant.SubscriptionIds = append(tenant.SubscriptionIds, *s.SubscriptionID)
+			tenant.SubscriptionNames[*s.SubscriptionID] = ptr.ToString(s.DisplayName)
 
 			slog.Trace("listing resource groups")
-			groupsClient := resources.NewGroupsClient(*s.SubscriptionID)
-			groupsClient.Authorizer = authorizers.Management
+			groupsClient, err := armresources.NewResourceGroupsClient(*s.SubscriptionID, authorizers.IdentityCreds, nil)
+			if err != nil {
+				return nil, err
+			}
 
 			slog.Debugf("configured regions: %v", regions)
-			for list, err := groupsClient.List(ctx, "", nil); list.NotDone(); err = list.NextWithContext(ctx) {
+			groupsPager := groupsClient.NewListPager(nil)
+			for groupsPager.More() {
+				groupsPage, err := groupsPager.NextPage(ctx)
 				if err != nil {
 					return nil, err
 				}
 
-				for _, g := range list.Values() {
+				for _, g := range groupsPage.Value {
 					// If the region isn't in the list of regions we want to include, skip it
 					if !slices.Contains(regions, ptr.ToString(g.Location)) && !slices.Contains(regions, "all") {
 						continue
@@ -98,6 +121,12 @@ func NewTenant( //nolint:gocyclo
 		}
 	}
 
+	for _, subscriptionID := range subscriptionIDs {
+		if !slices.Contains(tenant.SubscriptionIds, subscriptionID) {
+			return nil, fmt.Errorf("subscription not found: %s", subscriptionID)
+		}
+	}
+
 	if len(tenant.TenantIds) == 0 {
 		return nil, fmt.Errorf("tenant not found: %s", tenant.ID)
 	}
@@ -107,4 +136,40 @@ func NewTenant( //nolint:gocyclo
 	}
 
 	return tenant, nil
+}
+
+// RemoveSubscriptions drops the subscriptions for which skip returns true, with their resource groups, and returns
+// the removed ids.
+func (t *Tenant) RemoveSubscriptions(skip func(subscriptionID string) bool) []string {
+	removed := make([]string, 0)
+	t.SubscriptionIds = slices.DeleteFunc(t.SubscriptionIds, func(subscriptionID string) bool {
+		if !skip(subscriptionID) {
+			return false
+		}
+		removed = append(removed, subscriptionID)
+		delete(t.ResourceGroups, subscriptionID)
+		delete(t.Regions, subscriptionID)
+		return true
+	})
+
+	return removed
+}
+
+// displayName joins a tenant's display name and default domain, either may be missing.
+func displayName(name, domain *string) string {
+	parts := make([]string, 0, 2)
+	for _, p := range []*string{name, domain} {
+		if ptr.ToString(p) != "" {
+			parts = append(parts, *p)
+		}
+	}
+	return strings.Join(parts, ", ")
+}
+
+// Describe returns the id with its name in parentheses when the name is known.
+func Describe(id, name string) string {
+	if name == "" {
+		return id
+	}
+	return fmt.Sprintf("%s (%s)", id, name)
 }

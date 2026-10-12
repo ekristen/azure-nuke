@@ -7,7 +7,7 @@ First you need to create a config file for *aws-nuke*. This is a minimal one:
 ```yaml
 regions:
   - global
-  - us-east-1
+  - eastus
 
 blocklist:
 - "00000000-0000-0000-0000-000000000000" # production
@@ -34,7 +34,7 @@ Therefore, we have to extend the config, so it ignores this user:
 ```yaml
 regions:
   - global
-  - us-east-1
+  - eastus
 
 blocklist:
   - "00000000-0000-0000-0000-000000000000" # production

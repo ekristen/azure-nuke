@@ -2,11 +2,11 @@ package resources
 
 import (
 	"context"
-	"time"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/containerregistry/mgmt/2019-05-01/containerregistry" //nolint:staticcheck
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerregistry/armcontainerregistry/v3"
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -29,14 +29,26 @@ func init() {
 type ContainerRegistry struct {
 	*BaseResource `property:",inline"`
 
-	client containerregistry.RegistriesClient
-	Name   *string
-	Tags   map[string]*string
+	client   *armcontainerregistry.RegistriesClient
+	removeOp *runtime.Poller[armcontainerregistry.RegistriesClientDeleteResponse]
+	Name     *string
+	Tags     map[string]*string
 }
 
 func (r *ContainerRegistry) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, *r.ResourceGroup, *r.Name)
-	return err
+	r.removeOp = nil
+
+	poller, err := r.client.BeginDelete(ctx, *r.ResourceGroup, *r.Name, nil)
+	if err != nil {
+		return azure.IgnoreNotFound(err)
+	}
+
+	r.removeOp = poller
+	return nil
+}
+
+func (r *ContainerRegistry) HandleWait(ctx context.Context) error {
+	return azure.WaitForPoller(ctx, r.removeOp)
 }
 
 func (r *ContainerRegistry) Properties() types.Properties {
@@ -47,8 +59,7 @@ func (r *ContainerRegistry) String() string {
 	return *r.Name
 }
 
-type ContainerRegistryLister struct {
-}
+type ContainerRegistryLister struct{}
 
 func (l ContainerRegistryLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)
@@ -56,23 +67,21 @@ func (l ContainerRegistryLister) List(ctx context.Context, o interface{}) ([]res
 
 	log := logrus.WithField("r", ContainerRegistryResource).WithField("s", opts.SubscriptionID)
 
-	client := containerregistry.NewRegistriesClient(opts.SubscriptionID)
-	client.Authorizer = opts.Authorizers.Management
-	client.RetryAttempts = 1
-	client.RetryDuration = time.Second * 2
-
-	log.Trace("attempting to list container registries")
-
-	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup)
+	client, err := armcontainerregistry.NewRegistriesClient(opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Trace("listing resources")
+	log.Trace("attempting to list container registries")
 
-	for list.NotDone() {
-		log.Trace("list not done")
-		for _, entity := range list.Values() {
+	pager := client.NewListByResourceGroupPager(opts.ResourceGroup, nil)
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, entity := range page.Value {
 			resources = append(resources, &ContainerRegistry{
 				BaseResource: &BaseResource{
 					Region:         entity.Location,
@@ -83,10 +92,6 @@ func (l ContainerRegistryLister) List(ctx context.Context, o interface{}) ([]res
 				Name:   entity.Name,
 				Tags:   entity.Tags,
 			})
-		}
-
-		if err := list.NextWithContext(ctx); err != nil {
-			return nil, err
 		}
 	}
 

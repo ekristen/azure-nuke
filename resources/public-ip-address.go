@@ -2,11 +2,11 @@ package resources
 
 import (
 	"context"
-	"time"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2022-05-01/network" //nolint:staticcheck
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v12"
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -32,14 +32,26 @@ func init() {
 type PublicIPAddresses struct {
 	*BaseResource `property:",inline"`
 
-	client network.PublicIPAddressesClient
-	Name   *string
-	Tags   map[string]*string
+	client   *armnetwork.PublicIPAddressesClient
+	removeOp *runtime.Poller[armnetwork.PublicIPAddressesClientDeleteResponse]
+	Name     *string
+	Tags     map[string]*string
 }
 
 func (r *PublicIPAddresses) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, *r.ResourceGroup, *r.Name)
-	return err
+	r.removeOp = nil
+
+	poller, err := r.client.BeginDelete(ctx, *r.ResourceGroup, *r.Name, nil)
+	if err != nil {
+		return azure.IgnoreNotFound(err)
+	}
+
+	r.removeOp = poller
+	return nil
+}
+
+func (r *PublicIPAddresses) HandleWait(ctx context.Context) error {
+	return azure.WaitForPoller(ctx, r.removeOp)
 }
 
 func (r *PublicIPAddresses) Properties() types.Properties {
@@ -50,47 +62,40 @@ func (r *PublicIPAddresses) String() string {
 	return *r.Name
 }
 
-type PublicIPAddressesLister struct {
-}
+type PublicIPAddressesLister struct{}
 
 func (l PublicIPAddressesLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)
 
 	log := logrus.WithField("r", PublicIPAddressesResource).WithField("s", opts.SubscriptionID)
 
-	client := network.NewPublicIPAddressesClient(opts.SubscriptionID)
-	client.Authorizer = opts.Authorizers.Management
-	client.RetryAttempts = 1
-	client.RetryDuration = time.Second * 2
+	client, err := armnetwork.NewPublicIPAddressesClient(opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
+	if err != nil {
+		return nil, err
+	}
 
 	resources := make([]resource.Resource, 0)
 
 	log.Trace("attempting to list public ip addresses")
 
-	list, err := client.List(ctx, opts.ResourceGroup)
-	if err != nil {
-		return nil, err
-	}
+	pager := client.NewListPager(opts.ResourceGroup, nil)
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
 
-	log.Trace("listing public ip addresses")
-
-	for list.NotDone() {
-		log.Trace("list not done")
-		for _, g := range list.Values() {
+		for _, entity := range page.Value {
 			resources = append(resources, &PublicIPAddresses{
 				BaseResource: &BaseResource{
-					Region:         g.Location,
+					Region:         entity.Location,
 					ResourceGroup:  &opts.ResourceGroup,
 					SubscriptionID: &opts.SubscriptionID,
 				},
 				client: client,
-				Name:   g.Name,
-				Tags:   g.Tags,
+				Name:   entity.Name,
+				Tags:   entity.Tags,
 			})
-		}
-
-		if err := list.NextWithContext(ctx); err != nil {
-			return nil, err
 		}
 	}
 

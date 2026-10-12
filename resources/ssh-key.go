@@ -2,11 +2,10 @@ package resources
 
 import (
 	"context"
-	"time"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-04-01/compute" //nolint:staticcheck
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v8"
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -29,13 +28,13 @@ func init() {
 type SSHPublicKey struct {
 	*BaseResource `property:",inline"`
 
-	client compute.SSHPublicKeysClient
+	client *armcompute.SSHPublicKeysClient
 	Name   *string
 	Tags   map[string]*string
 }
 
 func (r *SSHPublicKey) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, *r.ResourceGroup, *r.Name)
+	_, err := r.client.Delete(ctx, *r.ResourceGroup, *r.Name, nil)
 	return err
 }
 
@@ -49,47 +48,40 @@ func (r *SSHPublicKey) String() string {
 
 // --------------------------------------
 
-type SSHPublicKeyLister struct {
-}
+type SSHPublicKeyLister struct{}
 
 func (l SSHPublicKeyLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)
 
 	log := logrus.WithField("r", SSHPublicKeyResource).WithField("s", opts.SubscriptionID)
 
-	client := compute.NewSSHPublicKeysClient(opts.SubscriptionID)
-	client.Authorizer = opts.Authorizers.Management
-	client.RetryAttempts = 1
-	client.RetryDuration = time.Second * 2
-
-	resources := make([]resource.Resource, 0)
-
-	log.Trace("attempting to list ssh key")
-
-	list, err := client.ListBySubscription(ctx)
+	client, err := armcompute.NewSSHPublicKeysClient(opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Trace("listing ....")
+	resources := make([]resource.Resource, 0)
 
-	for list.NotDone() {
-		log.Trace("list not done")
-		for _, g := range list.Values() {
+	log.Trace("attempting to list ssh keys")
+
+	pager := client.NewListBySubscriptionPager(nil)
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, entity := range page.Value {
 			resources = append(resources, &SSHPublicKey{
 				BaseResource: &BaseResource{
 					Region:         &opts.Region,
 					SubscriptionID: &opts.SubscriptionID,
-					ResourceGroup:  azure.GetResourceGroupFromID(*g.ID),
+					ResourceGroup:  azure.GetResourceGroupFromID(*entity.ID),
 				},
 				client: client,
-				Name:   g.Name,
-				Tags:   g.Tags,
+				Name:   entity.Name,
+				Tags:   entity.Tags,
 			})
-		}
-
-		if err := list.NextWithContext(ctx); err != nil {
-			return nil, err
 		}
 	}
 

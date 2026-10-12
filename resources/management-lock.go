@@ -7,9 +7,7 @@ import (
 	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
-	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonids"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/resources/2020-05-01/managementlocks"
-	"github.com/hashicorp/go-azure-sdk/sdk/environments"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armlocks"
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -32,21 +30,17 @@ func init() {
 type ManagementLock struct {
 	*BaseResource `property:",inline"`
 
-	client    *managementlocks.ManagementLocksClient
+	client    *armlocks.ManagementLocksClient
 	ID        *string `property:"-"`
-	Scope     string  `property:"-"`
 	Name      *string
 	LockLevel string
-
-	scopedLockID *managementlocks.ScopedLockId
 }
 
 func (r *ManagementLock) Remove(ctx context.Context) error {
 	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(30*time.Second))
 	defer cancel()
 
-	_, err := r.client.DeleteByScope(ctx, *r.scopedLockID)
-
+	_, err := r.client.DeleteAtResourceGroupLevel(ctx, *r.ResourceGroup, *r.Name, nil)
 	return err
 }
 
@@ -70,40 +64,38 @@ func (l ManagementLockLister) List(ctx context.Context, o interface{}) ([]resour
 
 	resources := make([]resource.Resource, 0)
 
-	client, err := managementlocks.NewManagementLocksClientWithBaseURI(environments.AzurePublic().ResourceManager)
+	client, err := armlocks.NewManagementLocksClient(opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
 	if err != nil {
 		return resources, err
 	}
-	client.Client.Authorizer = opts.Authorizers.Management
 
 	log.Trace("attempting to list resources")
 
-	list, err := client.ListAtResourceGroupLevelComplete(ctx,
-		commonids.NewResourceGroupID(opts.SubscriptionID, opts.ResourceGroup),
-		managementlocks.ListAtResourceGroupLevelOperationOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	for _, lock := range list.Items {
-		scopedLockID, err := managementlocks.ParseScopedLockID(*lock.Id)
+	pager := client.NewListAtResourceGroupLevelPager(opts.ResourceGroup, nil)
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
 		if err != nil {
-			logrus.WithError(err).Error("failed to parse lock id")
-			continue
+			return nil, err
 		}
 
-		resources = append(resources, &ManagementLock{
-			BaseResource: &BaseResource{
-				Region:         ptr.String("global"),
-				ResourceGroup:  &opts.ResourceGroup,
-				SubscriptionID: &opts.SubscriptionID,
-			},
-			client:       client,
-			scopedLockID: scopedLockID,
-			ID:           lock.Id,
-			Name:         lock.Name,
-			LockLevel:    string(lock.Properties.Level),
-		})
+		for _, lock := range page.Value {
+			var lockLevel string
+			if lock.Properties != nil && lock.Properties.Level != nil {
+				lockLevel = string(*lock.Properties.Level)
+			}
+
+			resources = append(resources, &ManagementLock{
+				BaseResource: &BaseResource{
+					Region:         ptr.String("global"),
+					ResourceGroup:  &opts.ResourceGroup,
+					SubscriptionID: &opts.SubscriptionID,
+				},
+				client:    client,
+				ID:        lock.ID,
+				Name:      lock.Name,
+				LockLevel: lockLevel,
+			})
+		}
 	}
 
 	log.Trace("done listing")

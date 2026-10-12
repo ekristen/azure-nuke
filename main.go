@@ -1,11 +1,12 @@
 package main
 
 import (
+	"context"
 	"os"
 	"path"
 
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 
 	"github.com/ekristen/azure-nuke/pkg/common"
 
@@ -26,23 +27,20 @@ func main() {
 		}
 	}()
 
-	app := cli.NewApp()
-	app.Name = path.Base(os.Args[0])
-	app.Usage = "remove everything from an azure tenant"
-	app.Version = common.AppVersion.Summary
-	app.Authors = []*cli.Author{
-		{
-			Name:  "Erik Kristensen",
-			Email: "erik@erikkristensen.com",
+	cmd := &cli.Command{
+		Name:    path.Base(os.Args[0]),
+		Usage:   "remove everything from an azure tenant",
+		Version: common.AppVersion.Summary,
+		Authors: []any{
+			"Erik Kristensen <erik@erikkristensen.com>",
+		},
+		Commands: common.GetCommands(),
+		CommandNotFound: func(_ context.Context, _ *cli.Command, command string) {
+			logrus.Fatalf("command %s not found.", command)
 		},
 	}
 
-	app.Commands = common.GetCommands()
-	app.CommandNotFound = func(context *cli.Context, command string) {
-		logrus.Fatalf("Command %s not found.", command)
-	}
-
-	if err := app.Run(os.Args); err != nil {
+	if err := cmd.Run(context.Background(), os.Args); err != nil {
 		logrus.Fatal(err)
 	}
 }

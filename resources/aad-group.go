@@ -27,8 +27,7 @@ func init() {
 	})
 }
 
-type AzureAdGroupLister struct {
-}
+type AzureAdGroupLister struct{}
 
 func (l AzureAdGroupLister) List(_ context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)

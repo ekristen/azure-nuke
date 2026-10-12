@@ -12,9 +12,7 @@ const (
 	ResourceGroupScope registry.Scope = "resource-group"
 )
 
-var (
-	ResourceGroupRegex = regexp.MustCompile(`/resourceGroups/([^/]+)`)
-)
+var ResourceGroupRegex = regexp.MustCompile(`/resourceGroups/([^/]+)`)
 
 type ListerOpts struct {
 	Authorizers    *Authorizers

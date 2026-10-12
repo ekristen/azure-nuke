@@ -30,8 +30,7 @@ func init() {
 	})
 }
 
-type AzureADUserLister struct {
-}
+type AzureADUserLister struct{}
 
 func (l AzureADUserLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	var resources []resource.Resource

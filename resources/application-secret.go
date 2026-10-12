@@ -55,8 +55,7 @@ func (r *ApplicationSecret) String() string {
 	return fmt.Sprintf("%s -> %s", *r.AppName, *r.KeyID)
 }
 
-type ApplicationSecretLister struct {
-}
+type ApplicationSecretLister struct{}
 
 func (l ApplicationSecretLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	var resources []resource.Resource

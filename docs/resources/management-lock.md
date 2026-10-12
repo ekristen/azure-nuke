@@ -8,5 +8,5 @@
 ## Properties
 
 - **`BaseResource`**: No description provided
-- **`Name`**: No description provided
 - **`LockLevel`**: No description provided
+- **`Name`**: No description provided

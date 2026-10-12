@@ -2,12 +2,11 @@ package resources
 
 import (
 	"context"
-	"time"
 
 	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/preview/security/mgmt/v3.0/security" //nolint:staticcheck
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/security/armsecurity"
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -30,13 +29,13 @@ func init() {
 type SecurityWorkspace struct {
 	*BaseResource `property:",inline"`
 
-	client security.WorkspaceSettingsClient
+	client *armsecurity.WorkspaceSettingsClient
 	Name   *string `description:"The name of the workspace"`
 	Scope  *string `description:"The scope of the workspace"`
 }
 
 func (r *SecurityWorkspace) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, *r.Name)
+	_, err := r.client.Delete(ctx, *r.Name, nil)
 	return err
 }
 
@@ -50,8 +49,7 @@ func (r *SecurityWorkspace) String() string {
 
 // -------------------------------------------------------------
 
-type SecurityWorkspaceLister struct {
-}
+type SecurityWorkspaceLister struct{}
 
 func (l SecurityWorkspaceLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)
@@ -62,35 +60,36 @@ func (l SecurityWorkspaceLister) List(ctx context.Context, o interface{}) ([]res
 
 	log.Trace("creating client")
 
-	client := security.NewWorkspaceSettingsClient(opts.SubscriptionID)
-	client.Authorizer = opts.Authorizers.Management
-	client.RetryAttempts = 1
-	client.RetryDuration = time.Second * 2
+	client, err := armsecurity.NewWorkspaceSettingsClient(opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
+	if err != nil {
+		return nil, err
+	}
 
 	resources := make([]resource.Resource, 0)
 
 	log.Trace("listing resources")
 
-	list, err := client.List(ctx)
-	if err != nil {
-		return nil, err
-	}
+	pager := client.NewListPager(nil)
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
 
-	for list.NotDone() {
-		log.Trace("listing not done")
-		for _, g := range list.Values() {
+		for _, entity := range page.Value {
+			var scope *string
+			if entity.Properties != nil {
+				scope = entity.Properties.Scope
+			}
+
 			resources = append(resources, &SecurityWorkspace{
 				BaseResource: &BaseResource{
 					Region: ptr.String("global"),
 				},
 				client: client,
-				Name:   g.Name,
-				Scope:  g.Scope,
+				Name:   entity.Name,
+				Scope:  scope,
 			})
-		}
-
-		if err := list.NextWithContext(ctx); err != nil {
-			return nil, err
 		}
 	}
 

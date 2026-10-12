@@ -44,12 +44,14 @@ func TestLoadExampleConfig(t *testing.T) {
 					Filters: filter.Filters{
 						"ResourceGroup": {
 							filter.Filter{
+								Group: "default",
 								Type:  filter.Exact,
 								Value: "Default",
 							},
 						},
 						"ServicePrincipal": {
 							filter.Filter{
+								Group: "default",
 								Type:  filter.Exact,
 								Value: "some-management-account",
 							},

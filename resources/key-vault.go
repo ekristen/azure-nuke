@@ -2,11 +2,10 @@ package resources
 
 import (
 	"context"
-	"time"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/keyvault/mgmt/2019-09-01/keyvault" //nolint:staticcheck
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/keyvault/armkeyvault/v2"
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -26,47 +25,40 @@ func init() {
 	})
 }
 
-type KeyVaultLister struct {
-}
+type KeyVaultLister struct{}
 
 func (l KeyVaultLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)
 
 	log := logrus.WithField("r", KeyVaultResource).WithField("s", opts.SubscriptionID)
 
-	client := keyvault.NewVaultsClient(opts.SubscriptionID)
-	client.Authorizer = opts.Authorizers.Management
-	client.RetryAttempts = 1
-	client.RetryDuration = time.Second * 2
+	client, err := armkeyvault.NewVaultsClient(opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
+	if err != nil {
+		return nil, err
+	}
 
 	resources := make([]resource.Resource, 0)
 
 	log.Trace("attempting to list key vaults")
 
-	list, err := client.ListBySubscription(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
+	pager := client.NewListBySubscriptionPager(nil)
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
 
-	log.Trace("listing key vaults")
-
-	for list.NotDone() {
-		log.Trace("list not done")
-		for _, g := range list.Values() {
+		for _, entity := range page.Value {
 			resources = append(resources, &KeyVault{
 				BaseResource: &BaseResource{
-					Region:         g.Location,
-					ResourceGroup:  azure.GetResourceGroupFromID(*g.ID),
+					Region:         entity.Location,
+					ResourceGroup:  azure.GetResourceGroupFromID(*entity.ID),
 					SubscriptionID: &opts.SubscriptionID,
 				},
 				client: client,
-				Name:   g.Name,
-				Tags:   g.Tags,
+				Name:   entity.Name,
+				Tags:   entity.Tags,
 			})
-		}
-
-		if err := list.NextWithContext(ctx); err != nil {
-			return nil, err
 		}
 	}
 
@@ -78,14 +70,13 @@ func (l KeyVaultLister) List(ctx context.Context, o interface{}) ([]resource.Res
 type KeyVault struct {
 	*BaseResource `property:",inline"`
 
-	client keyvault.VaultsClient
+	client *armkeyvault.VaultsClient
 	Name   *string
 	Tags   map[string]*string
 }
 
 func (r *KeyVault) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, *r.ResourceGroup, *r.Name)
-
+	_, err := r.client.Delete(ctx, *r.ResourceGroup, *r.Name, nil)
 	return err
 }
 

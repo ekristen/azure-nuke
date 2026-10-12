@@ -2,12 +2,12 @@ package resources
 
 import (
 	"context"
-	"time"
 
 	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns" //nolint:staticcheck
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns/v2"
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -30,14 +30,26 @@ func init() {
 type PrivateDNSZone struct {
 	*BaseResource `property:",inline"`
 
-	client privatedns.PrivateZonesClient
-	Name   *string
-	Tags   map[string]*string
+	client   *armprivatedns.PrivateZonesClient
+	removeOp *runtime.Poller[armprivatedns.PrivateZonesClientDeleteResponse]
+	Name     *string
+	Tags     map[string]*string
 }
 
 func (r *PrivateDNSZone) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, *r.ResourceGroup, *r.Name, "")
-	return err
+	r.removeOp = nil
+
+	poller, err := r.client.BeginDelete(ctx, *r.ResourceGroup, *r.Name, nil)
+	if err != nil {
+		return azure.IgnoreNotFound(err)
+	}
+
+	r.removeOp = poller
+	return nil
+}
+
+func (r *PrivateDNSZone) HandleWait(ctx context.Context) error {
+	return azure.WaitForPoller(ctx, r.removeOp)
 }
 
 func (r *PrivateDNSZone) Properties() types.Properties {
@@ -48,8 +60,7 @@ func (r *PrivateDNSZone) String() string {
 	return *r.Name
 }
 
-type PrivateDNSZoneLister struct {
-}
+type PrivateDNSZoneLister struct{}
 
 func (l PrivateDNSZoneLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	var resources []resource.Resource
@@ -62,38 +73,31 @@ func (l PrivateDNSZoneLister) List(ctx context.Context, o interface{}) ([]resour
 
 	log.Trace("start")
 
-	client := privatedns.NewPrivateZonesClient(opts.SubscriptionID)
-	client.Authorizer = opts.Authorizers.Management
-	client.RetryAttempts = 1
-	client.RetryDuration = time.Second * 2
-
-	list, err := client.List(ctx, nil)
+	client, err := armprivatedns.NewPrivateZonesClient(opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
 	if err != nil {
-		log.WithError(err).Error("unable to list")
 		return nil, err
 	}
 
 	log.Trace("listing entities")
 
-	for list.NotDone() {
-		log.WithField("count", len(list.Values())).Trace("list not done")
-		for _, g := range list.Values() {
-			log.Trace("adding entity to list")
+	pager := client.NewListPager(nil)
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
 
+		for _, entity := range page.Value {
 			resources = append(resources, &PrivateDNSZone{
 				BaseResource: &BaseResource{
-					Region:         g.Location,
-					ResourceGroup:  azure.GetResourceGroupFromID(*g.ID),
+					Region:         entity.Location,
+					ResourceGroup:  azure.GetResourceGroupFromID(*entity.ID),
 					SubscriptionID: ptr.String(opts.SubscriptionID),
 				},
 				client: client,
-				Name:   g.Name,
-				Tags:   g.Tags,
+				Name:   entity.Name,
+				Tags:   entity.Tags,
 			})
-		}
-
-		if err := list.NextWithContext(ctx); err != nil {
-			return nil, err
 		}
 	}
 

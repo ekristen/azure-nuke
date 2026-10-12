@@ -57,8 +57,7 @@ func (r *ApplicationFederatedCredential) String() string {
 
 // -------------------------------------------------------------------------------------------------------
 
-type ApplicationFederatedCredentialLister struct {
-}
+type ApplicationFederatedCredentialLister struct{}
 
 func (l ApplicationFederatedCredentialLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	var resources []resource.Resource

@@ -8,9 +8,7 @@ import (
 	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
-	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonids"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/consumption/2021-10-01/budgets"
-	"github.com/hashicorp/go-azure-sdk/sdk/environments"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/consumption/armconsumption/v2"
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -33,7 +31,7 @@ func init() {
 type Budget struct {
 	*BaseResource `property:",inline"`
 
-	client *budgets.BudgetsClient
+	client *armconsumption.BudgetsClient
 	ID     *string
 	Name   *string
 }
@@ -46,36 +44,38 @@ func (l BudgetLister) List(pctx context.Context, o interface{}) ([]resource.Reso
 
 	log := logrus.WithField("r", BudgetResource).WithField("s", opts.SubscriptionID)
 
-	client, err := budgets.NewBudgetsClientWithBaseURI(environments.AzurePublic().ResourceManager)
+	client, err := armconsumption.NewBudgetsClient(opts.Authorizers.IdentityCreds, nil)
 	if err != nil {
 		return nil, err
 	}
-	client.Client.Authorizer = opts.Authorizers.Management
 
 	log.Trace("attempting to list budgets for subscription")
 
 	ctx, cancel := context.WithDeadline(pctx, time.Now().Add(10*time.Second))
 	defer cancel()
 
-	list, err := client.List(ctx, commonids.ScopeId{
-		Scope: fmt.Sprintf("/subscriptions/%s", opts.SubscriptionID),
-	})
-	if err != nil {
-		return nil, err
-	}
+	scope := fmt.Sprintf("/subscriptions/%s", opts.SubscriptionID)
 
 	log.Trace("listing budgets for subscription")
 
-	for _, entry := range *list.Model {
-		resources = append(resources, &Budget{
-			BaseResource: &BaseResource{
-				Region:         ptr.String("global"),
-				SubscriptionID: ptr.String(opts.SubscriptionID), // note: this is just the guid
-			},
-			client: client,
-			ID:     entry.Id,
-			Name:   entry.Name,
-		})
+	pager := client.NewListPager(scope, nil)
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, entry := range page.Value {
+			resources = append(resources, &Budget{
+				BaseResource: &BaseResource{
+					Region:         ptr.String("global"),
+					SubscriptionID: ptr.String(opts.SubscriptionID),
+				},
+				client: client,
+				ID:     entry.ID,
+				Name:   entry.Name,
+			})
+		}
 	}
 
 	log.Trace("done")
@@ -87,10 +87,8 @@ func (r *Budget) Remove(ctx context.Context) error {
 	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(10*time.Second))
 	defer cancel()
 
-	_, err := r.client.Delete(ctx, budgets.ScopedBudgetId{
-		Scope:      fmt.Sprintf("/subscriptions/%s", ptr.ToString(r.SubscriptionID)),
-		BudgetName: *r.Name,
-	})
+	scope := fmt.Sprintf("/subscriptions/%s", ptr.ToString(r.SubscriptionID))
+	_, err := r.client.Delete(ctx, scope, *r.Name, nil)
 	return err
 }
 

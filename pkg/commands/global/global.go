@@ -1,13 +1,17 @@
 package global
 
 import (
+	"context"
 	"fmt"
 	"path"
 	"runtime"
 
+	"github.com/ekristen/libnuke/pkg/log"
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 )
+
+const logFormatJSON = "json"
 
 func Flags() []cli.Flag {
 	globalFlags := []cli.Flag{
@@ -15,7 +19,7 @@ func Flags() []cli.Flag {
 			Name:    "log-level",
 			Usage:   "Log Level",
 			Aliases: []string{"l"},
-			EnvVars: []string{"LOGLEVEL"},
+			Sources: cli.EnvVars("LOGLEVEL"),
 			Value:   "info",
 		},
 		&cli.BoolFlag{
@@ -30,17 +34,28 @@ func Flags() []cli.Flag {
 			Name:  "log-full-timestamp",
 			Usage: "force log output to always show full timestamp",
 		},
+		&cli.StringFlag{
+			Name:    "log-format",
+			Usage:   "log format",
+			Value:   "standard",
+			Sources: cli.EnvVars("AZURE_NUKE_LOG_FORMAT"),
+		},
+		&cli.BoolFlag{
+			Name:    logFormatJSON,
+			Usage:   "output as json, shorthand for --log-format=json",
+			Sources: cli.EnvVars("AZURE_NUKE_LOG_FORMAT_JSON"),
+		},
 	}
 
 	return globalFlags
 }
 
-func Before(c *cli.Context) error {
+func Before(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 	formatter := &logrus.TextFormatter{
-		DisableColors: c.Bool("log-disable-color"),
-		FullTimestamp: c.Bool("log-full-timestamp"),
+		DisableColors: cmd.Bool("log-disable-color"),
+		FullTimestamp: cmd.Bool("log-full-timestamp"),
 	}
-	if c.Bool("log-caller") {
+	if cmd.Bool("log-caller") {
 		logrus.SetReportCaller(true)
 
 		formatter.CallerPrettyfier = func(f *runtime.Frame) (string, string) {
@@ -48,9 +63,32 @@ func Before(c *cli.Context) error {
 		}
 	}
 
-	logrus.SetFormatter(formatter)
+	logFormatter := &log.CustomFormatter{
+		FallbackFormatter: formatter,
+	}
 
-	switch c.String("log-level") {
+	logFormat := cmd.String("log-format")
+	if cmd.Bool(logFormatJSON) {
+		logFormat = logFormatJSON
+	}
+
+	switch logFormat {
+	case logFormatJSON:
+		logrus.SetFormatter(&logrus.JSONFormatter{
+			DisableHTMLEscape: true,
+		})
+		// note: this is a hack to remove the _handler key from the log output
+		logrus.AddHook(&StructuredHook{})
+	case "kv":
+		logrus.SetFormatter(&logrus.TextFormatter{
+			DisableColors: true,
+			FullTimestamp: true,
+		})
+	default:
+		logrus.SetFormatter(logFormatter)
+	}
+
+	switch cmd.String("log-level") {
 	case "trace":
 		logrus.SetLevel(logrus.TraceLevel)
 	case "debug":
@@ -62,6 +100,22 @@ func Before(c *cli.Context) error {
 	case "error":
 		logrus.SetLevel(logrus.ErrorLevel)
 	}
+
+	return ctx, nil
+}
+
+type StructuredHook struct{}
+
+func (h *StructuredHook) Levels() []logrus.Level {
+	return logrus.AllLevels
+}
+
+func (h *StructuredHook) Fire(e *logrus.Entry) error {
+	if e.Data == nil {
+		return nil
+	}
+
+	delete(e.Data, "_handler")
 
 	return nil
 }

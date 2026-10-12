@@ -7,9 +7,8 @@ import (
 	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/recoveryservices/armrecoveryservices"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/recoveryservices/armrecoveryservicesbackup"
-	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/recoveryservices/armrecoveryservices/v3"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/recoveryservices/armrecoveryservicesbackup/v5"
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -45,7 +44,8 @@ func (r *RecoveryServicesBackupProtectionContainers) Filter() error {
 }
 
 func (r *RecoveryServicesBackupProtectionContainers) Remove(ctx context.Context) error {
-	_, err := r.pClient.Unregister(ctx, to.String(r.VaultName), to.String(r.ResourceGroup), to.String(r.backupFabric), to.String(r.Name), nil)
+	_, err := r.pClient.Unregister(ctx,
+		ptr.ToString(r.VaultName), ptr.ToString(r.ResourceGroup), ptr.ToString(r.backupFabric), ptr.ToString(r.Name), nil)
 	return err
 }
 
@@ -57,8 +57,7 @@ func (r *RecoveryServicesBackupProtectionContainers) String() string {
 	return ptr.ToString(r.Name)
 }
 
-type RecoveryServicesBackupProtectionContainersLister struct {
-}
+type RecoveryServicesBackupProtectionContainersLister struct{}
 
 func (l RecoveryServicesBackupProtectionContainersLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)
@@ -75,23 +74,20 @@ func (l RecoveryServicesBackupProtectionContainersLister) List(ctx context.Conte
 
 	log.Trace("creating client")
 
-	vaultsClient, err :=
-		armrecoveryservices.NewVaultsClient(
-			opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
+	vaultsClient, err := armrecoveryservices.NewVaultsClient(
+		opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
 	if err != nil {
 		return resources, err
 	}
 
-	client, err :=
-		armrecoveryservicesbackup.NewBackupProtectionContainersClient(
-			opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
+	client, err := armrecoveryservicesbackup.NewBackupProtectionContainersClient(
+		opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
 	if err != nil {
 		return resources, err
 	}
 
-	protectedContainers, err :=
-		armrecoveryservicesbackup.NewProtectionContainersClient(
-			opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
+	protectedContainers, err := armrecoveryservicesbackup.NewProtectionContainersClient(
+		opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
 	if err != nil {
 		return resources, err
 	}
@@ -106,7 +102,7 @@ func (l RecoveryServicesBackupProtectionContainersLister) List(ctx context.Conte
 		}
 
 		for _, v := range page.Value {
-			itemPager := client.NewListPager(to.String(v.Name), opts.ResourceGroup, nil)
+			itemPager := client.NewListPager(ptr.ToString(v.Name), opts.ResourceGroup, nil)
 			for itemPager.More() {
 				page, err := itemPager.NextPage(ctx)
 				if err != nil {
@@ -125,7 +121,7 @@ func (l RecoveryServicesBackupProtectionContainersLister) List(ctx context.Conte
 						VaultName:    v.Name,
 						ID:           i.ID,
 						Name:         i.Name,
-						backupFabric: to.StringPtr("Azure"), // TODO: this should be calculated
+						backupFabric: ptr.String("Azure"), // TODO: this should be calculated
 					})
 				}
 			}

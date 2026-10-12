@@ -3,12 +3,11 @@ package resources
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/preview/security/mgmt/v3.0/security" //nolint:staticcheck
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/security/armsecurity"
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -34,9 +33,10 @@ func init() {
 type SecurityPricing struct {
 	*BaseResource `property:",inline"`
 
-	client      security.PricingsClient
-	Name        *string
-	PricingTier string
+	client         *armsecurity.PricingsClient
+	subscriptionID string
+	Name           *string
+	PricingTier    string
 }
 
 func (r *SecurityPricing) Filter() error {
@@ -52,16 +52,17 @@ func (r *SecurityPricing) Filter() error {
 }
 
 func (r *SecurityPricing) Remove(ctx context.Context) error {
-	var pricingTier security.PricingTier = "Free"
+	pricingTier := armsecurity.PricingTier("Free")
 	if ptr.ToString(r.Name) == "Discovery" || ptr.ToString(r.Name) == "FoundationalCspm" {
-		pricingTier = "Standard"
+		pricingTier = armsecurity.PricingTier("Standard")
 	}
 
-	_, err := r.client.Update(ctx, *r.Name, security.Pricing{
-		PricingProperties: &security.PricingProperties{
-			PricingTier: pricingTier,
+	scopeID := "subscriptions/" + r.subscriptionID
+	_, err := r.client.Update(ctx, scopeID, *r.Name, armsecurity.Pricing{
+		Properties: &armsecurity.PricingProperties{
+			PricingTier: &pricingTier,
 		},
-	})
+	}, nil)
 	return err
 }
 
@@ -75,8 +76,7 @@ func (r *SecurityPricing) String() string {
 
 // -------------------------------------------------------------------
 
-type SecurityPricingLister struct {
-}
+type SecurityPricingLister struct{}
 
 func (l SecurityPricingLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)
@@ -87,28 +87,35 @@ func (l SecurityPricingLister) List(ctx context.Context, o interface{}) ([]resou
 
 	log.Trace("creating client")
 
-	client := security.NewPricingsClient(opts.SubscriptionID)
-	client.Authorizer = opts.Authorizers.Management
-	client.RetryAttempts = 1
-	client.RetryDuration = time.Second * 2
+	client, err := armsecurity.NewPricingsClient(opts.Authorizers.IdentityCreds, nil)
+	if err != nil {
+		return nil, err
+	}
 
 	resources := make([]resource.Resource, 0)
 
 	log.Trace("listing resources")
 
-	list, err := client.List(ctx)
+	scopeID := "subscriptions/" + opts.SubscriptionID
+	list, err := client.List(ctx, scopeID, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, price := range *list.Value {
+	for _, price := range list.Value {
+		var pricingTier string
+		if price.Properties != nil && price.Properties.PricingTier != nil {
+			pricingTier = string(*price.Properties.PricingTier)
+		}
+
 		resources = append(resources, &SecurityPricing{
 			BaseResource: &BaseResource{
 				Region: ptr.String("global"),
 			},
-			client:      client,
-			Name:        price.Name,
-			PricingTier: string(price.PricingTier),
+			client:         client,
+			subscriptionID: opts.SubscriptionID,
+			Name:           price.Name,
+			PricingTier:    pricingTier,
 		})
 	}
 

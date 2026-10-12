@@ -2,11 +2,11 @@ package resources
 
 import (
 	"context"
-	"time"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/dns/mgmt/2018-05-01/dns" //nolint:staticcheck
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -26,8 +26,7 @@ func init() {
 	})
 }
 
-type DNSZoneLister struct {
-}
+type DNSZoneLister struct{}
 
 func (l DNSZoneLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)
@@ -39,25 +38,24 @@ func (l DNSZoneLister) List(ctx context.Context, o interface{}) ([]resource.Reso
 
 	log.Trace("start")
 
-	client := dns.NewZonesClient(opts.SubscriptionID)
-	client.Authorizer = opts.Authorizers.Management
-	client.RetryAttempts = 1
-	client.RetryDuration = time.Second * 2
-
-	resources := make([]resource.Resource, 0)
-
-	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup, nil)
+	client, err := armdns.NewZonesClient(opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
 	if err != nil {
-		log.WithError(err).Error("unable to list")
 		return nil, err
 	}
 
+	resources := make([]resource.Resource, 0)
+
 	log.Trace("listing entities")
 
-	for list.NotDone() {
-		log.WithField("count", len(list.Values())).Trace("list not done")
-		for _, g := range list.Values() {
-			log.Trace("adding entity to list")
+	pager := client.NewListByResourceGroupPager(opts.ResourceGroup, nil)
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			log.WithError(err).Error("unable to list")
+			return nil, err
+		}
+
+		for _, g := range page.Value {
 			resources = append(resources, &DNSZone{
 				BaseResource: &BaseResource{
 					Region:         g.Location,
@@ -69,10 +67,6 @@ func (l DNSZoneLister) List(ctx context.Context, o interface{}) ([]resource.Reso
 				Tags:   g.Tags,
 			})
 		}
-
-		if err := list.NextWithContext(ctx); err != nil {
-			return nil, err
-		}
 	}
 
 	log.Trace("done")
@@ -83,14 +77,26 @@ func (l DNSZoneLister) List(ctx context.Context, o interface{}) ([]resource.Reso
 type DNSZone struct {
 	*BaseResource `property:",inline"`
 
-	client dns.ZonesClient
-	Name   *string
-	Tags   map[string]*string
+	client   *armdns.ZonesClient
+	removeOp *runtime.Poller[armdns.ZonesClientDeleteResponse]
+	Name     *string
+	Tags     map[string]*string
 }
 
 func (r *DNSZone) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, *r.ResourceGroup, *r.Name, "")
-	return err
+	r.removeOp = nil
+
+	poller, err := r.client.BeginDelete(ctx, *r.ResourceGroup, *r.Name, nil)
+	if err != nil {
+		return azure.IgnoreNotFound(err)
+	}
+
+	r.removeOp = poller
+	return nil
+}
+
+func (r *DNSZone) HandleWait(ctx context.Context) error {
+	return azure.WaitForPoller(ctx, r.removeOp)
 }
 
 func (r *DNSZone) Properties() types.Properties {

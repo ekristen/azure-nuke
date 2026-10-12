@@ -143,3 +143,29 @@ func (r *ExampleResource) Properties() types.Properties {
 	return props
 }
 ```
+
+## Creating a new resource
+
+Creating a new resources is fairly straightforward and a template is provided for you, along with a tool to help you
+generate the boilerplate code.
+
+Currently, the code is generated using a tool that is located in `tools/create-resource/main.go` and can be run like so:
+
+!!! note
+    At present, the tool does not check if the package or the resource type is valid, this is purely a helper tool to
+    generate the boilerplate code.
+
+```bash
+go run tools/create-resource/main.go <package-path> <ResourceType>
+go run tools/create-resource/main.go network/armnetwork/v12 RouteTable
+```
+
+The package path is relative to `github.com/Azure/azure-sdk-for-go/sdk/resourcemanager`. This will output the
+boilerplate code to stdout, so you can copy and paste it into the appropriate file or you can redirect to a file like so:
+
+```bash
+go run tools/create-resource/main.go <package-path> <ResourceType> > resources/<resource-type>.go
+```
+
+After adding a resource, regenerate its documentation with `go run tools/generate-docs/main.go` and add the new
+`docs/resources/<resource-type>.md` page to the `nav` in `mkdocs.yml`.

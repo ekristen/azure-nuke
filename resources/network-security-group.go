@@ -2,11 +2,11 @@ package resources
 
 import (
 	"context"
-	"time"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2022-05-01/network" //nolint:staticcheck
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v12"
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -29,14 +29,26 @@ func init() {
 type NetworkSecurityGroup struct {
 	*BaseResource `property:",inline"`
 
-	client network.SecurityGroupsClient
-	Name   *string
-	Tags   map[string]*string
+	client   *armnetwork.SecurityGroupsClient
+	removeOp *runtime.Poller[armnetwork.SecurityGroupsClientDeleteResponse]
+	Name     *string
+	Tags     map[string]*string
 }
 
 func (r *NetworkSecurityGroup) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, *r.ResourceGroup, *r.Name)
-	return err
+	r.removeOp = nil
+
+	poller, err := r.client.BeginDelete(ctx, *r.ResourceGroup, *r.Name, nil)
+	if err != nil {
+		return azure.IgnoreNotFound(err)
+	}
+
+	r.removeOp = poller
+	return nil
+}
+
+func (r *NetworkSecurityGroup) HandleWait(ctx context.Context) error {
+	return azure.WaitForPoller(ctx, r.removeOp)
 }
 
 func (r *NetworkSecurityGroup) Properties() types.Properties {
@@ -47,46 +59,39 @@ func (r *NetworkSecurityGroup) String() string {
 	return *r.Name
 }
 
-type NetworkSecurityGroupLister struct {
-}
+type NetworkSecurityGroupLister struct{}
 
 func (l NetworkSecurityGroupLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)
 
 	log := logrus.WithField("r", NetworkSecurityGroupResource).WithField("s", opts.SubscriptionID)
 
-	client := network.NewSecurityGroupsClient(opts.SubscriptionID)
-	client.Authorizer = opts.Authorizers.Management
-	client.RetryAttempts = 1
-	client.RetryDuration = time.Second * 2
+	client, err := armnetwork.NewSecurityGroupsClient(opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
+	if err != nil {
+		return nil, err
+	}
 
 	resources := make([]resource.Resource, 0)
 
 	log.Trace("attempting to list groups")
 
-	list, err := client.List(ctx, opts.ResourceGroup)
-	if err != nil {
-		return nil, err
-	}
+	pager := client.NewListPager(opts.ResourceGroup, nil)
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
 
-	log.Trace("listing")
-
-	for list.NotDone() {
-		log.Trace("list not done")
-		for _, g := range list.Values() {
+		for _, entity := range page.Value {
 			resources = append(resources, &NetworkSecurityGroup{
 				BaseResource: &BaseResource{
-					Region:        g.Location,
+					Region:        entity.Location,
 					ResourceGroup: &opts.ResourceGroup,
 				},
 				client: client,
-				Name:   g.Name,
-				Tags:   g.Tags,
+				Name:   entity.Name,
+				Tags:   entity.Tags,
 			})
-		}
-
-		if err := list.NextWithContext(ctx); err != nil {
-			return nil, err
 		}
 	}
 

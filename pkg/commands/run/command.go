@@ -10,13 +10,13 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 
 	libconfig "github.com/ekristen/libnuke/pkg/config"
 	"github.com/ekristen/libnuke/pkg/filter"
 	libnuke "github.com/ekristen/libnuke/pkg/nuke"
 	"github.com/ekristen/libnuke/pkg/registry"
-	libscanner "github.com/ekristen/libnuke/pkg/scanner"
+	"github.com/ekristen/libnuke/pkg/scanner"
 	"github.com/ekristen/libnuke/pkg/types"
 
 	"github.com/ekristen/azure-nuke/pkg/azure"
@@ -38,8 +38,8 @@ func (w *log2LogrusWriter) Write(b []byte) (int, error) {
 	return n, nil
 }
 
-func execute(c *cli.Context) error { //nolint:funlen,gocyclo
-	ctx, cancel := context.WithCancel(c.Context)
+func execute(ctx context.Context, cmd *cli.Command) error { //nolint:funlen,gocyclo
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	// This is to purposefully capture the output from the standard logger that is written to by several
@@ -51,12 +51,17 @@ func execute(c *cli.Context) error { //nolint:funlen,gocyclo
 	logger := logrus.StandardLogger()
 	logger.SetOutput(os.Stdout)
 
-	logger.Tracef("tenant id: %s", c.String("tenant-id"))
+	logger.Tracef("tenant id: %s", cmd.String("tenant-id"))
+
+	if cmd.String("client-id") == "" &&
+		(cmd.String("client-secret") != "" || cmd.String("client-certificate-file") != "" || cmd.String("client-federated-token-file") != "") {
+		return fmt.Errorf("--client-id is required when using --client-secret, --client-certificate-file, or --client-federated-token-file")
+	}
 
 	authorizers, err := azure.ConfigureAuth(ctx,
-		c.String("environment"), c.String("tenant-id"), c.String("client-id"),
-		c.String("client-secret"), c.String("client-certificate-file"),
-		c.String("client-federated-token-file"))
+		cmd.String("environment"), cmd.String("tenant-id"), cmd.String("client-id"),
+		cmd.String("client-secret"), cmd.String("client-certificate-file"),
+		cmd.String("client-federated-token-file"))
 	if err != nil {
 		return err
 	}
@@ -64,39 +69,53 @@ func execute(c *cli.Context) error { //nolint:funlen,gocyclo
 	logger.Trace("preparing to run nuke")
 
 	params := &libnuke.Parameters{
-		Force:      c.Bool("force"),
-		ForceSleep: c.Int("force-sleep"),
-		Quiet:      c.Bool("quiet"),
-		NoDryRun:   c.Bool("no-dry-run"),
-		Includes:   c.StringSlice("include"),
-		Excludes:   c.StringSlice("exclude"),
-	}
-
-	if len(c.StringSlice("feature-flag")) > 0 {
-		if slices.Contains(c.StringSlice("feature-flag"), "wait-on-dependencies") {
-			params.WaitOnDependencies = true
-		}
-
-		if slices.Contains(c.StringSlice("feature-flag"), "filter-groups") {
-			params.UseFilterGroups = true
-		}
+		Force:              cmd.Bool("no-prompt"),
+		ForceSleep:         int(cmd.Int("prompt-delay")), //nolint:unconvert
+		Quiet:              cmd.Bool("quiet"),
+		NoDryRun:           cmd.Bool("no-dry-run"),
+		Includes:           cmd.StringSlice("include"),
+		Excludes:           cmd.StringSlice("exclude"),
+		WaitOnDependencies: cmd.Bool("wait-on-dependencies"),
+		MaxWaitRetries:     int(cmd.Int("max-wait-retries")), //nolint:unconvert
 	}
 
 	parsedConfig, err := config.New(libconfig.Options{
-		Path:         c.Path("config"),
+		Path:         cmd.String("config"),
 		Deprecations: registry.GetDeprecatedResourceTypeMapping(),
+		Log:          logger.WithField("component", "config"),
 	})
 	if err != nil {
+		logger.Errorf("Failed to parse config file %s", cmd.String("config"))
 		return err
+	}
+
+	if err := parsedConfig.ValidateAccount(cmd.String("tenant-id")); err != nil {
+		return err
+	}
+
+	// Azure returns subscription ids in lowercase, the blocklist may not be
+	inBlocklist := func(id string) bool {
+		return slices.ContainsFunc(parsedConfig.ResolveBlocklist(), func(b string) bool { return strings.EqualFold(b, id) })
+	}
+
+	for _, subscriptionID := range cmd.StringSlice("subscription-id") {
+		if inBlocklist(subscriptionID) {
+			return fmt.Errorf("subscription %s is in the blocklist", subscriptionID)
+		}
 	}
 
 	tenant, err := azure.NewTenant(ctx,
-		authorizers, c.String("tenant-id"), c.StringSlice("subscription-id"), parsedConfig.Regions)
+		authorizers, cmd.String("tenant-id"), cmd.StringSlice("subscription-id"), parsedConfig.Regions)
 	if err != nil {
 		return err
 	}
 
-	filters, err := parsedConfig.Filters(c.String("tenant-id"))
+	// Without --subscription-id every subscription of the tenant is nuked, except the blocklisted ones
+	for _, subscriptionID := range tenant.RemoveSubscriptions(inBlocklist) {
+		logger.Warnf("skipping subscription %s (reason: in the blocklist)", subscriptionID)
+	}
+
+	filters, err := parsedConfig.Filters(cmd.String("tenant-id"))
 	if err != nil {
 		return err
 	}
@@ -124,7 +143,7 @@ func execute(c *cli.Context) error { //nolint:funlen,gocyclo
 	p := &azure.Prompt{Parameters: params, Tenant: tenant}
 	n.RegisterPrompt(p.Prompt)
 
-	tenantConfig := parsedConfig.Accounts[c.String("tenant-id")]
+	tenantConfig := parsedConfig.Accounts[cmd.String("tenant-id")]
 	tenantResourceTypes := types.ResolveResourceTypes(
 		registry.GetNamesForScope(azure.TenantScope),
 		[]types.Collection{
@@ -140,6 +159,11 @@ func execute(c *cli.Context) error { //nolint:funlen,gocyclo
 		nil,
 		nil,
 	)
+
+	// the tenant scanner, and so the tenant resource types, only run for the global region
+	if slices.Contains(parsedConfig.Regions, "global") || slices.Contains(parsedConfig.Regions, "all") {
+		p.TenantResourceTypes = tenantResourceTypes
+	}
 
 	subResourceTypes := types.ResolveResourceTypes(
 		registry.GetNamesForScope(azure.SubscriptionScope),
@@ -174,11 +198,20 @@ func execute(c *cli.Context) error { //nolint:funlen,gocyclo
 	)
 
 	if slices.Contains(parsedConfig.Regions, "global") || slices.Contains(parsedConfig.Regions, "all") {
-		if err := n.RegisterScanner(azure.TenantScope,
-			libscanner.New("tenant", tenantResourceTypes, &azure.ListerOpts{
+		tenantScanner, scanErr := scanner.New(&scanner.Config{
+			Owner:         "tenant",
+			ResourceTypes: tenantResourceTypes,
+			Opts: &azure.ListerOpts{
 				Authorizers: authorizers,
 				TenantID:    tenant.ID,
-			})); err != nil {
+			},
+			Logger: logger,
+		})
+		if scanErr != nil {
+			return scanErr
+		}
+
+		if err := n.RegisterScanner(azure.TenantScope, tenantScanner); err != nil {
 			return err
 		}
 
@@ -194,13 +227,22 @@ func execute(c *cli.Context) error { //nolint:funlen,gocyclo
 				Debug("registering scanner")
 
 			parts := strings.Split(subscriptionID, "-")
-			if err := n.RegisterScanner(azure.SubscriptionScope,
-				libscanner.New(fmt.Sprintf("sub/%s", parts[:1][0]), subResourceTypes, &azure.ListerOpts{
+			subScanner, scanErr := scanner.New(&scanner.Config{
+				Owner:         fmt.Sprintf("sub/%s", parts[:1][0]),
+				ResourceTypes: subResourceTypes,
+				Opts: &azure.ListerOpts{
 					Authorizers:    tenant.Authorizers,
 					TenantID:       tenant.ID,
 					SubscriptionID: subscriptionID,
 					Regions:        parsedConfig.Regions,
-				})); err != nil {
+				},
+				Logger: logger,
+			})
+			if scanErr != nil {
+				return scanErr
+			}
+
+			if err := n.RegisterScanner(azure.SubscriptionScope, subScanner); err != nil {
 				return err
 			}
 		}
@@ -215,14 +257,23 @@ func execute(c *cli.Context) error { //nolint:funlen,gocyclo
 				WithField("resource_group", rg).
 				Debug("registering scanner")
 
-			if err := n.RegisterScanner(azure.ResourceGroupScope,
-				libscanner.New(fmt.Sprintf("sub/%s/rg/%s", subscriptionID, rg), rgResourceTypes, &azure.ListerOpts{
+			rgScanner, scanErr := scanner.New(&scanner.Config{
+				Owner:         fmt.Sprintf("sub/%s/rg/%s", subscriptionID, rg),
+				ResourceTypes: rgResourceTypes,
+				Opts: &azure.ListerOpts{
 					Authorizers:    tenant.Authorizers,
 					TenantID:       tenant.ID,
 					SubscriptionID: subscriptionID,
 					ResourceGroup:  rg,
 					Regions:        parsedConfig.Regions,
-				})); err != nil {
+				},
+				Logger: logger,
+			})
+			if scanErr != nil {
+				return scanErr
+			}
+
+			if err := n.RegisterScanner(azure.ResourceGroupScope, rgScanner); err != nil {
 				return err
 			}
 		}
@@ -230,12 +281,12 @@ func execute(c *cli.Context) error { //nolint:funlen,gocyclo
 
 	logrus.Debug("running ...")
 
-	return n.Run(c.Context)
+	return n.Run(ctx)
 }
 
 func init() {
 	flags := []cli.Flag{
-		&cli.PathFlag{
+		&cli.StringFlag{
 			Name:  "config",
 			Usage: "path to config file",
 			Value: "config.yaml",
@@ -268,48 +319,56 @@ func init() {
 			Value:   10,
 			Aliases: []string{"force-sleep"},
 		},
+		&cli.IntFlag{
+			Name:  "max-wait-retries",
+			Usage: "maximum number of wait rounds for resources being removed before failing (0 = unlimited)",
+		},
+		&cli.BoolFlag{
+			Name:  "wait-on-dependencies",
+			Usage: "wait for dependent resources to be deleted before deleting resources that depend on them",
+		},
 		&cli.StringSliceFlag{
-			Name:  "feature-flag",
-			Usage: "enable experimental behaviors that may not be fully tested or supported",
+			Name:    "feature-flag",
+			Usage:   "enable experimental behaviors that may not be fully tested or supported",
+			Sources: cli.EnvVars("AZURE_NUKE_FEATURE_FLAGS"),
 		},
 		&cli.StringFlag{
 			Name:    "environment",
 			Usage:   "Azure Environment",
-			EnvVars: []string{"AZURE_ENVIRONMENT"},
+			Sources: cli.EnvVars("AZURE_ENVIRONMENT"),
 			Value:   "global",
 		},
 		&cli.StringFlag{
 			Name:     "tenant-id",
 			Usage:    "the tenant-id to nuke",
-			EnvVars:  []string{"AZURE_TENANT_ID"},
+			Sources:  cli.EnvVars("AZURE_TENANT_ID"),
 			Required: true,
 		},
 		&cli.StringSliceFlag{
 			Name:     "subscription-id",
 			Usage:    "the subscription-id to nuke (this filters to 1 or more subscription ids)",
-			EnvVars:  []string{"AZURE_SUBSCRIPTION_ID"},
+			Sources:  cli.EnvVars("AZURE_SUBSCRIPTION_ID"),
 			Required: false,
 		},
 		&cli.StringFlag{
-			Name:     "client-id",
-			Usage:    "the client-id to use for authentication",
-			EnvVars:  []string{"AZURE_CLIENT_ID"},
-			Required: true,
+			Name:    "client-id",
+			Usage:   "the client-id to use for authentication (optional when using Azure CLI auth)",
+			Sources: cli.EnvVars("AZURE_CLIENT_ID"),
 		},
 		&cli.StringFlag{
 			Name:    "client-secret",
 			Usage:   "the client-secret to use for authentication",
-			EnvVars: []string{"AZURE_CLIENT_SECRET"},
+			Sources: cli.EnvVars("AZURE_CLIENT_SECRET"),
 		},
 		&cli.StringFlag{
 			Name:    "client-certificate-file",
 			Usage:   "the client-certificate-file to use for authentication",
-			EnvVars: []string{"AZURE_CLIENT_CERTIFICATE_FILE"},
+			Sources: cli.EnvVars("AZURE_CLIENT_CERTIFICATE_FILE"),
 		},
 		&cli.StringFlag{
 			Name:    "client-federated-token-file",
 			Usage:   "the client-federated-token-file to use for authentication",
-			EnvVars: []string{"AZURE_FEDERATED_TOKEN_FILE"},
+			Sources: cli.EnvVars("AZURE_FEDERATED_TOKEN_FILE"),
 		},
 	}
 

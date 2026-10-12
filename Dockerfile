@@ -1,21 +1,28 @@
-# syntax=docker/dockerfile:1.18-labs
-FROM alpine:3.22.1 as base
+# syntax=docker/dockerfile:1.28-labs
 ARG PROJECT_NAME=azure-nuke
-RUN apk add --no-cache ca-certificates
-RUN adduser -D azure-nuke
 
-FROM ghcr.io/acorn-io/images-mirror/golang:1.21 AS build
+FROM cgr.dev/chainguard/wolfi-base:latest AS base
+ARG PROJECT_NAME
+RUN apk add --no-cache ca-certificates
+RUN addgroup -S ${PROJECT_NAME} && adduser -S ${PROJECT_NAME} -G ${PROJECT_NAME}
+
+FROM docker.io/library/golang:1.27 AS build
+ARG PROJECT_NAME
 COPY / /src
 WORKDIR /src
 RUN \
   --mount=type=cache,target=/go/pkg \
   --mount=type=cache,target=/root/.cache/go-build \
-  go build -o bin/azure-nuke main.go
+  go build -o bin/${PROJECT_NAME} main.go
 
 FROM base AS goreleaser
-COPY azure-nuke /usr/local/bin/azure-nuke
-USER azure-nuke
+ARG PROJECT_NAME
+COPY ${PROJECT_NAME} /usr/local/bin/${PROJECT_NAME}
+USER ${PROJECT_NAME}
+ENTRYPOINT ["/usr/local/bin/azure-nuke"]
 
 FROM base
-COPY --from=build /src/bin/azure-nuke /usr/local/bin/azure-nuke
-USER azure-nuke
+ARG PROJECT_NAME
+COPY --from=build /src/bin/${PROJECT_NAME} /usr/local/bin/${PROJECT_NAME}
+USER ${PROJECT_NAME}
+ENTRYPOINT ["/usr/local/bin/azure-nuke"]

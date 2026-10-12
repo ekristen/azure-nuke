@@ -105,6 +105,7 @@ nav:
       - Budget: resources/budget.md
       - Compute Snapshot: resources/compute-snapshot.md
       - Container Registry: resources/container-registry.md
+      - DNS Record Set: resources/dns-record-set.md
       - DNS Zone: resources/dns-zone.md
       - Disk: resources/disk.md
       - IP Allocation: resources/ip-allocation.md
@@ -115,6 +116,7 @@ nav:
       - Network Security Group: resources/network-security-group.md
       - Policy Assignment: resources/policy-assignment.md
       - Policy Definition: resources/policy-definition.md
+      - Private DNS Record Set: resources/private-dns-record-set.md
       - Private DNS Zone: resources/private-dns-zone.md
       - Public IP Address: resources/public-ip-address.md
       - Recovery Services Backup Policy: resources/recovery-services-backup-policy.md
@@ -123,6 +125,7 @@ nav:
       - Recovery Services Backup Protection Intent: resources/recovery-services-backup-protection-intent.md
       - Recovery Services Vault: resources/recovery-services-vault.md
       - Resource Group: resources/resource-group.md
+      - Role Assignment: resources/role-assignment.md
       - SSH Public Key: resources/ssh-public-key.md
       - Security Alert: resources/security-alert.md
       - Security Assessment: resources/security-assessment.md

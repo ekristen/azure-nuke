@@ -7,9 +7,9 @@
 
 ## Properties
 
-- **`PricingTier`**: No description provided
 - **`BaseResource`**: No description provided
 - **`Name`**: No description provided
+- **`PricingTier`**: No description provided
 ## Depends On
 
 !!! Experimental Feature

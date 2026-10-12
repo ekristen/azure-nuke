@@ -10,6 +10,7 @@
 - **`BaseResource`**: No description provided
 - **`ID`**: No description provided
 - **`Name`**: No description provided
+- **`VaultName`**: No description provided
 ## Depends On
 
 !!! Experimental Feature

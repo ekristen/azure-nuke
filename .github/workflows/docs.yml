@@ -27,18 +27,18 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: setup pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
       - name: setup python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: 3.x
       - name: setup cache
         run: |
           echo "cache_id=$(date --utc '+%V')" >> $GITHUB_ENV
       - name: handle cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           key: mkdocs-material-${{ env.cache_id }}
           path: .cache
@@ -51,10 +51,10 @@ jobs:
         run: |
           mkdocs build
       - name: upload artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           # Upload entire repository
           path: public/
       - name: deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

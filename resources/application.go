@@ -27,8 +27,7 @@ func init() {
 	})
 }
 
-type ApplicationLister struct {
-}
+type ApplicationLister struct{}
 
 func (l ApplicationLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	var resources []resource.Resource

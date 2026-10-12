@@ -9,9 +9,8 @@ import (
 	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/recoveryservices/armrecoveryservices"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/recoveryservices/armrecoveryservicesbackup"
-	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/recoveryservices/armrecoveryservices/v3"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/recoveryservices/armrecoveryservicesbackup/v5"
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -50,8 +49,8 @@ func (r *RecoveryServicesBackupProtectedItem) Filter() error {
 
 func (r *RecoveryServicesBackupProtectedItem) Remove(ctx context.Context) error {
 	_, err := r.itemClient.Delete(
-		ctx, to.String(r.VaultName), to.String(r.ResourceGroup),
-		to.String(r.backupFabric), to.String(r.ContainerName), to.String(r.Name), nil)
+		ctx, ptr.ToString(r.VaultName), ptr.ToString(r.ResourceGroup),
+		ptr.ToString(r.backupFabric), ptr.ToString(r.ContainerName), ptr.ToString(r.Name), nil)
 	return err
 }
 
@@ -63,8 +62,7 @@ func (r *RecoveryServicesBackupProtectedItem) String() string {
 	return ptr.ToString(r.Name)
 }
 
-type RecoveryServicesBackupProtectedItemLister struct {
-}
+type RecoveryServicesBackupProtectedItemLister struct{}
 
 func (l RecoveryServicesBackupProtectedItemLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)
@@ -106,7 +104,7 @@ func (l RecoveryServicesBackupProtectedItemLister) List(ctx context.Context, o i
 		}
 
 		for _, v := range page.Value {
-			itemPager := client.NewListPager(to.String(v.Name), opts.ResourceGroup, nil)
+			itemPager := client.NewListPager(ptr.ToString(v.Name), opts.ResourceGroup, nil)
 			for itemPager.More() {
 				page, err := itemPager.NextPage(ctx)
 				if err != nil {
@@ -114,8 +112,8 @@ func (l RecoveryServicesBackupProtectedItemLister) List(ctx context.Context, o i
 				}
 
 				for _, i := range page.Value {
-					containerName := to.String(i.Properties.GetProtectedItem().ContainerName)
-					if to.String(i.Properties.GetProtectedItem().ProtectedItemType) == "Microsoft.Compute/virtualMachines" {
+					containerName := ptr.ToString(i.Properties.GetProtectedItem().ContainerName)
+					if ptr.ToString(i.Properties.GetProtectedItem().ProtectedItemType) == "Microsoft.Compute/virtualMachines" {
 						if !strings.HasPrefix(containerName, "IaasVMContainer;") {
 							containerName = fmt.Sprintf("IaasVMContainer;%s", containerName)
 						}
@@ -133,8 +131,8 @@ func (l RecoveryServicesBackupProtectedItemLister) List(ctx context.Context, o i
 						ID:         i.ID,
 						Name:       i.Name,
 
-						ContainerName: to.StringPtr(containerName),
-						backupFabric:  to.StringPtr("Azure"), // TODO: this should be calculated
+						ContainerName: ptr.String(containerName),
+						backupFabric:  ptr.String("Azure"), // TODO: this should be calculated
 					})
 				}
 			}

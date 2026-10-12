@@ -2,11 +2,10 @@ package resources
 
 import (
 	"context"
-	"time"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/web/mgmt/2021-03-01/web" //nolint:staticcheck
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/appservice/armappservice/v6"
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -26,33 +25,30 @@ func init() {
 	})
 }
 
-type AppServicePlanLister struct {
-}
+type AppServicePlanLister struct{}
 
 func (l AppServicePlanLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)
 
 	log := logrus.WithField("r", AppServicePlanResource).WithField("s", opts.SubscriptionID)
 
-	client := web.NewAppServicePlansClient(opts.SubscriptionID)
-	client.Authorizer = opts.Authorizers.Management
-	client.RetryAttempts = 1
-	client.RetryDuration = time.Second * 2
-
-	resources := make([]resource.Resource, 0)
-
-	log.Trace("attempting to list ssh key")
-
-	list, err := client.ListByResourceGroup(ctx, opts.ResourceGroup)
+	client, err := armappservice.NewPlansClient(opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Trace("listing resources")
+	resources := make([]resource.Resource, 0)
 
-	for list.NotDone() {
-		log.Trace("list not done")
-		for _, g := range list.Values() {
+	log.Trace("attempting to list app service plans")
+
+	pager := client.NewListByResourceGroupPager(opts.ResourceGroup, nil)
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, g := range page.Value {
 			resources = append(resources, &AppServicePlan{
 				BaseResource: &BaseResource{
 					ResourceGroup: &opts.ResourceGroup,
@@ -60,10 +56,6 @@ func (l AppServicePlanLister) List(ctx context.Context, o interface{}) ([]resour
 				client: client,
 				Name:   *g.Name,
 			})
-		}
-
-		if err := list.NextWithContext(ctx); err != nil {
-			return nil, err
 		}
 	}
 
@@ -75,12 +67,12 @@ func (l AppServicePlanLister) List(ctx context.Context, o interface{}) ([]resour
 type AppServicePlan struct {
 	*BaseResource `property:",inline"`
 
-	client web.AppServicePlansClient
+	client *armappservice.PlansClient
 	Name   string
 }
 
 func (r *AppServicePlan) Remove(ctx context.Context) error {
-	_, err := r.client.Delete(ctx, r.GetResourceGroup(), r.Name)
+	_, err := r.client.Delete(ctx, r.GetResourceGroup(), r.Name, nil)
 	return err
 }
 

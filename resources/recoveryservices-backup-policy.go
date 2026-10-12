@@ -7,11 +7,9 @@ import (
 	"github.com/gotidy/ptr"
 	"github.com/sirupsen/logrus"
 
-	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonids"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/recoveryservices/2023-02-01/vaults"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/recoveryservicesbackup/2023-02-01/backuppolicies"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/recoveryservicesbackup/2023-02-01/protectionpolicies"
-	"github.com/hashicorp/go-azure-sdk/sdk/environments"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/recoveryservices/armrecoveryservices/v3"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/recoveryservices/armrecoveryservicesbackup/v5"
 
 	"github.com/ekristen/libnuke/pkg/registry"
 	"github.com/ekristen/libnuke/pkg/resource"
@@ -37,13 +35,12 @@ func init() {
 type RecoveryServicesBackupPolicy struct {
 	*BaseResource `property:",inline"`
 
-	client            backuppolicies.BackupPoliciesClient
-	protectionsClient protectionpolicies.ProtectionPoliciesClient
+	protectionsClient *armrecoveryservicesbackup.ProtectionPoliciesClient
+	removeOp          *runtime.Poller[armrecoveryservicesbackup.ProtectionPoliciesClientDeleteResponse]
 
-	ID   *string
-	Name *string
-
-	backupPolicyID protectionpolicies.BackupPolicyId
+	ID        *string
+	Name      *string
+	VaultName string
 }
 
 func (r *RecoveryServicesBackupPolicy) Filter() error {
@@ -51,8 +48,19 @@ func (r *RecoveryServicesBackupPolicy) Filter() error {
 }
 
 func (r *RecoveryServicesBackupPolicy) Remove(ctx context.Context) error {
-	_, err := r.protectionsClient.Delete(ctx, r.backupPolicyID)
-	return err
+	r.removeOp = nil
+
+	poller, err := r.protectionsClient.BeginDelete(ctx, r.VaultName, *r.ResourceGroup, *r.Name, nil)
+	if err != nil {
+		return azure.IgnoreNotFound(err)
+	}
+
+	r.removeOp = poller
+	return nil
+}
+
+func (r *RecoveryServicesBackupPolicy) HandleWait(ctx context.Context) error {
+	return azure.WaitForPoller(ctx, r.removeOp)
 }
 
 func (r *RecoveryServicesBackupPolicy) Properties() types.Properties {
@@ -63,8 +71,7 @@ func (r *RecoveryServicesBackupPolicy) String() string {
 	return ptr.ToString(r.Name)
 }
 
-type RecoveryServicesBackupPolicyLister struct {
-}
+type RecoveryServicesBackupPolicyLister struct{}
 
 func (l RecoveryServicesBackupPolicyLister) List(ctx context.Context, o interface{}) ([]resource.Resource, error) {
 	opts := o.(*azure.ListerOpts)
@@ -79,58 +86,56 @@ func (l RecoveryServicesBackupPolicyLister) List(ctx context.Context, o interfac
 
 	log.Trace("creating client")
 
-	vaultsClient, err := vaults.NewVaultsClientWithBaseURI(environments.AzurePublic().ResourceManager) // TODO: pass in the endpoint
+	vaultsClient, err := armrecoveryservices.NewVaultsClient(opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
 	if err != nil {
 		return nil, err
 	}
-	vaultsClient.Client.Authorizer = opts.Authorizers.Management
 
-	// TODO: pass in the endpoint
-	client :=
-		backuppolicies.NewBackupPoliciesClientWithBaseURI("https://management.azure.com")
-	client.Client.Authorizer = opts.Authorizers.Management
-	client.Client.RetryAttempts = 1
-	client.Client.RetryDuration = time.Second * 2
+	backupClient, err := armrecoveryservicesbackup.NewBackupPoliciesClient(opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
+	if err != nil {
+		return nil, err
+	}
 
-	// TODO: pass in the endpoint
-	protectionsClient :=
-		protectionpolicies.NewProtectionPoliciesClientWithBaseURI("https://management.azure.com")
-	protectionsClient.Client.Authorizer = opts.Authorizers.Management
-	protectionsClient.Client.RetryAttempts = 1
-	protectionsClient.Client.RetryDuration = time.Second * 2
+	protectionsClient, err := armrecoveryservicesbackup.NewProtectionPoliciesClient(opts.SubscriptionID, opts.Authorizers.IdentityCreds, nil)
+	if err != nil {
+		return nil, err
+	}
 
 	resources := make([]resource.Resource, 0)
 
 	log.Trace("listing resources")
 
-	vaultsRes, err :=
-		vaultsClient.ListByResourceGroupComplete(
-			ctx, commonids.NewResourceGroupID(opts.SubscriptionID, opts.ResourceGroup))
-	if err != nil {
-		return nil, err
-	}
-
-	for _, v := range vaultsRes.Items {
-		vaultID := backuppolicies.NewVaultID(opts.SubscriptionID, opts.ResourceGroup, ptr.ToString(v.Name))
-		items, err := client.ListComplete(ctx, vaultID, backuppolicies.DefaultListOperationOptions())
+	vaultsPager := vaultsClient.NewListByResourceGroupPager(opts.ResourceGroup, nil)
+	for vaultsPager.More() {
+		vaultsPage, err := vaultsPager.NextPage(ctx)
 		if err != nil {
 			return nil, err
 		}
 
-		for _, item := range items.Items {
-			resources = append(resources, &RecoveryServicesBackupPolicy{
-				BaseResource: &BaseResource{
-					Region:         item.Location,
-					ResourceGroup:  &opts.ResourceGroup,
-					SubscriptionID: &opts.SubscriptionID,
-				},
-				client:            client,
-				protectionsClient: protectionsClient,
-				ID:                item.Id,
-				Name:              item.Name,
-				backupPolicyID: protectionpolicies.NewBackupPolicyID(
-					opts.SubscriptionID, opts.ResourceGroup, ptr.ToString(v.Name), ptr.ToString(item.Name)),
-			})
+		for _, v := range vaultsPage.Value {
+			vaultName := ptr.ToString(v.Name)
+
+			policyPager := backupClient.NewListPager(vaultName, opts.ResourceGroup, nil)
+			for policyPager.More() {
+				policyPage, err := policyPager.NextPage(ctx)
+				if err != nil {
+					return nil, err
+				}
+
+				for _, item := range policyPage.Value {
+					resources = append(resources, &RecoveryServicesBackupPolicy{
+						BaseResource: &BaseResource{
+							Region:         item.Location,
+							ResourceGroup:  &opts.ResourceGroup,
+							SubscriptionID: &opts.SubscriptionID,
+						},
+						protectionsClient: protectionsClient,
+						ID:                item.ID,
+						Name:              item.Name,
+						VaultName:         vaultName,
+					})
+				}
+			}
 		}
 	}
 

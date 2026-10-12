@@ -1,10 +1,11 @@
 package list
 
 import (
+	"context"
 	"sort"
 
 	"github.com/fatih/color"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 
 	"github.com/ekristen/libnuke/pkg/registry"
 
@@ -14,7 +15,7 @@ import (
 	_ "github.com/ekristen/azure-nuke/resources"
 )
 
-func execute(c *cli.Context) error {
+func execute(_ context.Context, _ *cli.Command) error {
 	ls := registry.GetNames()
 
 	sort.Strings(ls)
@@ -28,17 +29,17 @@ func execute(c *cli.Context) error {
 			_, _ = color.New(color.FgCyan).Printf("alternative resource\n")
 		} else {
 			_, _ = color.New(color.Bold).Printf("%-55s", name)
-			c := color.FgGreen
+			clr := color.FgGreen
 			switch reg.Scope {
 			case azure.TenantScope:
-				c = color.FgHiGreen
+				clr = color.FgHiGreen
 			case azure.SubscriptionScope:
-				c = color.FgHiBlue
+				clr = color.FgHiBlue
 			case azure.ResourceGroupScope:
-				c = color.FgHiMagenta
+				clr = color.FgHiMagenta
 			}
 
-			_, _ = color.New(c).Printf("%s\n", string(reg.Scope))
+			_, _ = color.New(clr).Printf("%s\n", string(reg.Scope))
 		}
 	}
 
